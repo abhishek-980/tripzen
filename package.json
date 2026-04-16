@@ -1,0 +1,24 @@
+{
+  "name": "tripzen",
+  "version": "1.0.0",
+  "description": "Tripzen travel matchmaking website",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "tripzen",
+    "travel",
+    "matchmaking",
+    "booking"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1",
+    "mongoose": "^9.4.1",
+    "nodemon": "^3.1.14"
+  }
+}
