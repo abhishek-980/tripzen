@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tripzen WhatsApp Gateway Linker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.85);
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --accent: #f59e0b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e293b 0%, var(--bg) 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 16px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 6px;
+    }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      max-width: 960px;
+      width: 100%;
+    }
+    @media (max-width: 768px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .card h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      margin-bottom: 20px;
+    }
+    .status-connected { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
+    .status-pairing { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
+    .status-disconnected { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+
+    .qr-container {
+      width: 260px;
+      height: 260px;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .qr-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .pairing-code-box {
+      background: rgba(15, 23, 42, 0.8);
+      border: 2px dashed #10b981;
+      border-radius: 14px;
+      padding: 16px 24px;
+      margin: 16px 0;
+      width: 100%;
+    }
+    .pairing-code-val {
+      font-size: 2.2rem;
+      font-weight: 900;
+      letter-spacing: 6px;
+      color: #34d399;
+      font-family: monospace;
+    }
+    .btn {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #fff;
+      border: none;
+      padding: 12px 22px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      text-decoration: none;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      box-shadow: none;
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+    .instructions {
+      text-align: left;
+      width: 100%;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-top: 16px;
+    }
+    .instructions ol {
+      padding-left: 20px;
+    }
+    .instructions li {
+      margin-bottom: 6px;
+    }
+    .test-box {
+      width: 100%;
+      margin-top: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 960px;
+      text-align: center;
+    }
+    .input-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .input-field {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      width: 280px;
+      outline: none;
+    }
+    .input-field:focus {
+      border-color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1><span>💬</span> TripZen WhatsApp Gateway</h1>
+    <p>Connect official sender number <strong>+91 89206 32874</strong> for 100% automated background booking messages</p>
+  </div>
+
+  <div id="statusBadge" class="status-badge status-pairing">
+    <span>🟡</span> <span id="statusText">Checking Connection Status...</span>
+  </div>
+
+  <div class="main-grid">
+    <!-- METHOD 1: QR CODE -->
+    <div class="card">
+      <h2><span>📷</span> Method 1: Scan QR Code (Fastest)</h2>
+      <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 14px;">Point your WhatsApp camera at this code to link in 1 second</p>
+      <div class="qr-container">
+        <img id="qrCodeImg" src="" alt="WhatsApp QR Code" style="display: none;" />
+        <div id="qrLoading">Loading QR Code...</div>
+      </div>
+      <div class="instructions">
+        <ol>
+          <li>Open WhatsApp on phone <strong>8920632874</strong></li>
+          <li>Tap <strong>Settings</strong> ➔ <strong>Linked Devices</strong></li>
+          <li>Tap <strong>Link a Device</strong> and point camera here</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- METHOD 2: 8-DIGIT PAIRING CODE -->
+    <div class="card">
+      <h2><span>🔢</span> Method 2: Enter Pairing Code</h2>
+      <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 10px;">Type this 8-letter code inside WhatsApp</p>
+      
+      <div class="pairing-code-box">
+        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px;">Live Pairing Code for 8920632874</div>
+        <div id="pairingCodeVal" class="pairing-code-val">--------</div>
+      </div>
+
+      <button id="refreshCodeBtn" class="btn" style="margin-bottom: 12px;">
+        <span>🔄</span> Generate Fresh Code
+      </button>
+
+      <div class="instructions">
+        <ol>
+          <li>Open WhatsApp on <strong>8920632874</strong></li>
+          <li>Tap <strong>Settings</strong> ➔ <strong>Linked Devices</strong> ➔ <strong>Link a Device</strong></li>
+          <li>Tap <strong>"Link with phone number instead"</strong></li>
+          <li>Enter the 8-character code shown above</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE TEST SENDER TOOL -->
+  <div class="test-box">
+    <h2 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 8px;">🧪 Live WhatsApp Delivery Tester</h2>
+    <p style="font-size: 0.86rem; color: var(--text-muted);">Send an instant test message to any phone number to verify connection</p>
+    
+    <div class="input-row">
+      <input type="text" id="testPhoneInput" class="input-field" value="7982307329" placeholder="Recipient 10-digit number" />
+      <button id="sendTestMsgBtn" class="btn"><span>🚀</span> Send Test WhatsApp</button>
+      <button id="logoutBtn" class="btn btn-secondary"><span>⚠️</span> Reset / Re-link Session</button>
+    </div>
+
+    <div id="testResultMsg" style="margin-top: 14px; font-size: 0.9rem; font-weight: 700;"></div>
+  </div>
+
+  <div style="margin-top: 30px;">
+    <a href="/" class="btn btn-secondary"><span>←</span> Return to TripZen Home</a>
+  </div>
+
+  <script>
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/whatsapp/status');
+        const data = await res.json();
+        
+        const badge = document.getElementById('statusBadge');
+        const statusText = document.getElementById('statusText');
+        const qrImg = document.getElementById('qrCodeImg');
+        const qrLoading = document.getElementById('qrLoading');
+        const codeVal = document.getElementById('pairingCodeVal');
+
+        if (data.status === 'connected') {
+          badge.className = 'status-badge status-connected';
+          statusText.innerHTML = `🟢 Bot Active & Connected as <strong>${data.linkedNumber || data.officialNumber}</strong>`;
+          qrLoading.textContent = '✓ Already Linked & Online';
+          qrImg.style.display = 'none';
+          codeVal.textContent = 'CONNECTED';
+          codeVal.style.color = '#34d399';
+        } else if (data.status === 'pairing') {
+          badge.className = 'status-badge status-pairing';
+          statusText.innerHTML = `🟡 Ready to Link Number <strong>${data.officialNumber}</strong>`;
+          if (data.qrCodeDataUrl) {
+            qrImg.src = data.qrCodeDataUrl;
+            qrImg.style.display = 'block';
+            qrLoading.style.display = 'none';
+          }
+          if (data.pairingCode) {
+            codeVal.textContent = data.pairingCode;
+            codeVal.style.color = '#34d399';
+          }
+        } else {
+          badge.className = 'status-badge status-disconnected';
+          statusText.innerHTML = `🔴 Bot Disconnected`;
+        }
+      } catch (err) {
+        console.error('Status fetch error:', err);
+      }
+    }
+
+    document.getElementById('refreshCodeBtn').addEventListener('click', async () => {
+      const codeVal = document.getElementById('pairingCodeVal');
+      codeVal.textContent = 'Generating...';
+      try {
+        const res = await fetch('/api/whatsapp/request-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber: '8920632874' })
+        });
+        const result = await res.json();
+        if (result.success && result.pairingCode) {
+          codeVal.textContent = result.pairingCode;
+        } else {
+          fetchStatus();
+        }
+      } catch (e) {
+        alert('Failed to request code: ' + e.message);
+      }
+    });
+
+    document.getElementById('sendTestMsgBtn').addEventListener('click', async () => {
+      const phone = document.getElementById('testPhoneInput').value.trim();
+      const resultBox = document.getElementById('testResultMsg');
+      resultBox.textContent = 'Sending message to +' + phone + '...';
+      resultBox.style.color = '#fbbf24';
+
+      try {
+        const res = await fetch('/api/whatsapp/send-test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: phone })
+        });
+        const result = await res.json();
+        if (result.success) {
+          resultBox.textContent = `✓ Message sent successfully to +${result.recipientNumber}! Check your WhatsApp now.`;
+          resultBox.style.color = '#34d399';
+        } else {
+          resultBox.textContent = `⚠️ Could not send via socket (${result.reason || result.error || 'Device not linked'}). Use QR/Code above to link first!`;
+          resultBox.style.color = '#f87171';
+        }
+      } catch (e) {
+        resultBox.textContent = 'Error: ' + e.message;
+        resultBox.style.color = '#f87171';
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      if (confirm('Reset and unlink WhatsApp session?')) {
+        await fetch('/api/whatsapp/logout', { method: 'POST' });
+        alert('Session reset. Generating fresh pairing code...');
+        setTimeout(fetchStatus, 2000);
+      }
+    });
+
+    fetchStatus();
+    setInterval(fetchStatus, 3000);
+  </script>
+</body>
+</html>

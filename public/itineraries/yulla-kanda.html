@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yulla Kanda Alpine Lake & Sacred Krishna Temple | Tripzen Official Itinerary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --forest: #064e3b;
+      --accent: #f59e0b;
+      --bg: #0b0f19;
+      --surface: #111827;
+      --surface-border: #1f2937;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #f3f4f6;
+      color: #1f2937;
+      line-height: 1.6;
+      padding: 24px;
+    }
+
+    .page-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+    }
+
+    /* Print & Header Controls */
+    .top-action-bar {
+      background: #0f172a;
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-logo-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 900;
+      font-size: 1.25rem;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-logo-area span {
+      background: linear-gradient(135deg, #10b981, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .action-btn {
+      background: #10b981;
+      color: #ffffff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      background: #059669;
+      transform: translateY(-1px);
+    }
+
+    /* Hero Section */
+    .hero-banner {
+      position: relative;
+      height: 280px;
+      background: #111827 url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+      display: flex;
+      align-items: flex-end;
+      padding: 32px;
+      color: #ffffff;
+    }
+
+    .hero-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(to top, rgba(15, 23, 42, 0.95) 15%, rgba(15, 23, 42, 0.35) 100%);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .badge-primary {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid #10b981;
+      color: #34d399;
+    }
+
+    .badge-accent {
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid #f59e0b;
+      color: #fbbf24;
+    }
+
+    .badge-dark {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(4px);
+      color: #fff;
+    }
+
+    .hero-title {
+      font-size: 1.85rem;
+      font-weight: 900;
+      line-height: 1.25;
+      margin-bottom: 6px;
+      color: #ffffff;
+    }
+
+    .hero-subtitle {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    /* Content Layout */
+    .content-body {
+      padding: 32px;
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 8px;
+    }
+
+    /* Quick Facts Grid */
+    .facts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .fact-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 12px 16px;
+      border-radius: 10px;
+    }
+
+    .fact-card-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #64748b;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .fact-card-val {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    /* Overview Text */
+    .overview-text {
+      color: #4b5563;
+      font-size: 0.95rem;
+      line-height: 1.65;
+      margin-bottom: 28px;
+      background: #f0fdf4;
+      border-left: 4px solid #10b981;
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+    }
+
+    /* Day by day timeline */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .day-box {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+
+    .day-header {
+      background: #f8fafc;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .day-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .day-pill {
+      background: #064e3b;
+      color: #34d399;
+      font-weight: 900;
+      font-size: 0.78rem;
+      padding: 3px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .day-name {
+      font-weight: 800;
+      font-size: 0.98rem;
+      color: #0f172a;
+    }
+
+    .day-stats {
+      font-size: 0.8rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .day-body {
+      padding: 16px 18px;
+      color: #374151;
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .day-meta-row {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed #e2e8f0;
+      display: flex;
+      gap: 20px;
+      font-size: 0.82rem;
+      color: #64748b;
+    }
+
+    .day-meta-item strong {
+      color: #0f172a;
+    }
+
+    /* 2 Column lists */
+    .two-col-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+
+    .list-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .list-card h3 {
+      font-size: 1rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .list-card ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .list-card li {
+      font-size: 0.88rem;
+      color: #374151;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.45;
+    }
+
+    .list-card.inclusions h3 { color: #059669; }
+    .list-card.inclusions li::before { content: "✓"; color: #10b981; font-weight: 900; }
+    .list-card.exclusions h3 { color: #dc2626; }
+    .list-card.exclusions li::before { content: "✕"; color: #ef4444; font-weight: 900; }
+    .list-card.checklist h3 { color: #0284c7; }
+    .list-card.checklist li::before { content: "🎒"; font-size: 0.85rem; }
+
+    /* Footer & Booking */
+    .booking-footer {
+      background: linear-gradient(135deg, #064e3b, #047857);
+      color: #ffffff;
+      padding: 24px 32px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 32px;
+    }
+
+    .footer-left h4 {
+      font-size: 1.25rem;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .footer-left p {
+      color: #d1fae5;
+      font-size: 0.88rem;
+    }
+
+    .footer-price {
+      text-align: right;
+    }
+
+    .footer-price-val {
+      font-size: 1.65rem;
+      font-weight: 900;
+      color: #ffffff;
+    }
+
+    .footer-price-sub {
+      font-size: 0.75rem;
+      color: #a7f3d0;
+      display: block;
+    }
+
+    .official-seal {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: #9ca3af;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        color: #000000 !important;
+      }
+      .top-action-bar {
+        display: none !important;
+      }
+      .page-container {
+        box-shadow: none !important;
+        border: none !important;
+        max-width: 100% !important;
+        border-radius: 0 !important;
+      }
+      .hero-banner {
+        height: 180px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .day-box {
+        page-break-inside: avoid;
+      }
+      .booking-footer {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      .facts-grid { grid-template-columns: 1fr 1fr; }
+      .two-col-grid { grid-template-columns: 1fr; }
+      .booking-footer { flex-direction: column; gap: 16px; text-align: center; }
+      .footer-price { text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-action-bar">
+    <div class="brand-logo-area">
+      🏔️ <span>TripZen</span> • Official Itinerary
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button class="action-btn" onclick="window.print()">
+        🖨️ Print / Save as PDF
+      </button>
+      <a href="/#/packages" class="action-btn" style="background: #374151; text-decoration: none;">
+        ← Back to Tripzen
+      </a>
+    </div>
+  </div>
+
+  <div class="page-container">
+    <div class="hero-banner">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="badge-row">
+          <span class="badge badge-primary">Verified Tripzen Operator</span>
+          <span class="badge badge-accent">Moderate</span>
+          <span class="badge badge-dark">⏱️ 3 Days / 2 Nights</span>
+          <span class="badge badge-dark">🏔️ 12,778 ft (Yulla Kanda Lake)</span>
+        </div>
+        <h1 class="hero-title">Yulla Kanda Alpine Lake & Sacred Krishna Temple</h1>
+        <p class="hero-subtitle">World's Highest Krishna Temple (12,778 ft) in Hidden Kinnaur</p>
+      </div>
+    </div>
+
+    <div class="content-body">
+      <!-- Quick Facts -->
+      <div class="facts-grid">
+        
+          <div class="fact-card">
+            <div class="fact-card-label">Region</div>
+            <div class="fact-card-val">Kinnaur, Himachal Pradesh</div>
+          </div>
+        
+          <div class="fact-card">
+            <div class="fact-card-label">Max Altitude</div>
+            <div class="fact-card-val">12,778 ft / 3,895 m</div>
+          </div>
+        
+          <div class="fact-card">
+            <div class="fact-card-label">Trek Distance</div>
+            <div class="fact-card-val">24 km total</div>
+          </div>
+        
+          <div class="fact-card">
+            <div class="fact-card-label">Base Village</div>
+            <div class="fact-card-val">Yulla Khas Village</div>
+          </div>
+        
+          <div class="fact-card">
+            <div class="fact-card-label">Stay Type</div>
+            <div class="fact-card-val">High-Altitude Alpine Dome Tents</div>
+          </div>
+        
+          <div class="fact-card">
+            <div class="fact-card-label">Meals</div>
+            <div class="fact-card-val">Freshly Prepared Hot Vegetarian Food</div>
+          </div>
+        
+      </div>
+
+      <!-- Overview -->
+      <div class="overview-text">
+        <strong>Trek Overview:</strong> Yulla Kanda is home to the highest Krishna Temple in the world, uniquely situated on an island in the middle of a holy glacial lake at 12,778 ft. Legend says the lake was created by the Pandavas during their exile. Located in the majestic Kinnaur district, the trail winds through lush apple orchards, deodar forests, and dramatic jagged ridges with views of the sacred Kinnaur Kailash range.
+      </div>
+
+      <!-- Day by Day Itinerary -->
+      <h2 class="section-title">📅 Detailed Day-by-Day Itinerary</h2>
+      <div class="timeline">
+        
+          <div class="day-box">
+            <div class="day-header">
+              <div class="day-title-wrap">
+                <span class="day-pill">DAY 1</span>
+                <span class="day-name">Delhi / Chandigarh to Yulla Khas Village (Kinnaur)</span>
+              </div>
+              <div class="day-stats">🏔️ 7,100 ft • 🚶 Drive through Hindustan-Tibet Highway</div>
+            </div>
+            <div class="day-body">
+              <p>Scenic drive along the Sutlej river cutting through the dramatic rock-carved cliff roads of Kinnaur. Arrive at Yulla Khas, a serene Himachali village filled with traditional wood-and-stone houses and apple orchards. Acclimatization walk, briefing session, and hot dinner.</p>
+              <div class="day-meta-row">
+                <div class="day-meta-item">🍽️ <strong>Meals:</strong> Lunch on route & Hot Himachali Dinner</div>
+                <div class="day-meta-item">⛺ <strong>Stay:</strong> Homestay in Yulla Khas</div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="day-box">
+            <div class="day-header">
+              <div class="day-title-wrap">
+                <span class="day-pill">DAY 2</span>
+                <span class="day-name">Trek from Yulla Khas to Yulla Kanda Holy Lake & Camp</span>
+              </div>
+              <div class="day-stats">🏔️ 12,778 ft • 🚶 12 km uphill hike</div>
+            </div>
+            <div class="day-body">
+              <p>Begin early morning ascent through pine and birch forests opening up to lush alpine pastures (Thach). Arrive at the holy emerald Yulla Kanda lake. Cross the wooden bridge to the sacred Krishna temple in the center of the lake. Perform traditional puja and witness breathtaking views of the Raldang and Kinnaur Kailash peaks. Camp under a canopy of billion stars.</p>
+              <div class="day-meta-row">
+                <div class="day-meta-item">🍽️ <strong>Meals:</strong> Breakfast, Packed Lunch, Hot Soup & Camp Dinner</div>
+                <div class="day-meta-item">⛺ <strong>Stay:</strong> Alpine Dome Tents at Yulla Kanda Lake</div>
+              </div>
+            </div>
+          </div>
+        
+          <div class="day-box">
+            <div class="day-header">
+              <div class="day-title-wrap">
+                <span class="day-pill">DAY 3</span>
+                <span class="day-name">Yulla Kanda Descent to Yulla Khas & Return Drive</span>
+              </div>
+              <div class="day-stats">🏔️ 7,100 ft • 🚶 12 km descent + Drive</div>
+            </div>
+            <div class="day-body">
+              <p>Enjoy morning golden light over the lake. Descend through the forested trails back to Yulla Khas village. Relish a celebratory local Kinnauri tea and begin journey back to Chandigarh / Delhi.</p>
+              <div class="day-meta-row">
+                <div class="day-meta-item">🍽️ <strong>Meals:</strong> Breakfast & Lunch</div>
+                <div class="day-meta-item">⛺ <strong>Stay:</strong> Return Transit</div>
+              </div>
+            </div>
+          </div>
+        
+      </div>
+
+      <!-- Inclusions & Exclusions -->
+      <div class="two-col-grid">
+        <div class="list-card inclusions">
+          <h3>Inclusions</h3>
+          <ul>
+            <li>Delhi/Chandigarh to Kinnaur return comfortable travel</li><li>All tent stays, sleeping bags, insulated mats at high camp & village homestay</li><li>All 3 hot freshly cooked vegetarian meals + morning/evening tea</li><li>Certified local Himachali mountain guide & support staff</li><li>Local permits and village council trail conservation fees</li><li>Oxygen cylinder, pulse oximeter, and comprehensive medical kit</li>
+          </ul>
+        </div>
+        <div class="list-card exclusions">
+          <h3>Exclusions</h3>
+          <ul>
+            <li>Personal trekking gear or backpack offloading</li><li>Meals during highway travel</li><li>Travel insurance and medical expenses</li><li>Anything not explicitly mentioned in inclusions</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Gear Checklist -->
+      <div class="list-card checklist" style="margin-bottom: 28px;">
+        <h3>Mandatory Packing & Gear Checklist</h3>
+        <ul style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
+          <li>High-ankle hiking shoes with waterproof membrane</li><li>Fleece jacket and windproof down jacket (-5°C rating)</li><li>Quick-dry trekking pants & moisture-wicking base layers</li><li>Trekking poles, woolen beanie, and waterproof gloves</li><li>UV protected sunglasses & sunscreen SPF 50</li><li>Personal refillable water bottles & hydration bladder</li>
+        </ul>
+      </div>
+
+      <!-- Safety & Altitude Protocol -->
+      <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 18px 20px; margin-bottom: 28px;">
+        <h4 style="color: #92400e; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+          🛡️ Tripzen High-Altitude Safety Protocols
+        </h4>
+        <p style="font-size: 0.86rem; color: #78350f; line-height: 1.55;">
+          All Tripzen Himalayan expeditions are led by certified Wilderness First Responders (WFR) and mountaineering leaders. Emergency medical kits, high-altitude oxygen canisters, and digital pulse oximeters are carried on all summit pushes. Regular acclimatization breaks and hydration schedules are strictly enforced.
+        </p>
+      </div>
+
+      <!-- Booking Card -->
+      <div class="booking-footer">
+        <div class="footer-left">
+          <h4>Ready for the Mountains?</h4>
+          <p>Operated by <strong>TripZen Alpine Adventures</strong> • 100% Razorpay Buyer Protection</p>
+        </div>
+        <div class="footer-price">
+          <span class="footer-price-val">₹7,000</span>
+          <span class="footer-price-sub">per person (taxes incl.)</span>
+        </div>
+      </div>
+
+      <div class="official-seal">
+        <div>Tripzen Technologies Pvt. Ltd. • ISO 9001:2015 Safety Certified</div>
+        <div>Official Itinerary Document ID: TZ-YULLA-KANDA-2026</div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

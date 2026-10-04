@@ -1,0 +1,1986 @@
+const fs = require('fs');
+const path = require('path');
+
+const ITINERARIES_DATA = [
+  {
+    id: 'pkg-chopta-tungnath',
+    slug: 'chopta-tungnath',
+    title: 'Chopta Tungnath & Chandrashila Sunrise Summit',
+    subtitle: 'Highest Shiva Temple (12,073 ft) & 360° Himalayan Panorama (13,100 ft)',
+    operator: 'TripZen Himalayan Expeditions',
+    duration: '3 Days / 2 Nights',
+    altitude: '13,100 ft (Chandrashila Peak)',
+    distance: '15 km Total Trek',
+    difficulty: 'Easy to Moderate',
+    grade: 'Beginner Friendly',
+    departure: 'Delhi / Rishikesh to Delhi',
+    bestSeason: 'Year Round (Best: Sep - Nov & Dec - Apr for Snow)',
+    price: '₹6,500',
+    originalPrice: '₹8,500',
+    heroImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80',
+    overview: 'The Chopta Tungnath Chandrashila trek is the crown jewel of Garhwal Himalayas. It takes you to Tungnath, the highest Shiva temple in the world perched at 12,073 ft, and continues upward to the breathtaking Chandrashila Summit at 13,100 ft. From the top, witness an unobstructed 360-degree panorama of Chaukhamba, Trishul, Nanda Devi, Kedarnath, and Bandarpunch peaks alongside camping at the crystal clear Deoriatal Lake.',
+    quickFacts: [
+      { label: 'Region', val: 'Rudraprayag, Uttarakhand' },
+      { label: 'Max Altitude', val: '13,100 ft / 3,990 m' },
+      { label: 'Trek Distance', val: '15 km total' },
+      { label: 'Base Camp', val: 'Sari Village / Chopta Meadows' },
+      { label: 'Stay Type', val: 'Alpine Swiss Tents / Homestay' },
+      { label: 'Meals', val: 'All Nutritious Veg Meals Included' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'Delhi / Rishikesh to Sari Village & Hike to Deoriatal Lake',
+        altitude: '7,840 ft',
+        distance: '3 km trek',
+        details: 'Early morning scenic drive through Devprayag (confluence of Alaknanda & Bhagirathi) and Rudraprayag to reach Sari Village. Begin an easy 3 km hike through lush rhododendron and oak trails to the holy Deoriatal Lake. Witness the majestic reflection of Mount Chaukhamba in the crystal-clear water during sunset. Overnight camping in high-altitude Swiss tents at Sari/Chopta.',
+        meals: 'Lunch, Evening Snacks & Hot Dinner',
+        stay: 'Alpine Camps at Sari / Chopta'
+      },
+      {
+        day: 2,
+        title: 'Chopta to Tungnath Temple & Chandrashila Summit Push',
+        altitude: '13,100 ft',
+        distance: '10 km round trip',
+        details: 'Wake up before dawn with a hot cup of Pahadi tea. Drive to Chopta base and start the stone-paved ascent to Tungnath (12,073 ft), the third Kedar. Offer prayers at the 1000-year-old architectural marvel. Continue the steep 1 km ridge climb to Chandrashila Peak (13,100 ft) just in time for sunrise. Marvel at the golden rays hitting Chaukhamba, Nanda Devi, and Dunagiri. Descend back to Chopta for campfire and celebration.',
+        meals: 'Breakfast, Packed Energy Lunch, Evening Soup & Dinner',
+        stay: 'Alpine Swiss Camps at Chopta'
+      },
+      {
+        day: 3,
+        title: 'Chopta to Rishikesh / Delhi Departure',
+        altitude: '1,120 ft',
+        distance: 'Drive 200 km / 420 km',
+        details: 'Enjoy morning sunrise over Chopta meadows followed by a hearty breakfast. Pack bags and begin drive down to Rishikesh. Quick stop at Devprayag for photos and spiritual vibes. Arrive in Rishikesh by evening / Delhi by night with unforgettable Himalayan memories.',
+        meals: 'Breakfast & En-route stops',
+        stay: 'Return Transit'
+      }
+    ],
+    inclusions: [
+      'Delhi/Rishikesh to Chopta return AC/comfortable mountain transport',
+      '2 Nights accommodation in sanitized alpine Swiss tents with clean bedding',
+      'All wholesome vegetarian meals (Breakfast, Lunch, Evening Snacks, Hot Dinner)',
+      'Certified Wilderness First Responder (WFR) Trek Leader & local guides',
+      'Forest entry permits, camping fees, and green trail charges',
+      'Medical first aid kit, pulse oximeter, and emergency oxygen canister'
+    ],
+    exclusions: [
+      'Personal luggage offloading charges (available at nominal cost)',
+      'Any meals during road transit on highways',
+      'Personal trekking equipment (trekking poles, thermal wear)',
+      'Emergency medical evacuation or costs arising from natural landslides'
+    ],
+    checklist: [
+      'Sturdy trekking shoes with deep lug grip (ankle support recommended)',
+      'Quick-dry trekking trousers & breathable full-sleeve t-shirts',
+      'Down jacket / heavy fleece (temperatures drop to 0°C to 5°C)',
+      'Rain poncho / waterproof jacket and backpack rain cover',
+      'Thermos water bottle (1-2 liters) & personal energy snacks',
+      'Headlamp or LED torch with extra batteries',
+      'Sunscreen (SPF 50+), UV sunglasses, and lip balm'
+    ]
+  },
+  {
+    id: 'pkg-madmaheshwar',
+    slug: 'madmaheshwar',
+    title: 'Madmaheshwar Ji (Second Kedar) Sacred Alpine Trail',
+    subtitle: 'Mystical Panch Kedar Pilgrimage & Buda Madmaheshwar Ridge (11,800 ft)',
+    operator: 'TripZen Sacred Trails',
+    duration: '3 Days / 2 Nights',
+    altitude: '11,800 ft (Buda Madmaheshwar)',
+    distance: '32 km Total Trek',
+    difficulty: 'Moderate',
+    grade: 'Spiritual Adventure',
+    departure: 'Delhi / Rishikesh to Delhi',
+    bestSeason: 'May - June & September - November',
+    price: '₹7,500',
+    originalPrice: '₹9,999',
+    heroImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&q=80',
+    overview: 'Madmaheshwar is the Second Kedar among the sacred Panch Kedar temples, dedicated to the navel (nabhi) of Lord Shiva. Tucked inside the pristine Kedarnath Wildlife Sanctuary, this trek passes through dense untouched oak forests, wooden suspension bridges over the thundering Madhyamaheshwar Ganga, and opens into the heavenly meadows of Buda Madmaheshwar with front-row views of Chaukhamba I, II, III & IV.',
+    quickFacts: [
+      { label: 'Region', val: 'Garhwal Himalayas, Uttarakhand' },
+      { label: 'Max Altitude', val: '11,800 ft / 3,600 m' },
+      { label: 'Trek Distance', val: '32 km round trip' },
+      { label: 'Base Village', val: 'Ransi Village' },
+      { label: 'Stay Type', val: 'Traditional Homestay & Alpine Tents' },
+      { label: 'Meals', val: 'Wholesome Pahadi Pure Veg Meals' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'Rishikesh / Haridwar to Ransi Village & Trek to Gaundhar',
+        altitude: '6,200 ft',
+        distance: '6 km trek',
+        details: 'Scenic morning drive via Ukhimath to Ransi, the starting village. Visit the historic Rakeshwari Devi Temple for blessings. Begin a gentle downstream and riverside trail along the roaring Madhyamaheshwar Ganga to reach Gaundhar / Bantoli. Fall asleep to the soothing sound of the river.',
+        meals: 'Lunch, Evening Tea & Garhwali Dinner',
+        stay: 'Homestay / Camps at Gaundhar'
+      },
+      {
+        day: 2,
+        title: 'Gaundhar to Madmaheshwar Temple & Sunset at Buda Madmaheshwar',
+        altitude: '11,800 ft',
+        distance: '10 km trek',
+        details: 'A steady and scenic uphill hike through dense oak, rhododendron, and bamboo forests passing Khatara and Nanu settlements. Reach the sacred Madmaheshwar temple valley by afternoon. After evening darshan and temple aarti, hike 1.5 km further up to Buda Madmaheshwar ridge for an otherworldly sunset over the Chaukhamba massifs.',
+        meals: 'Breakfast, Trail Energy Pack, Hot Pahadi Dinner',
+        stay: 'Temple Guesthouse / Dome Tents at Madmaheshwar'
+      },
+      {
+        day: 3,
+        title: 'Madmaheshwar Darshan to Ransi & Return Journey to Rishikesh',
+        altitude: '1,120 ft',
+        distance: '16 km descent + Drive',
+        details: 'Attend serene morning temple puja. Begin downhill trek back through Bantoli to Ransi village. Board vehicle for return drive through Rudraprayag and Devprayag to Rishikesh / Haridwar with refreshed mind and spirit.',
+        meals: 'Breakfast & Trail Meals',
+        stay: 'Return Transit'
+      }
+    ],
+    inclusions: [
+      'Delhi/Rishikesh to Ransi and return mountain vehicle transport',
+      'Homestay and alpine camp accommodation at Gaundhar & Madmaheshwar',
+      'All nutritious Pahadi vegetarian meals & evening hot herbal tea',
+      'Experienced Garhwali trek guide and temple coordinator',
+      'Kedarnath Sanctuary permits & green trail maintenance fees',
+      'First aid kit, oxygen oximeters, and emergency mountain support'
+    ],
+    exclusions: [
+      'Mule/porter charges for carrying personal backpacks',
+      'Meals during road transit outside trek base',
+      'Personal trekking gear & insurance',
+      'Unforeseen costs due to roadblocks or weather delays'
+    ],
+    checklist: [
+      'Broken-in trekking shoes with good traction',
+      'Warm thermal inners, fleece jacket, and windproof outer layer',
+      'Trekking pole (highly recommended for steep descent)',
+      'Waterproof backpack cover and personal rain poncho',
+      'Reusable water bottles (min 2L) and electrolytes / ORS sachets',
+      'Personal medical kit and altitude medication (Diamox if prescribed)',
+      'Headlamp with spare batteries'
+    ]
+  },
+  {
+    id: 'pkg-yulla-kanda',
+    slug: 'yulla-kanda',
+    title: 'Yulla Kanda Alpine Lake & Sacred Krishna Temple',
+    subtitle: "World's Highest Krishna Temple (12,778 ft) in Hidden Kinnaur",
+    operator: 'TripZen Alpine Adventures',
+    duration: '3 Days / 2 Nights',
+    altitude: '12,778 ft (Yulla Kanda Lake)',
+    distance: '24 km Total Trek',
+    difficulty: 'Moderate',
+    grade: 'Hidden Jewel of Himachal',
+    departure: 'Delhi / Chandigarh to Delhi',
+    bestSeason: 'June to October (Janmashtami Special in Autumn)',
+    price: '₹7,000',
+    originalPrice: '₹9,500',
+    heroImage: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1600&q=80',
+    overview: 'Yulla Kanda is home to the highest Krishna Temple in the world, uniquely situated on an island in the middle of a holy glacial lake at 12,778 ft. Legend says the lake was created by the Pandavas during their exile. Located in the majestic Kinnaur district, the trail winds through lush apple orchards, deodar forests, and dramatic jagged ridges with views of the sacred Kinnaur Kailash range.',
+    quickFacts: [
+      { label: 'Region', val: 'Kinnaur, Himachal Pradesh' },
+      { label: 'Max Altitude', val: '12,778 ft / 3,895 m' },
+      { label: 'Trek Distance', val: '24 km total' },
+      { label: 'Base Village', val: 'Yulla Khas Village' },
+      { label: 'Stay Type', val: 'High-Altitude Alpine Dome Tents' },
+      { label: 'Meals', val: 'Freshly Prepared Hot Vegetarian Food' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'Delhi / Chandigarh to Yulla Khas Village (Kinnaur)',
+        altitude: '7,100 ft',
+        distance: 'Drive through Hindustan-Tibet Highway',
+        details: 'Scenic drive along the Sutlej river cutting through the dramatic rock-carved cliff roads of Kinnaur. Arrive at Yulla Khas, a serene Himachali village filled with traditional wood-and-stone houses and apple orchards. Acclimatization walk, briefing session, and hot dinner.',
+        meals: 'Lunch on route & Hot Himachali Dinner',
+        stay: 'Homestay in Yulla Khas'
+      },
+      {
+        day: 2,
+        title: 'Trek from Yulla Khas to Yulla Kanda Holy Lake & Camp',
+        altitude: '12,778 ft',
+        distance: '12 km uphill hike',
+        details: 'Begin early morning ascent through pine and birch forests opening up to lush alpine pastures (Thach). Arrive at the holy emerald Yulla Kanda lake. Cross the wooden bridge to the sacred Krishna temple in the center of the lake. Perform traditional puja and witness breathtaking views of the Raldang and Kinnaur Kailash peaks. Camp under a canopy of billion stars.',
+        meals: 'Breakfast, Packed Lunch, Hot Soup & Camp Dinner',
+        stay: 'Alpine Dome Tents at Yulla Kanda Lake'
+      },
+      {
+        day: 3,
+        title: 'Yulla Kanda Descent to Yulla Khas & Return Drive',
+        altitude: '7,100 ft',
+        distance: '12 km descent + Drive',
+        details: 'Enjoy morning golden light over the lake. Descend through the forested trails back to Yulla Khas village. Relish a celebratory local Kinnauri tea and begin journey back to Chandigarh / Delhi.',
+        meals: 'Breakfast & Lunch',
+        stay: 'Return Transit'
+      }
+    ],
+    inclusions: [
+      'Delhi/Chandigarh to Kinnaur return comfortable travel',
+      'All tent stays, sleeping bags, insulated mats at high camp & village homestay',
+      'All 3 hot freshly cooked vegetarian meals + morning/evening tea',
+      'Certified local Himachali mountain guide & support staff',
+      'Local permits and village council trail conservation fees',
+      'Oxygen cylinder, pulse oximeter, and comprehensive medical kit'
+    ],
+    exclusions: [
+      'Personal trekking gear or backpack offloading',
+      'Meals during highway travel',
+      'Travel insurance and medical expenses',
+      'Anything not explicitly mentioned in inclusions'
+    ],
+    checklist: [
+      'High-ankle hiking shoes with waterproof membrane',
+      'Fleece jacket and windproof down jacket (-5°C rating)',
+      'Quick-dry trekking pants & moisture-wicking base layers',
+      'Trekking poles, woolen beanie, and waterproof gloves',
+      'UV protected sunglasses & sunscreen SPF 50',
+      'Personal refillable water bottles & hydration bladder'
+    ]
+  },
+  {
+    id: 'pkg-hampta-pass',
+    slug: 'hampta-pass',
+    title: 'Hampta Pass Crossover & Chandratal Moon Lake',
+    subtitle: 'Dramatic Crossover from Lush Kullu Valley to Barren Spiti Desert',
+    operator: 'TripZen Alpine Adventures',
+    duration: '5 Days / 4 Nights',
+    altitude: '14,100 ft (Hampta Pass Summit)',
+    distance: '25 km Total Trek',
+    difficulty: 'Moderate',
+    grade: 'Bucket-list Crossover',
+    departure: 'Manali to Manali',
+    bestSeason: 'June to Mid-October',
+    price: '₹6,000',
+    originalPrice: '₹8,500',
+    heroImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80',
+    overview: 'Hampta Pass is India’s most dramatic crossover trek. In just 5 days, watch the scenery transform from the lush green pine valleys and wildflower meadows of Kullu into the stark, raw, moon-like high altitude desert of Spiti Valley. The journey culminates with a visit to the mystical turquoise Chandratal Lake at 14,100 ft.',
+    quickFacts: [
+      { label: 'Region', val: 'Manali & Spiti Valley, HP' },
+      { label: 'Max Altitude', val: '14,100 ft / 4,298 m' },
+      { label: 'Trek Distance', val: '25 km + Spiti Jeep Safari' },
+      { label: 'Base Camp', val: 'Jobra / Manali' },
+      { label: 'Stay Type', val: 'Alpine Tents at Balu Ka Ghera & Shea Goru' },
+      { label: 'Meals', val: 'All Nutritious High-Energy Meals' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'Manali to Jobra Drive & Trek to Chika Campsite',
+        altitude: '10,100 ft',
+        distance: '45 min drive + 3 km trek',
+        details: 'Meet the Tripzen team in Manali. Drive through 42 hairpin bends up to Jobra. Cross the bridge over Rani Nallah and trek along birch, oak, and pine forests to the stunning riverside meadow campsite at Chika.',
+        meals: 'Lunch, Hot Evening Snacks & Dinner',
+        stay: 'Riverside Tents at Chika'
+      },
+      {
+        day: 2,
+        title: 'Chika to Balu Ka Ghera (Valley of Flowers of Kullu)',
+        altitude: '11,900 ft',
+        distance: '6 km trek (4-5 hours)',
+        details: 'A scenic gradual climb along the riverbed with colorful rhododendrons, alpine flowers, and towering snow-capped peaks. Reach Balu Ka Ghera, a vast sandy flat meadow nestled right below Hampta Pass.',
+        meals: 'Breakfast, Packed Lunch, Hot Soup & Dinner',
+        stay: 'Alpine Camps at Balu Ka Ghera'
+      },
+      {
+        day: 3,
+        title: 'Balu Ka Ghera over Hampta Pass (14,100 ft) to Shea Goru',
+        altitude: '14,100 ft Pass Summit -> 12,900 ft Camp',
+        distance: '8 km trek (7-8 hours)',
+        details: 'Summit day! An early 5:30 AM start ascending the rocky ridge and moraine to reach the windy saddle of Hampta Pass at 14,100 ft. Witness the breathtaking contrast between Kullu and Spiti. Descend cautiously over scree and snowfields to the oasis camp of Shea Goru.',
+        meals: 'Breakfast, Energy Trail Pack, Hot Dinner',
+        stay: 'Glacial Camps at Shea Goru'
+      },
+      {
+        day: 4,
+        title: 'Shea Goru River Crossing to Chatru & Chandratal Lake Safari',
+        altitude: '14,100 ft (Chandratal Lake)',
+        distance: '5 km trek + 45 km Jeep Safari',
+        details: 'Experience an exhilarating icy glacial river crossing at Shea Goru with team ropes. Trek down to Chatru roadhead. Board 4x4 rugged vehicles for a thrilling drive across Batal to the sacred crescent-shaped Chandratal (Moon Lake). Camp at Chatru / Chandratal.',
+        meals: 'Breakfast, Lunch, Hot Campfire Dinner',
+        stay: 'Campsite at Chatru / Chandratal'
+      },
+      {
+        day: 5,
+        title: 'Chatru to Manali via Atal Tunnel',
+        altitude: '6,700 ft',
+        distance: 'Drive 65 km (3-4 hours)',
+        details: 'Drive back along the rugged Chandra river gorge, enter the engineering marvel Atal Tunnel, and arrive in lush Manali by 2:00 PM. Depart with memories of two different worlds!',
+        meals: 'Breakfast & Farewell Mountain Lunch',
+        stay: 'Trip concludes in Manali'
+      }
+    ],
+    inclusions: [
+      'Manali to Jobra and Chatru/Chandratal to Manali transport',
+      'All 4 nights alpine tent accommodation on twin/triple sharing',
+      'High quality sleeping bags rated to -10°C, insulated foam mats',
+      'All nutritious vegetarian meals + hot soups and trail energy snacks',
+      'Experienced Mountaineering Qualified (NIM/HMI) Trek Leader & local guides',
+      'Chandratal eco-permits, forest camping fees, and green taxes',
+      'Oxygen cylinder, medical stretchers, and pulse oximeters'
+    ],
+    exclusions: [
+      'Backpack offloading charges',
+      'Chandratal jeep safari if road is blocked by untimely heavy snow',
+      'Personal equipment (hiking boots, thermal jackets)',
+      'Travel and medical insurance'
+    ],
+    checklist: [
+      'Waterproof trekking boots with ankle support',
+      'Warm down jacket & fleece pullovers (-5°C to -10°C at night)',
+      'Waterproof rain jacket and rain pants / poncho',
+      'Trekking poles, woolen cap, sun hat, and neck gaiter',
+      'Waterproof gloves + warm inner fleece gloves',
+      'Headlamp with extra lithium batteries',
+      'Sunscreen SPF 50+, lip balm, and personal medication'
+    ]
+  },
+  {
+    id: 'pkg-valley-of-flowers',
+    slug: 'valley-of-flowers',
+    title: 'Valley of Flowers & Hemkund Sahib UNESCO Trek',
+    subtitle: '500+ Wildflower Species & Sacred Glacial Lake (14,107 ft)',
+    operator: 'TripZen Himalayan Expeditions',
+    duration: '6 Days / 5 Nights',
+    altitude: '14,107 ft (Hemkund Sahib)',
+    distance: '38 km Total Trek',
+    difficulty: 'Moderate',
+    grade: 'UNESCO World Heritage',
+    departure: 'Rishikesh to Rishikesh',
+    bestSeason: 'July to September (Peak Blooms in August)',
+    price: '₹9,000',
+    originalPrice: '₹12,500',
+    heroImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&q=80',
+    overview: 'Valley of Flowers is a vibrant UNESCO World Heritage Site nestled in the Chamoli district of Uttarakhand. Discovered by Frank Smythe in 1931, it bursts into a riot of colors with over 500 species of rare sub-alpine flowers including the elusive Blue Poppy and Brahma Kamal. The journey also climbs to the highest Sikh shrine in the world, Hemkund Sahib, situated beside an emerald glacial lake ringed by seven snow-clad peaks.',
+    quickFacts: [
+      { label: 'Region', val: 'Chamoli, Garhwal Himalayas' },
+      { label: 'Max Altitude', val: '14,107 ft / 4,300 m' },
+      { label: 'Trek Distance', val: '38 km total' },
+      { label: 'Base Camp', val: 'Govindghat / Ghangaria' },
+      { label: 'Stay Type', val: 'Sanitized Guesthouse / Hotel Rooms' },
+      { label: 'Meals', val: 'All Pure Veg Hygienic Meals' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'Rishikesh to Govindghat / Joshimath',
+        altitude: '6,300 ft',
+        distance: 'Drive 270 km (9-10 hours)',
+        details: 'Scenic drive alongside the holy Ganga and Alaknanda rivers, passing the sacred Panch Prayags (Devprayag, Rudraprayag, Karnaprayag, Nandaprayag, Vishnuprayag). Arrive in Govindghat for evening briefing and rest.',
+        meals: 'Lunch on route & Dinner in Govindghat',
+        stay: 'Hotel / Guesthouse at Govindghat'
+      },
+      {
+        day: 2,
+        title: 'Govindghat to Poolna Drive & Trek to Ghangaria Base',
+        altitude: '9,800 ft',
+        distance: '4 km drive + 9 km trek',
+        details: 'Drive to Poolna village. Start the picturesque trek along the roaring Pushpawati and Lakshman Ganga rivers through dense oak and rhododendron canopies to reach the bustling hamlet of Ghangaria.',
+        meals: 'Breakfast, Lunch, Evening Snacks & Dinner',
+        stay: 'Guesthouse / Hotel in Ghangaria'
+      },
+      {
+        day: 3,
+        title: 'Ghangaria to Valley of Flowers & Return',
+        altitude: '11,500 ft',
+        distance: '8 km round trip (6-7 hours)',
+        details: 'Enter the official gates of the UNESCO National Park. Walk amidst vast carpets of colorful blossoms—Blue Poppies, Anemones, Geraniums, and Himalayan Bellflowers. Visit the memorial of British botanist Joan Margaret Legge. Return to Ghangaria by evening.',
+        meals: 'Breakfast, Packed Lunch in the Valley, Dinner',
+        stay: 'Ghangaria Hotel'
+      },
+      {
+        day: 4,
+        title: 'Ghangaria to Sacred Hemkund Sahib Glacial Lake',
+        altitude: '14,107 ft',
+        distance: '12 km round trip (6-7 hours)',
+        details: 'Steep zig-zag stone trail climbing to the highest Gurudwara in the world. Drink the sacred amrit jal from the glacial lake, spot the rare Brahma Kamal blooming on rocky slopes, and enjoy hot khichdi and piping tea at the langar. Descend back to Ghangaria.',
+        meals: 'Breakfast, Langar Prasad Lunch, Dinner',
+        stay: 'Ghangaria Hotel'
+      },
+      {
+        day: 5,
+        title: 'Ghangaria to Govindghat & Drive to Badrinath / Mana Village',
+        altitude: '6,300 ft',
+        distance: '9 km trek + 25 km drive',
+        details: 'Trek down to Poolna and drive to Govindghat. Take an optional excursion to the sacred Badrinath Temple and Mana (the Last Indian Village) to see the Saraswati River origin and Bhim Pul. Return to Joshimath.',
+        meals: 'Breakfast, Lunch & Dinner',
+        stay: 'Hotel in Joshimath / Govindghat'
+      },
+      {
+        day: 6,
+        title: 'Joshimath / Govindghat to Rishikesh Departure',
+        altitude: '1,120 ft',
+        distance: 'Drive 260 km',
+        details: 'Morning breakfast and depart for Rishikesh. Arrive in Rishikesh by 6:00 PM with heart filled with floral bliss and spiritual serenity.',
+        meals: 'Breakfast & En-route stops',
+        stay: 'Return Transit'
+      }
+    ],
+    inclusions: [
+      'Rishikesh to Govindghat return comfortable vehicle transport',
+      '5 Nights hotel/guesthouse stay on triple/quad sharing',
+      'All 3 wholesome vegetarian meals from Day 1 dinner to Day 6 breakfast',
+      'UNESCO National Park entry fee, permits, and conservation taxes',
+      'Experienced Himalayan Trek Leaders with botanical knowledge',
+      'Medical first aid, oxygen cylinder, and oximeter monitoring'
+    ],
+    exclusions: [
+      'Pony, doli, or porter services for personal bags',
+      'Meals during road travel between Rishikesh and Govindghat',
+      'Personal trekking gear and rain protection',
+      'Emergency evacuation costs'
+    ],
+    checklist: [
+      'Sturdy waterproof hiking shoes with deep rubber lugs',
+      'Quality rain suit (jacket + trousers) or full waterproof poncho',
+      'Warm down jacket & fleece layer (night temperatures reach 4°C)',
+      'Trekking poles (essential for Hemkund Sahib descent)',
+      'Dry-fit quick-dry socks (4 pairs) & spare clothes in dry bags',
+      'Sun hat, UV sunglasses, sunscreen, and lip balm'
+    ]
+  },
+  {
+    id: 'pkg-kareri-lake',
+    slug: 'kareri-lake',
+    title: 'Kareri Lake Glacial Trek & Riverside Camp',
+    subtitle: 'Pristine Glacial Lake Beneath Dhauladhar Granite Towers (9,626 ft)',
+    operator: 'TripZen Mountain Co.',
+    duration: '3 Days / 2 Nights',
+    altitude: '9,626 ft (Kareri Lake)',
+    distance: '20 km Total Trek',
+    difficulty: 'Easy to Moderate',
+    grade: 'Weekend Glacial Escape',
+    departure: 'Delhi / Dharamshala to Delhi',
+    bestSeason: 'April to June & September to November',
+    price: '₹7,000',
+    originalPrice: '₹9,500',
+    heroImage: 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=1600&q=80',
+    overview: 'Kareri Lake is a shallow, crystal-clear glacial freshwater lake fed by melting snow from the Dhauladhar range. The trail winds through thick subtropical pine and rhododendron forests, crossing wooden bridges and stepping stones along the frothing Nyund Nallah stream. Pitch tents right on the grassy banks of the lake surrounded by sheer granite peaks.',
+    quickFacts: [
+      { label: 'Region', val: 'Kangra, Himachal Pradesh' },
+      { label: 'Max Altitude', val: '9,626 ft / 2,934 m' },
+      { label: 'Trek Distance', val: '20 km round trip' },
+      { label: 'Base Village', val: 'Kareri Village / Ghera' },
+      { label: 'Stay Type', val: 'Lakeside Alpine Dome Tents' },
+      { label: 'Meals', val: 'Hot Fresh Pahadi Camp Meals' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'Delhi to Dharamshala & Drive to Kareri Village Base',
+        altitude: '6,200 ft',
+        distance: 'Drive + 2 km gentle walk',
+        details: 'Arrive in Dharamshala in the morning. Transfer to Kareri Village via Ghera. Stroll through the terraced wheat and barley fields, meet the local Gaddi shepherds, and acclimatize in a cozy village camp.',
+        meals: 'Lunch, Evening Snacks & Campfire Dinner',
+        stay: 'Village Camp at Kareri'
+      },
+      {
+        day: 2,
+        title: 'Kareri Village to Kareri Lake via Nyund Stream',
+        altitude: '9,626 ft',
+        distance: '10 km trek (5-6 hours)',
+        details: 'Trek along the Nyund Nallah stream with soothing water sounds all along the way. Climb stone stairs through dense oak forests opening onto the lake basin. Visit the Lord Shiva shrine atop the ridge overlooking the lake. Enjoy bonfire and stargazing.',
+        meals: 'Breakfast, Trail Lunch, Hot Soup & Mountain Dinner',
+        stay: 'Lakeside Dome Tents at Kareri Lake'
+      },
+      {
+        day: 3,
+        title: 'Kareri Lake to Kareri Village & Departure to Delhi',
+        altitude: '6,200 ft',
+        distance: '10 km descent + Return Drive',
+        details: 'Wake up to the golden reflections of the Dhauladhar peaks on the lake surface. Descend back along the stream to Kareri Village. Board vehicle to Dharamshala / Delhi with rejuvenated energy.',
+        meals: 'Breakfast & Trail Snacks',
+        stay: 'Return Transit'
+      }
+    ],
+    inclusions: [
+      'Delhi to Dharamshala and base village transfers',
+      '2 Nights high altitude camping with warm sleeping bags & mats',
+      'All delicious hot vegetarian meals + evening campfire tea & snacks',
+      'Certified local Gaddi guides with deep knowledge of terrain',
+      'Camping permits and forest entry fees',
+      'Comprehensive first aid kit and oximeter'
+    ],
+    exclusions: [
+      'Personal porter for luggage',
+      'Highway food during Delhi transit',
+      'Personal clothing and trekking equipment',
+      'Any unplanned costs due to bad weather'
+    ],
+    checklist: [
+      'Comfortable trekking shoes with strong grip',
+      'Warm fleece jacket and thermal innerwear',
+      'Rain poncho or waterproof jacket',
+      'Headlamp or torchlight',
+      'Water bottle (1.5L) & hydration tablets',
+      'Power bank and personal toiletries'
+    ]
+  },
+  {
+    id: 'pkg-jibhi-tirthan',
+    slug: 'jibhi-tirthan',
+    title: 'Jibhi, Jalori Pass & Serolsar Lake Forest Retreat',
+    subtitle: 'Enchanted Cedar Woods, Hidden Waterfalls & High Pass (10,800 ft)',
+    operator: 'TripZen Escapes',
+    duration: '3 Days / 2 Nights',
+    altitude: '10,800 ft (Jalori Pass)',
+    distance: '12 km Total Sightseeing & Hike',
+    difficulty: 'Easy',
+    grade: 'Nature & Cafe Explorer',
+    departure: 'Delhi to Delhi',
+    bestSeason: 'All Year Round (Snow in Dec - Mar, Green in Apr - Nov)',
+    price: '₹7,000',
+    originalPrice: '₹9,200',
+    heroImage: 'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=1600&q=80',
+    overview: 'Jibhi and Tirthan Valley are the serene hideaways of Himachal Pradesh. Surrounded by dense pine and deodar forests, gushing trout streams, and traditional Himachali Kathkuni architecture, this trip takes you to the iconic Jalori Pass (10,800 ft), the sacred Serolsar Lake nestled in virgin oak woods, and the ancient Chehni Kothi tower.',
+    quickFacts: [
+      { label: 'Region', val: 'Kullu, Himachal Pradesh' },
+      { label: 'Max Altitude', val: '10,800 ft / 3,290 m' },
+      { label: 'Trek Distance', val: '10 km gentle forest trail' },
+      { label: 'Base Location', val: 'Jibhi / Shoja' },
+      { label: 'Stay Type', val: 'Riverside Wooden Chalets / Cottages' },
+      { label: 'Meals', val: 'Delicious Buffet Breakfast & Dinner' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'Delhi to Jibhi & Hidden Waterfall Exploration',
+        altitude: '5,300 ft',
+        distance: 'Drive + 2 km walk',
+        details: 'Board overnight AC semi-sleeper bus from Delhi. Arrive in Jibhi in the morning and check in to cozy riverside wooden cottages. In the afternoon, walk to the famous Jibhi Waterfall through charming wooden bridges. Spend the evening cafe hopping with acoustic music.',
+        meals: 'Breakfast, Lunch, Evening Tea & Bonfire Dinner',
+        stay: 'Riverside Wooden Cottage in Jibhi'
+      },
+      {
+        day: 2,
+        title: 'Jalori Pass (10,800 ft) & Hike to Sacred Serolsar Lake',
+        altitude: '10,800 ft',
+        distance: '10 km round trip forest walk',
+        details: 'Scenic drive to Jalori Pass with 360-degree views of the Great Himalayan National Park. Begin an easy 5 km hike through dense oak forests to the holy Serolsar Lake. Visit the temple of Budhi Nagin, the mother goddess of the lake. Evening campfire with local music.',
+        meals: 'Breakfast, Trail Picnic Lunch & Himachali Dinner',
+        stay: 'Wooden Cottage / Swiss Camp in Jibhi'
+      },
+      {
+        day: 3,
+        title: 'Chehni Kothi Heritage Walk & Departure to Delhi',
+        altitude: '5,300 ft',
+        distance: '3 km village walk + Return Drive',
+        details: 'Visit the 1500-year-old Chehni Kothi, the tallest indigenous stone-and-timber tower in the Western Himalayas. Enjoy a farewell trout/vegetarian lunch by the Tirthan river before boarding the return coach to Delhi.',
+        meals: 'Breakfast & Lunch',
+        stay: 'Return Transit'
+      }
+    ],
+    inclusions: [
+      'Delhi to Jibhi and return comfortable AC Semi-Sleeper transfers',
+      '2 Nights stay in premium riverside wooden cottages / Swiss camps',
+      'Buffet breakfast and dinner + evening bonfire & music',
+      'Excursion to Jalori Pass, Serolsar Lake, Jibhi Waterfall, and Chehni Kothi',
+      'Experienced Tripzen trip leader and local storyteller',
+      'All toll taxes, parking fees, and driver allowances'
+    ],
+    exclusions: [
+      'Lunches and personal cafe expenses',
+      'Adventure activities (ziplining, river crossing)',
+      'Any personal gear or medical expenses'
+    ],
+    checklist: [
+      'Warm jacket & woolen pullover (cool evenings)',
+      'Comfortable walking/hiking shoes',
+      'Camera / smartphone with power bank',
+      'Personal toiletries and lip balm',
+      'Valid Government Photo ID proof'
+    ]
+  },
+  {
+    id: 'pkg-rudranath-kalpeshwar',
+    slug: 'rudranath-kalpeshwar',
+    title: 'Rudranath & Kalpeshwar Ji Sacred Panch Kedar Trail',
+    subtitle: 'The Face of Lord Shiva & Endless High-Altitude Bugyals (11,800 ft)',
+    operator: 'TripZen Sacred Trails',
+    duration: '5 Days / 4 Nights',
+    altitude: '11,800 ft (Rudranath Shrine)',
+    distance: '42 km Total Trek',
+    difficulty: 'Moderate to Challenging',
+    grade: 'Panch Kedar Masterpiece',
+    departure: 'Delhi / Rishikesh to Delhi',
+    bestSeason: 'May to June & September to October',
+    price: '₹11,000',
+    originalPrice: '₹14,999',
+    heroImage: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1600&q=80',
+    overview: 'Rudranath is the Fourth Kedar, where the serene face (mukh) of Lord Shiva is worshipped in a natural stone cave. Regarded as the most scenic trek in Uttarakhand, the trail traverses vast rolling emerald meadows (Panar & Pitradhar Bugyal) with dramatic, close-up panoramas of Mount Nanda Devi, Trishul, Nanda Ghunti, and Chaukhamba. The itinerary also covers Kalpeshwar (Fifth Kedar), where Lord Shiva’s matted hair (jata) is worshipped.',
+    quickFacts: [
+      { label: 'Region', val: 'Chamoli, Uttarakhand' },
+      { label: 'Max Altitude', val: '11,800 ft / 3,600 m' },
+      { label: 'Trek Distance', val: '42 km total' },
+      { label: 'Base Village', val: 'Sagar Village / Urgam' },
+      { label: 'Stay Type', val: 'Meadow Alpine Tents & Homestays' },
+      { label: 'Meals', val: 'Wholesome Pahadi Pure Veg Meals' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'Rishikesh to Sagar Village Base',
+        altitude: '6,600 ft',
+        distance: 'Drive 215 km (8 hours)',
+        details: 'Drive along the Alaknanda valley via Devprayag and Karnaprayag to Sagar Village near Gopeshwar. Orientation walk, briefing session, and hot Garhwali dinner.',
+        meals: 'Lunch on route & Dinner in Sagar',
+        stay: 'Homestay in Sagar Village'
+      },
+      {
+        day: 2,
+        title: 'Sagar Village to Panar Bugyal via Lyti Bugyal',
+        altitude: '10,800 ft',
+        distance: '12 km steep trek (6-7 hours)',
+        details: 'Ascend through dense oak, pine, and rhododendron forests to Pun Bugyal and Lyti Bugyal. Climb the switchbacks to reach the breathtaking high-altitude meadows of Panar Bugyal. Witness Trishul and Nanda Devi glowing in the sunset.',
+        meals: 'Breakfast, Packed Lunch, Hot Soup & Camp Dinner',
+        stay: 'Alpine Dome Tents at Panar Bugyal'
+      },
+      {
+        day: 3,
+        title: 'Panar Bugyal across Pitradhar to Rudranath Temple',
+        altitude: '11,800 ft',
+        distance: '8 km trek (4-5 hours)',
+        details: 'Trek through endless ridge meadows to Pitradhar (12,500 ft). Offer prayers and descend into the mystical Rudranath valley. Attend the deeply moving evening aarti of Lord Shiva’s serene face (Nilkanth Mahadev) inside the natural rock sanctum.',
+        meals: 'Breakfast, Hot Lunch, Evening Tea & Prasad Dinner',
+        stay: 'Temple Guesthouse / Tents at Rudranath'
+      },
+      {
+        day: 4,
+        title: 'Rudranath to Helang / Urgam Valley & Kalpeshwar Ji Darshan',
+        altitude: '7,200 ft',
+        distance: '14 km descent + 20 km drive',
+        details: 'Attend morning Rudrabhishek. Descend through the forested Dumak / Urgam trail. Reach Urgam Valley and walk to the ancient rock cave of Kalpeshwar Temple (5th Kedar) surrounded by Kalpvriksha wish-fulfilling tree.',
+        meals: 'Breakfast, Trail Lunch & Dinner',
+        stay: 'Homestay in Urgam Valley'
+      },
+      {
+        day: 5,
+        title: 'Urgam Valley to Rishikesh / Delhi Departure',
+        altitude: '1,120 ft',
+        distance: 'Drive 230 km',
+        details: 'Drive back along the sacred Alaknanda river to Rishikesh. Arrive in Rishikesh by 5:00 PM with completed Panch Kedar blessings.',
+        meals: 'Breakfast & En-route lunch',
+        stay: 'Return Transit'
+      }
+    ],
+    inclusions: [
+      'Rishikesh to Sagar village and Urgam to Rishikesh transport',
+      '4 Nights accommodation in meadow alpine camps and village homestays',
+      'All freshly cooked pure vegetarian meals, morning/evening tea & energy snacks',
+      'Experienced Garhwali trek leader and local spiritual guide',
+      'Forest entry permits, meadow camping fees, and green eco-cess',
+      'First aid kit, pulse oximeter, and emergency mountain support'
+    ],
+    exclusions: [
+      'Porters/mules for carrying personal luggage',
+      'Meals during road transit between Rishikesh and Sagar',
+      'Personal trekking gear and travel insurance',
+      'Any unplanned expenses from bad weather or landslides'
+    ],
+    checklist: [
+      'High-traction broken-in trekking boots',
+      'Thermal inners, heavy fleece jacket, and down feather coat',
+      'Trekking poles (vital for steep downhill sections)',
+      'Waterproof raincoat and backpack cover',
+      'Water bottles (2 x 1L) and hydration mix',
+      'Headlamp with spare batteries'
+    ]
+  },
+  {
+    id: 'pkg-churdhar',
+    slug: 'churdhar',
+    title: 'Churdhar Peak (Highest Peak of Outer Himalayas)',
+    subtitle: 'Churdhar Sanctuary & Shirgul Maharaj Temple (11,965 ft)',
+    operator: 'TripZen Mountain Co.',
+    duration: '3 Days / 2 Nights',
+    altitude: '11,965 ft (Churdhar Summit)',
+    distance: '36 km Total Trek',
+    difficulty: 'Moderate',
+    grade: 'Highest Shivalik Summit',
+    departure: 'Delhi / Chandigarh to Delhi',
+    bestSeason: 'April to June & September to November',
+    price: '₹6,500',
+    originalPrice: '₹8,500',
+    heroImage: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1600&q=80',
+    overview: 'Churdhar Peak (11,965 ft) is the highest mountain in the Outer Himalayas / Shivalik range. It is also where George Everest carried out major astronomical readings for the Great Trigonometrical Survey of India. The trek passes through the protected Churdhar Wildlife Sanctuary rich in musk deer, monal pheasants, and ancient deodar forests, culminating at the colossal Shiva idol and ancient Shirgul Maharaj temple on the summit ridge.',
+    quickFacts: [
+      { label: 'Region', val: 'Sirmaur / Shimla, HP' },
+      { label: 'Max Altitude', val: '11,965 ft / 3,647 m' },
+      { label: 'Trek Distance', val: '36 km round trip' },
+      { label: 'Base Village', val: 'Nohradhar Base' },
+      { label: 'Stay Type', val: 'Alpine Ridge Tents / Forest Camp' },
+      { label: 'Meals', val: 'Hot Fresh Vegetarian Mountain Food' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'Delhi / Chandigarh to Nohradhar Base & Acclimatization',
+        altitude: '6,800 ft',
+        distance: 'Drive + 2 km walk',
+        details: 'Scenic drive through Solan and Rajgarh apple orchards to Nohradhar village. Check into base camp, evening acclimatization walk, route briefing, and dinner.',
+        meals: 'Lunch on route & Hot Dinner',
+        stay: 'Base Camp in Nohradhar'
+      },
+      {
+        day: 2,
+        title: 'Nohradhar to Churdhar Summit Push & Ridge Camp',
+        altitude: '11,965 ft',
+        distance: '18 km trek (7-8 hours)',
+        details: 'Begin early hike through Jam Nallah and dense deodar forests to reach Teesri ridge. Push forward along the wind-swept boulders to the Shirgul Maharaj Temple and the giant Shiva statue on the summit (11,965 ft). Marvel at the 360-degree vista stretching from the Gangetic plains to Badrinath and Kedarnath peaks. Camp at the sacred ridge.',
+        meals: 'Breakfast, Packed Lunch, Hot Tea & Campfire Dinner',
+        stay: 'Alpine Dome Tents at Teesri / Churdhar Ridge'
+      },
+      {
+        day: 3,
+        title: 'Churdhar Descent to Nohradhar & Return Journey',
+        altitude: '6,800 ft',
+        distance: '16 km descent + Return Drive',
+        details: 'Enjoy magical sunrise above the sea of clouds. Descend through the whispering pine trails back to Nohradhar. Board vehicle for return journey to Chandigarh / Delhi.',
+        meals: 'Breakfast & Farewell Lunch',
+        stay: 'Return Transit'
+      }
+    ],
+    inclusions: [
+      'Delhi/Chandigarh to Nohradhar return comfortable transport',
+      '2 Nights camping accommodation with sleeping bags & foam mats',
+      'All 3 hot freshly cooked vegetarian meals + tea & evening snacks',
+      'Certified trek leader and local mountain guide',
+      'Sanctuary entry permits and local camping fees',
+      'First aid kit, oxygen cylinder, and emergency support'
+    ],
+    exclusions: [
+      'Personal luggage porterage',
+      'Highway meals during travel',
+      'Personal trekking gear and clothing',
+      'Travel and medical insurance'
+    ],
+    checklist: [
+      'Sturdy trekking shoes with reliable grip',
+      'Thermal inners and heavy fleece jacket (-2°C at peak)',
+      'Waterproof windcheater / rain poncho',
+      'Trekking pole and headlamp with spare cells',
+      'Refillable 2L water bottles and energy bars'
+    ]
+  },
+  {
+    id: 'pkg-kedarnath-dham',
+    slug: 'kedarnath-dham',
+    title: 'Kedarnath Dham Himalayan Pilgrimage Trek',
+    subtitle: 'Sacred Jyotirlinga (11,755 ft) Flanked by Grand Kedarnath Massif',
+    operator: 'TripZen Sacred Trails',
+    duration: '4 Days / 3 Nights',
+    altitude: '11,755 ft (Kedarnath Temple)',
+    distance: '32 km Total Trek',
+    difficulty: 'Easy to Moderate',
+    grade: 'Divine Himalayan Yatra',
+    departure: 'Delhi / Haridwar to Delhi',
+    bestSeason: 'May to June & September to November',
+    price: '₹10,000',
+    originalPrice: '₹13,500',
+    heroImage: 'https://images.unsplash.com/photo-1589182373726-e4f658ab50f0?auto=format&fit=crop&w=1600&q=80',
+    overview: 'Kedarnath Dham is the most revered of the twelve Jyotirlingas and the foremost of the Panch Kedar temples. Set against the colossal 22,769 ft Kedarnath peak and Kedar Dome in the Mandakini river valley, this spiritual journey combines high-altitude Himalayan grandeur with ancient Vedic heritage and divine serenity.',
+    quickFacts: [
+      { label: 'Region', val: 'Rudraprayag, Uttarakhand' },
+      { label: 'Max Altitude', val: '11,755 ft / 3,583 m' },
+      { label: 'Trek Distance', val: '32 km round trip' },
+      { label: 'Base Location', val: 'Sonprayag / Gaurikund' },
+      { label: 'Stay Type', val: 'Sanitized Hotels & Top Guesthouses' },
+      { label: 'Meals', val: 'Pure Vegetarian Satvik Meals' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'Haridwar / Rishikesh to Guptkashi / Sonprayag',
+        altitude: '4,300 ft',
+        distance: 'Drive 210 km (7-8 hours)',
+        details: 'Scenic drive along the Mandakini and Alaknanda rivers via Devprayag and Rudraprayag. Arrive in Guptkashi. Visit the ancient Kashi Vishwanath and Ardhanareshwar temple. Yatra registration check and dinner.',
+        meals: 'Lunch on route & Dinner in Guptkashi',
+        stay: 'Hotel in Guptkashi / Sonprayag'
+      },
+      {
+        day: 2,
+        title: 'Sonprayag to Gaurikund & Trek to Kedarnath Dham',
+        altitude: '11,755 ft',
+        distance: '16 km trek (6-8 hours)',
+        details: 'Early morning taxi to Gaurikund. Begin the sacred ascent along the paved trail passing Jungle Chatti, Bheembali, and Lincholi. Reach Kedarnath base by afternoon. Check in to top guesthouse. Attend the surreal evening Sandhya Aarti of Lord Kedarnath.',
+        meals: 'Breakfast, Trail Refreshments & Hot Satvik Dinner',
+        stay: 'Top Guesthouse / Hotel at Kedarnath'
+      },
+      {
+        day: 3,
+        title: 'Kedarnath Morning Darshan, Bhairavnath & Descent to Sonprayag',
+        altitude: '11,755 ft -> 5,500 ft',
+        distance: '16 km descent + Local Hike',
+        details: 'Early morning Abhishek and temple darshan. Short uphill hike to Bhairavnath Temple for panoramic view of the entire temple town and glacier. Descend back to Gaurikund and transfer to Guptkashi.',
+        meals: 'Breakfast & Hot Dinner in Guptkashi',
+        stay: 'Hotel in Guptkashi / Sonprayag'
+      },
+      {
+        day: 4,
+        title: 'Guptkashi to Rishikesh / Haridwar Departure',
+        altitude: '1,120 ft',
+        distance: 'Drive 210 km',
+        details: 'Enjoy morning breakfast in the quiet hills. Drive back via Rishikesh and drop at Haridwar / Rishikesh Railway Station or Delhi.',
+        meals: 'Breakfast & En-route lunch',
+        stay: 'Return Transit'
+      }
+    ],
+    inclusions: [
+      'Delhi/Haridwar to Sonprayag return comfortable transport',
+      '3 Nights hotel accommodation (2 nights Guptkashi + 1 night Kedarnath top)',
+      'Wholesome pure vegetarian breakfast and dinner',
+      'Yatra registration assistance and trek coordination support',
+      'Experienced trip leader to guide through temple rituals',
+      'Emergency first aid and oxygen monitoring'
+    ],
+    exclusions: [
+      'Helicopter ticket / pony / palanquin / porter charges',
+      'Highway lunch stops during drive',
+      'VIP priority darshan ticket fees',
+      'Any personal expenses or travel insurance'
+    ],
+    checklist: [
+      'Comfortable broken-in walking shoes',
+      'Heavy down jacket & thermal layers (sub-zero night temperatures)',
+      'Waterproof rain poncho & backpack cover',
+      'Trekking pole for downhill support',
+      'Government Photo ID proof & biometric Yatra slip',
+      'Thermos bottle & personal medication'
+    ]
+  },
+  {
+    id: 'pkg-nag-tibba',
+    slug: 'nag-tibba',
+    title: 'Nag Tibba (Serpent Peak) Weekend Summit',
+    subtitle: 'Highest Peak in Lower Garhwal (9,915 ft) & 360° Great Himalayan Wall',
+    operator: 'TripZen Alpine Adventures',
+    duration: '3 Days / 2 Nights',
+    altitude: '9,915 ft (Nag Tibba Summit)',
+    distance: '16 km Total Trek',
+    difficulty: 'Easy',
+    grade: 'Beginner & Family Friendly',
+    departure: 'Delhi / Dehradun to Delhi',
+    bestSeason: 'All Year Round (Snow in Dec - Mar)',
+    price: '₹5,000',
+    originalPrice: '₹6,999',
+    heroImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80',
+    overview: 'Nag Tibba (9,915 ft) is the highest peak in the Lesser Himalayan region of Garhwal. Perfect for first-time trekkers, families, and busy professionals seeking a quick weekend escape, it offers uninterrupted 360-degree views of Bandarpoonch, Swargarohini, Gangotri group, Kedarnath peak, and the Doon valley.',
+    quickFacts: [
+      { label: 'Region', val: 'Tehri Garhwal, Uttarakhand' },
+      { label: 'Max Altitude', val: '9,915 ft / 3,022 m' },
+      { label: 'Trek Distance', val: '16 km round trip' },
+      { label: 'Base Village', val: 'Pantwari Base' },
+      { label: 'Stay Type', val: 'Alpine Dome Tents at Base Camp' },
+      { label: 'Meals', val: 'All Freshly Cooked Hot Meals' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'Delhi / Dehradun to Pantwari & Trek to Camp 1',
+        altitude: '7,600 ft',
+        distance: 'Drive + 4.5 km trek',
+        details: 'Scenic morning drive via Mussoorie and Kempty Falls to Pantwari village. Begin gradual trek through rocky trails and goat pastures to reach Camp 1. Unwind with tea, sunset views over the valley, and a campfire.',
+        meals: 'Lunch at base, Evening Tea & Hot Dinner',
+        stay: 'Alpine Dome Tents at Nag Tibba Camp'
+      },
+      {
+        day: 2,
+        title: 'Camp 1 to Nag Devta Temple, Summit Push (9,915 ft) & Sunset',
+        altitude: '9,915 ft',
+        distance: '8 km round trip (5-6 hours)',
+        details: 'Early morning hike through dense oak and rhododendron forest to the ancient Nag Devta Temple. Push onward to the Nag Tibba Summit (9,915 ft). Marvel at the dramatic snow wall of Bandarpoonch and Gangotri. Return to camp for evening festivities.',
+        meals: 'Breakfast, Packed Lunch, Hot Soup & Campfire Dinner',
+        stay: 'Alpine Camps at Nag Tibba'
+      },
+      {
+        day: 3,
+        title: 'Camp 1 to Pantwari & Return Drive to Dehradun / Delhi',
+        altitude: '4,640 ft',
+        distance: '4.5 km descent + Return Drive',
+        details: 'Enjoy morning sunrise over the ridges. Descend back to Pantwari village. Board vehicle for return drive through Dehradun to Delhi.',
+        meals: 'Breakfast & Farewell Lunch',
+        stay: 'Return Transit'
+      }
+    ],
+    inclusions: [
+      'Delhi/Dehradun to Pantwari return comfortable transit',
+      '2 Nights high altitude camping with sleeping bags and mats',
+      'All 3 hot nutritious meals + tea and evening snacks',
+      'Certified mountaineering trek leader and guide',
+      'Forest permits and camping charges',
+      'First aid medical kit and oximeter'
+    ],
+    exclusions: [
+      'Luggage offloading charges',
+      'Highway food during transit',
+      'Personal trekking gear',
+      'Travel insurance'
+    ],
+    checklist: [
+      'Good grip sports/hiking shoes',
+      'Warm fleece jacket & windbreaker',
+      'Trekking pole and headlamp',
+      'Refillable water bottle & sunscreen',
+      'Power bank and personal medicines'
+    ]
+  },
+  {
+    id: 'pkg-annapurna-abc',
+    slug: 'annapurna-abc',
+    title: 'Annapurna Base Camp (ABC) Sanctuary Expedition',
+    subtitle: 'Surrounded by 8,000m Giants & Machapuchare (13,550 ft)',
+    operator: 'TripZen High Altitude Expeditions',
+    duration: '10 Days / 9 Nights',
+    altitude: '13,550 ft (Annapurna Base Camp)',
+    distance: '67 km Total Trek',
+    difficulty: 'Challenging',
+    grade: 'World-Class Himalayan Expedition',
+    departure: 'Kathmandu / Pokhara to Kathmandu',
+    bestSeason: 'March to May & September to November',
+    price: '₹35,000',
+    originalPrice: '₹45,000',
+    heroImage: 'https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?auto=format&fit=crop&w=1600&q=80',
+    overview: 'Annapurna Base Camp (ABC) is one of the most legendary treks in the world. Leading deep into the heart of the Annapurna Sanctuary, it surrounds you in an amphitheater of colossal peaks including Annapurna I (8,091m - 10th highest in the world), Annapurna South, Hiunchuli, and the sacred unclimbed Fishtail (Machapuchare).',
+    quickFacts: [
+      { label: 'Region', val: 'Annapurna Conservation Area, Nepal' },
+      { label: 'Max Altitude', val: '13,550 ft / 4,130 m' },
+      { label: 'Trek Distance', val: '67 km total' },
+      { label: 'Base Location', val: 'Pokhara / Nayapul' },
+      { label: 'Stay Type', val: 'Traditional Sherpa Tea House Lodges' },
+      { label: 'Meals', val: 'All 3 Wholesome Himalayan Meals (Dal Bhat Power)' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'Kathmandu to Pokhara Scenic Transit',
+        altitude: '2,700 ft',
+        distance: 'Scenic tourist coach / flight',
+        details: 'Arrive in Pokhara, the lakeside adventure capital of Nepal. Walk along Phewa Lake, check equipment, meet Sherpa guides, and prepare TIMS & ACAP permits.',
+        meals: 'Dinner in Pokhara',
+        stay: 'Hotel in Pokhara'
+      },
+      {
+        day: 2,
+        title: 'Pokhara to Nayapul Drive & Trek to Ghandruk / Ulleri',
+        altitude: '6,360 ft',
+        distance: 'Drive + 5-6 hours trek',
+        details: 'Drive to Nayapul and start trek through charming Gurung villages and terraced rice paddies to Ghandruk / Ulleri with views of Machapuchare.',
+        meals: 'Breakfast, Lunch, Dinner',
+        stay: 'Tea House Lodge'
+      },
+      {
+        day: 3,
+        title: 'Trek to Chhomrong (Gateway to the Sanctuary)',
+        altitude: '7,120 ft',
+        distance: '5-6 hours trek',
+        details: 'Hike through oak and rhododendron forests, descending to the Chhomrong Khola and ascending to the magnificent amphitheater village of Chhomrong.',
+        meals: 'Breakfast, Lunch, Dinner',
+        stay: 'Tea House Lodge in Chhomrong'
+      },
+      {
+        day: 4,
+        title: 'Chhomrong to Bamboo / Dovan',
+        altitude: '8,200 ft',
+        distance: '5-6 hours trek',
+        details: 'Trail drops through stone steps into a bamboo and fern canyon alongside the Modi Khola river.',
+        meals: 'Breakfast, Lunch, Dinner',
+        stay: 'Tea House Lodge in Dovan'
+      },
+      {
+        day: 5,
+        title: 'Dovan to Deurali & Machapuchare Base Camp (MBC)',
+        altitude: '12,139 ft',
+        distance: '6 hours trek',
+        details: 'Ascend past Hinku cave into the alpine valley between Machapuchare and Hiunchuli to arrive at MBC (12,139 ft).',
+        meals: 'Breakfast, Lunch, Dinner',
+        stay: 'Tea House Lodge at MBC'
+      },
+      {
+        day: 6,
+        title: 'MBC to Annapurna Base Camp (13,550 ft) Sunrise Push',
+        altitude: '13,550 ft',
+        distance: '3 hours trek',
+        details: 'Trek into the sanctuary basin to reach ABC at 13,550 ft. Marvel at the 360-degree wall of Annapurna I, Annapurna South, Tent Peak, and Gangapurna.',
+        meals: 'Breakfast, Lunch, Hot Camp Dinner',
+        stay: 'Tea House Lodge at ABC'
+      },
+      {
+        day: 7,
+        title: 'ABC Sunrise over Annapurna Massif & Trek down to Bamboo',
+        altitude: '7,500 ft',
+        distance: '6-7 hours descent',
+        details: 'Witness golden sunrise over Annapurna I. Descend back through MBC and Deurali to Bamboo.',
+        meals: 'Breakfast, Lunch, Dinner',
+        stay: 'Tea House Lodge in Bamboo'
+      },
+      {
+        day: 8,
+        title: 'Bamboo to Jhinu Danda & Natural Hot Springs',
+        altitude: '5,800 ft',
+        distance: '5 hours trek',
+        details: 'Trek to Jhinu Danda. Relax and soak tired muscles in the natural thermal hot springs beside the Modi Khola river.',
+        meals: 'Breakfast, Lunch, Celebration Dinner',
+        stay: 'Tea House Lodge in Jhinu Danda'
+      },
+      {
+        day: 9,
+        title: 'Jhinu Danda to Siwai & Drive to Pokhara',
+        altitude: '2,700 ft',
+        distance: '3 hours walk + 2 hours drive',
+        details: 'Walk across the iconic long suspension bridges to Siwai. Drive back to Pokhara for celebratory dinner.',
+        meals: 'Breakfast, Lunch & Dinner',
+        stay: 'Hotel in Pokhara'
+      },
+      {
+        day: 10,
+        title: 'Pokhara to Kathmandu Return Transit',
+        altitude: '4,600 ft',
+        distance: 'Transit to Kathmandu',
+        details: 'Scenic return coach to Kathmandu. Expedition concludes with incredible memories!',
+        meals: 'Breakfast',
+        stay: 'Trip concludes in Kathmandu'
+      }
+    ],
+    inclusions: [
+      'ACAP (Annapurna Conservation Area Permit) & TIMS trekking permits',
+      'All 9 nights accommodation (Hotels in Pokhara & certified Tea Houses on trek)',
+      'All 3 meals daily throughout the trekking days',
+      'Government licensed experienced Sherpa Trek Leader & porters (1:2 ratio)',
+      'Kathmandu to Pokhara return transit',
+      'Comprehensive high-altitude first aid, pulse oximeter, and oxygen backup'
+    ],
+    exclusions: [
+      'International / domestic Nepal flights',
+      'Nepal tourist entry visa fees',
+      'Personal travel & high-altitude medical evacuation insurance (mandatory)',
+      'Hot shower, battery charging, and Wi-Fi fees at remote tea houses'
+    ],
+    checklist: [
+      'Heavy down jacket rated to -15°C & thermal base layers',
+      'Broken-in mountaineering / trekking boots with Gore-Tex',
+      'Rainproof jacket and trousers (or poncho)',
+      'Trekking poles, high-altitude UV sunglasses, and fleece gloves',
+      'Personal water filtration bottle / purifying tablets',
+      'Passport with 6 months validity & 4 passport-size photos'
+    ]
+  },
+  {
+    id: 'pkg-everest-ebc',
+    slug: 'everest-ebc',
+    title: 'Everest Base Camp (EBC) & Kala Patthar Expedition',
+    subtitle: 'Foot of Mount Everest (17,598 ft) & Kala Patthar Sunrise (18,519 ft)',
+    operator: 'TripZen High Altitude Expeditions',
+    duration: '14 Days / 13 Nights',
+    altitude: '18,519 ft (Kala Patthar Summit)',
+    distance: '130 km Total Trek',
+    difficulty: 'Challenging',
+    grade: 'Ultimate High-Altitude Pilgrimage',
+    departure: 'Kathmandu to Kathmandu',
+    bestSeason: 'March to May & September to November',
+    price: '₹75,000',
+    originalPrice: '₹95,000',
+    heroImage: 'https://images.unsplash.com/photo-1516306580123-e6e52b1b7b5f?auto=format&fit=crop&w=1600&q=80',
+    overview: 'The Everest Base Camp trek is the pinnacle of world trekking. Flying into the legendary mountain airstrip of Lukla, you will follow in the footsteps of Hillary and Tenzing through the Sherpa heartland of Khumbu, historic monasteries, and colossal Himalayan peaks (Everest, Lhotse, Ama Dablam, Nuptse) right to the edge of the Khumbu Icefall.',
+    quickFacts: [
+      { label: 'Region', val: 'Khumbu, Sagarmatha National Park, Nepal' },
+      { label: 'Max Altitude', val: '18,519 ft / 5,644 m (Kala Patthar)' },
+      { label: 'Trek Distance', val: '130 km round trip' },
+      { label: 'Starting Point', val: 'Lukla Airport (2,860 m)' },
+      { label: 'Stay Type', val: 'Sanitized Sherpa Tea House Lodges' },
+      { label: 'Meals', val: 'Nutritious Himalayan High-Altitude Meals' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'Kathmandu to Lukla Flight (9,383 ft) & Trek to Phakding',
+        altitude: '8,562 ft',
+        distance: '35 min flight + 8 km trek',
+        details: 'Thrilling mountain flight into Tenzing-Hillary Airport in Lukla. Trek alongside the Dudh Kosi river to Phakding.',
+        meals: 'Lunch & Dinner',
+        stay: 'Tea House in Phakding'
+      },
+      {
+        day: 2,
+        title: 'Phakding across Hillary Suspension Bridge to Namche Bazaar',
+        altitude: '11,286 ft',
+        distance: '11 km trek (6 hours)',
+        details: 'Enter Sagarmatha National Park at Monjo. Cross the high Hillary Suspension Bridge and climb the Namche hill for your first glimpse of Mount Everest.',
+        meals: 'Breakfast, Lunch, Dinner',
+        stay: 'Lodge in Namche Bazaar'
+      },
+      {
+        day: 3,
+        title: 'Namche Bazaar Acclimatization & Everest View Hotel',
+        altitude: '12,730 ft',
+        distance: 'Acclimatization hike',
+        details: 'Hike to the Everest View Hotel for magnificent views of Everest, Lhotse, and Ama Dablam. Explore Namche Sherpa museum and bakery.',
+        meals: 'Breakfast, Lunch, Dinner',
+        stay: 'Lodge in Namche Bazaar'
+      },
+      {
+        day: 4,
+        title: 'Namche Bazaar to Tengboche Monastery',
+        altitude: '12,694 ft',
+        distance: '10 km trek (5-6 hours)',
+        details: 'Trek along rhododendron ridges with Ama Dablam towering above. Climb to Tengboche to witness the famous Buddhist monastery and monks’ chanting.',
+        meals: 'Breakfast, Lunch, Dinner',
+        stay: 'Tea House in Tengboche'
+      },
+      {
+        day: 5,
+        title: 'Tengboche to Dingboche (Above Tree Line)',
+        altitude: '14,468 ft',
+        distance: '11 km trek (5-6 hours)',
+        details: 'Cross the Imja Khola and enter the high alpine tundra surrounded by stone-walled barley fields in Dingboche.',
+        meals: 'Breakfast, Lunch, Dinner',
+        stay: 'Tea House in Dingboche'
+      },
+      {
+        day: 6,
+        title: 'Dingboche Acclimatization & Nagarjun Hill Hike',
+        altitude: '16,732 ft',
+        distance: 'Acclimatization push',
+        details: 'Climb Nagarjun Hill (5,100 m) for stunning vistas of Makalu, Lhotse, and Island Peak. Rest and hydrate.',
+        meals: 'Breakfast, Lunch, Dinner',
+        stay: 'Tea House in Dingboche'
+      },
+      {
+        day: 7,
+        title: 'Dingboche to Lobuche via Thokla Pass Memorials',
+        altitude: '16,207 ft',
+        distance: '8 km trek (5 hours)',
+        details: 'Climb the steep Thokla Pass passing the poignant stone memorials of fallen Everest climbers to reach Lobuche.',
+        meals: 'Breakfast, Lunch, Dinner',
+        stay: 'Tea House in Lobuche'
+      },
+      {
+        day: 8,
+        title: 'Lobuche to Gorak Shep & Everest Base Camp (17,598 ft)',
+        altitude: '17,598 ft (EBC)',
+        distance: '12 km trek (7-8 hours)',
+        details: 'Trek across Khumbu Glacier moraine to Gorak Shep. Push onward to the historic Everest Base Camp! Stand beside the iconic painted rock and Khumbu icefall. Return to Gorak Shep.',
+        meals: 'Breakfast, Lunch, Celebratory Dinner',
+        stay: 'Tea House in Gorak Shep'
+      },
+      {
+        day: 9,
+        title: 'Kala Patthar Summit Sunrise (18,519 ft) & Descent to Pheriche',
+        altitude: '18,519 ft -> 14,340 ft',
+        distance: '14 km trek (7 hours)',
+        details: 'Early 4:00 AM push to Kala Patthar summit for the most iconic sunrise view of Mount Everest in the world. Descend to Pheriche.',
+        meals: 'Breakfast, Lunch, Dinner',
+        stay: 'Tea House in Pheriche'
+      },
+      {
+        day: 10,
+        title: 'Pheriche to Namche Bazaar',
+        altitude: '11,286 ft',
+        distance: '15 km descent',
+        details: 'Descend through Pangboche and Tengboche back to the rich oxygen and cozy bakeries of Namche Bazaar.',
+        meals: 'Breakfast, Lunch, Dinner',
+        stay: 'Lodge in Namche'
+      },
+      {
+        day: 11,
+        title: 'Namche Bazaar to Lukla',
+        altitude: '9,383 ft',
+        distance: '19 km trek (7 hours)',
+        details: 'Cross the suspension bridges one last time and celebrate the successful expedition with the Sherpa crew in Lukla.',
+        meals: 'Breakfast, Lunch, Farewell Sherpa Party Dinner',
+        stay: 'Lodge in Lukla'
+      },
+      {
+        day: 12,
+        title: 'Lukla to Kathmandu Flight',
+        altitude: '4,600 ft',
+        distance: 'Morning flight',
+        details: 'Early morning flight back to Kathmandu. Transfer to hotel for a hot shower and well-deserved rest.',
+        meals: 'Breakfast & Celebration Dinner',
+        stay: 'Hotel in Kathmandu'
+      },
+      {
+        day: 13,
+        title: 'Kathmandu Buffer / Sightseeing Day',
+        altitude: '4,600 ft',
+        distance: 'Buffer day for mountain flight weather',
+        details: 'Explore UNESCO World Heritage sites: Pashupatinath, Boudhanath Stupa, and Thamel shopping.',
+        meals: 'Breakfast',
+        stay: 'Hotel in Kathmandu'
+      },
+      {
+        day: 14,
+        title: 'Final Departure from Kathmandu',
+        altitude: '4,600 ft',
+        distance: 'Airport transfer',
+        details: 'Airport drop for your flight back home carrying memories of standing on the roof of the world.',
+        meals: 'Breakfast',
+        stay: 'Expedition Concludes'
+      }
+    ],
+    inclusions: [
+      'Return Kathmandu-Lukla-Kathmandu mountain flights & airport transfers',
+      'Sagarmatha National Park Entry Permit & Khumbu Pasang Lhamu Rural Municipality Permit',
+      'All 13 nights accommodation (Hotels in Kathmandu & certified high-altitude Tea Houses)',
+      'All 3 hot meals daily throughout the trekking days + hot morning tea',
+      'Highly experienced certified high-altitude Sherpa Guide & Porters (1:2 ratio)',
+      'Hyperbaric chamber / Gamow bag access, emergency satellite phone, and oxygen cylinder backup'
+    ],
+    exclusions: [
+      'International flights to/from Kathmandu',
+      'Nepal entry visa fees',
+      'Mandatory comprehensive high-altitude travel & medical evacuation insurance',
+      'Personal trekking gear, hot showers, Wi-Fi, and electronic charging fees'
+    ],
+    checklist: [
+      'Expedition down jacket (-20°C rating) & waterproof outer shell',
+      'Heavy mountaineering boots & microspikes',
+      'Thermal base layers, fleece mid-layers, and high-altitude trekking socks',
+      'UV Category 4 mountaineering sunglasses (glacier protection)',
+      'Thermos vacuum flask (1L) + wide-mouth Nalgene bottles',
+      'Headlamp (min 300 lumens) with lithium cold-resistant batteries'
+    ]
+  },
+  {
+    id: 'pkg-kedarkantha-summit',
+    slug: 'kedarkantha',
+    title: 'Kedarkantha Winter Snow Summit Trek',
+    subtitle: 'Queen of Winter Treks & 360° Himalayan Summit (12,500 ft)',
+    operator: 'TripZen Alpine Adventures',
+    duration: '5 Days / 4 Nights',
+    altitude: '12,500 ft (Kedarkantha Summit)',
+    distance: '20 km Total Trek',
+    difficulty: 'Moderate',
+    grade: 'Classic Winter Snow Trek',
+    departure: 'Dehradun to Dehradun',
+    bestSeason: 'December to April (Snow) & May to November (Green)',
+    price: '₹6,500',
+    originalPrice: '₹9,000',
+    heroImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&q=80',
+    overview: 'Kedarkantha is India’s most popular winter snow trek. Set inside the Govind Wildlife Sanctuary in Uttarkashi, the trek features enchanting pine forests blanketed in fresh powder snow, the frozen alpine lake of Juda Ka Talab, and an exhilarating early-morning summit climb to 12,500 ft for an unforgettable 360° sunrise over 13 Himalayan ranges.',
+    quickFacts: [
+      { label: 'Region', val: 'Uttarkashi, Uttarakhand' },
+      { label: 'Max Altitude', val: '12,500 ft / 3,810 m' },
+      { label: 'Trek Distance', val: '20 km round trip' },
+      { label: 'Base Village', val: 'Sankri Village' },
+      { label: 'Stay Type', val: 'Alpine Swiss Tents & Sankri Homestay' },
+      { label: 'Meals', val: 'All 3 Nutritious Mountain Meals' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'Dehradun to Sankri Base Village',
+        altitude: '6,400 ft',
+        distance: 'Drive 200 km (7-8 hours)',
+        details: 'Scenic drive along the Yamuna and Tons rivers passing Mussoorie, Nainbagh, Purola, and Mori. Reach the wooden hamlet of Sankri. Evening briefing and gear check.',
+        meals: 'Lunch on route & Hot Dinner',
+        stay: 'Homestay / Guesthouse in Sankri'
+      },
+      {
+        day: 2,
+        title: 'Sankri to Juda Ka Talab (Frozen Alpine Lake)',
+        altitude: '9,100 ft',
+        distance: '4 km trek (4 hours)',
+        details: 'Trek through pine and maple woods covered in snow. Reach the legendary Juda Ka Talab, a frozen lake nestled inside a pine clearing. Camp beside the lake.',
+        meals: 'Breakfast, Lunch, Evening Soup & Dinner',
+        stay: 'Alpine Tents at Juda Ka Talab'
+      },
+      {
+        day: 3,
+        title: 'Juda Ka Talab to Kedarkantha Base Camp',
+        altitude: '11,250 ft',
+        distance: '3.5 km trek (3 hours)',
+        details: 'Walk out of the tree line onto wide open snow slopes. Reach Kedarkantha Base Camp with clear views of the triangular summit peak. Early dinner and summit briefing.',
+        meals: 'Breakfast, Lunch, Hot Snacks & Early Dinner',
+        stay: 'Alpine Tents at Base Camp'
+      },
+      {
+        day: 4,
+        title: 'Base Camp to Kedarkantha Summit (12,500 ft) & Hargaon',
+        altitude: '12,500 ft Summit -> 8,900 ft Hargaon',
+        distance: '6 km trek (6 hours)',
+        details: 'Early 3:30 AM summit push using microspikes and gaiters. Reach the summit (12,500 ft) at sunrise to see Swargarohini, Black Peak (Kalanag), and Bandarpoonch bathed in golden light. Descend to Hargaon campsite.',
+        meals: 'Early Morning Tea, Summit Snacks, Lunch & Dinner',
+        stay: 'Alpine Tents at Hargaon'
+      },
+      {
+        day: 5,
+        title: 'Hargaon to Sankri & Drive back to Dehradun',
+        altitude: '2,200 ft',
+        distance: '4 km descent + Drive 200 km',
+        details: 'Descend through apple orchards back to Sankri. Board transport to Dehradun Railway Station / Airport arriving by 7:00 PM.',
+        meals: 'Breakfast & En-route lunch',
+        stay: 'Return Transit'
+      }
+    ],
+    inclusions: [
+      'Dehradun to Sankri return comfortable transit',
+      '4 Nights accommodation (1 night Sankri guesthouse + 3 nights alpine snow camps)',
+      'High-altitude sleeping bags, insulated foam mattresses, and twin-sharing tents',
+      'Microspikes and gaiters for safe snow walking',
+      'All 3 freshly prepared hot vegetarian meals + evening soup & snacks',
+      'Certified mountaineer trek leaders and local rescue guides',
+      'Govind National Park permits and camping charges'
+    ],
+    exclusions: [
+      'Backpack offloading charges',
+      'Highway food during drive',
+      'Personal trekking clothing and shoes',
+      'Travel and medical insurance'
+    ],
+    checklist: [
+      'High-ankle waterproof trekking shoes',
+      'Warm down jacket & fleece layers (-5°C to -10°C)',
+      'Waterproof gloves + warm fleece gloves',
+      'Thermal innerwear (2 sets)',
+      'UV sunglasses & high SPF sunscreen',
+      'Headlamp with extra batteries'
+    ]
+  },
+  {
+    id: 'pkg-triund-sunset',
+    slug: 'triund-sunset',
+    title: 'Triund & Snowline Cafe Sunset Ridge Trek',
+    subtitle: 'Towering Dhauladhar Snow Wall & Kangra Valley Sunset (9,350 ft)',
+    operator: 'TripZen Mountain Co.',
+    duration: '2 Days / 1 Night',
+    altitude: '9,350 ft (Triund Top)',
+    distance: '18 km Total Trek',
+    difficulty: 'Easy',
+    grade: 'Classic Weekend Escape',
+    departure: 'McLeod Ganj / Dharamshala to McLeod Ganj',
+    bestSeason: 'All Year Round',
+    price: '₹2,500',
+    originalPrice: '₹3,800',
+    heroImage: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1600&q=80',
+    overview: 'Triund is the crown jewel of Dharamshala. Situated on a high mountain ridge right below the mighty snow-covered Dhauladhar wall, it provides one of the most accessible yet spectacular mountain vistas in India. Camp under starry skies with the twinkling Kangra Valley lights on one side and sheer 17,000 ft granite towers on the other.',
+    quickFacts: [
+      { label: 'Region', val: 'Dharamshala, Himachal Pradesh' },
+      { label: 'Max Altitude', val: '9,350 ft / 2,850 m' },
+      { label: 'Trek Distance', val: '18 km round trip' },
+      { label: 'Base Location', val: 'Dharamkot / McLeod Ganj' },
+      { label: 'Stay Type', val: 'Ridge Top Alpine Dome Tents' },
+      { label: 'Meals', val: 'Freshly Prepared Hot Mountain Meals' }
+    ],
+    days: [
+      {
+        day: 1,
+        title: 'McLeod Ganj / Dharamkot to Triund Ridge & Sunset',
+        altitude: '9,350 ft',
+        distance: '9 km trek (4-5 hours)',
+        details: 'Meet at Gallu Devi Temple base. Hike through oak, rhododendron, and deodar woods passing Magic View Cafe. Reach the vast grassy Triund ridge by afternoon. Watch the sun set in fiery orange behind the Kangra valley. Campfire and dinner under the stars.',
+        meals: 'Lunch on trail, Hot Evening Tea & Campfire Dinner',
+        stay: 'Alpine Dome Tents on Triund Ridge'
+      },
+      {
+        day: 2,
+        title: 'Triund to Snowline Cafe Hike & Descent to Dharamkot',
+        altitude: '9,350 ft -> 6,800 ft',
+        distance: '9 km descent + 4 km optional extension',
+        details: 'Early morning hike to Snowline Cafe and Laka Glacier viewpoint for close-up glacier views. Enjoy hot breakfast at camp and descend back to Dharamkot / McLeod Ganj by 2:00 PM.',
+        meals: 'Breakfast & Morning Tea',
+        stay: 'Trip concludes in McLeod Ganj'
+      }
+    ],
+    inclusions: [
+      '1 Night high ridge dome camping with sleeping bag and foam mat',
+      'All freshly prepared vegetarian meals (Lunch, Evening Tea/Snacks, Dinner, Breakfast)',
+      'Experienced local mountain guide and camp leader',
+      'Forest entry and camping permissions',
+      'First aid kit and safety support'
+    ],
+    exclusions: [
+      'Transport to/from McLeod Ganj base',
+      'Personal gear and extra mineral water',
+      'Any personal cafe orders'
+    ],
+    checklist: [
+      'Comfortable sports/hiking shoes',
+      'Warm jacket / fleece for evening winds',
+      'Water bottle (1-2L)',
+      'Torchlight / headlamp & power bank',
+      'Sunscreen and sunglasses'
+    ]
+  }
+];
+
+function generateItineraryHtml(item) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${item.title} | Tripzen Official Itinerary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --forest: #064e3b;
+      --accent: #f59e0b;
+      --bg: #0b0f19;
+      --surface: #111827;
+      --surface-border: #1f2937;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #f3f4f6;
+      color: #1f2937;
+      line-height: 1.6;
+      padding: 24px;
+    }
+
+    .page-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+    }
+
+    /* Print & Header Controls */
+    .top-action-bar {
+      background: #0f172a;
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-logo-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 900;
+      font-size: 1.25rem;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-logo-area span {
+      background: linear-gradient(135deg, #10b981, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .action-btn {
+      background: #10b981;
+      color: #ffffff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      background: #059669;
+      transform: translateY(-1px);
+    }
+
+    /* Hero Section */
+    .hero-banner {
+      position: relative;
+      height: 280px;
+      background: #111827 url('${item.heroImage}') center/cover no-repeat;
+      display: flex;
+      align-items: flex-end;
+      padding: 32px;
+      color: #ffffff;
+    }
+
+    .hero-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(to top, rgba(15, 23, 42, 0.95) 15%, rgba(15, 23, 42, 0.35) 100%);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .badge-primary {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid #10b981;
+      color: #34d399;
+    }
+
+    .badge-accent {
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid #f59e0b;
+      color: #fbbf24;
+    }
+
+    .badge-dark {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(4px);
+      color: #fff;
+    }
+
+    .hero-title {
+      font-size: 1.85rem;
+      font-weight: 900;
+      line-height: 1.25;
+      margin-bottom: 6px;
+      color: #ffffff;
+    }
+
+    .hero-subtitle {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    /* Content Layout */
+    .content-body {
+      padding: 32px;
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 8px;
+    }
+
+    /* Quick Facts Grid */
+    .facts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .fact-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 12px 16px;
+      border-radius: 10px;
+    }
+
+    .fact-card-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #64748b;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .fact-card-val {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    /* Overview Text */
+    .overview-text {
+      color: #4b5563;
+      font-size: 0.95rem;
+      line-height: 1.65;
+      margin-bottom: 28px;
+      background: #f0fdf4;
+      border-left: 4px solid #10b981;
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+    }
+
+    /* Day by day timeline */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .day-box {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+
+    .day-header {
+      background: #f8fafc;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .day-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .day-pill {
+      background: #064e3b;
+      color: #34d399;
+      font-weight: 900;
+      font-size: 0.78rem;
+      padding: 3px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .day-name {
+      font-weight: 800;
+      font-size: 0.98rem;
+      color: #0f172a;
+    }
+
+    .day-stats {
+      font-size: 0.8rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .day-body {
+      padding: 16px 18px;
+      color: #374151;
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .day-meta-row {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed #e2e8f0;
+      display: flex;
+      gap: 20px;
+      font-size: 0.82rem;
+      color: #64748b;
+    }
+
+    .day-meta-item strong {
+      color: #0f172a;
+    }
+
+    /* 2 Column lists */
+    .two-col-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+
+    .list-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .list-card h3 {
+      font-size: 1rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .list-card ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .list-card li {
+      font-size: 0.88rem;
+      color: #374151;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.45;
+    }
+
+    .list-card.inclusions h3 { color: #059669; }
+    .list-card.inclusions li::before { content: "✓"; color: #10b981; font-weight: 900; }
+    .list-card.exclusions h3 { color: #dc2626; }
+    .list-card.exclusions li::before { content: "✕"; color: #ef4444; font-weight: 900; }
+    .list-card.checklist h3 { color: #0284c7; }
+    .list-card.checklist li::before { content: "🎒"; font-size: 0.85rem; }
+
+    /* Footer & Booking */
+    .booking-footer {
+      background: linear-gradient(135deg, #064e3b, #047857);
+      color: #ffffff;
+      padding: 24px 32px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 32px;
+    }
+
+    .footer-left h4 {
+      font-size: 1.25rem;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .footer-left p {
+      color: #d1fae5;
+      font-size: 0.88rem;
+    }
+
+    .footer-price {
+      text-align: right;
+    }
+
+    .footer-price-val {
+      font-size: 1.65rem;
+      font-weight: 900;
+      color: #ffffff;
+    }
+
+    .footer-price-sub {
+      font-size: 0.75rem;
+      color: #a7f3d0;
+      display: block;
+    }
+
+    .official-seal {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: #9ca3af;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+        color: #000000 !important;
+      }
+      .top-action-bar {
+        display: none !important;
+      }
+      .page-container {
+        box-shadow: none !important;
+        border: none !important;
+        max-width: 100% !important;
+        border-radius: 0 !important;
+      }
+      .hero-banner {
+        height: 180px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .day-box {
+        page-break-inside: avoid;
+      }
+      .booking-footer {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      .facts-grid { grid-template-columns: 1fr 1fr; }
+      .two-col-grid { grid-template-columns: 1fr; }
+      .booking-footer { flex-direction: column; gap: 16px; text-align: center; }
+      .footer-price { text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-action-bar">
+    <div class="brand-logo-area">
+      🏔️ <span>TripZen</span> • Official Itinerary
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button class="action-btn" onclick="window.print()">
+        🖨️ Print / Save as PDF
+      </button>
+      <a href="/#/packages" class="action-btn" style="background: #374151; text-decoration: none;">
+        ← Back to Tripzen
+      </a>
+    </div>
+  </div>
+
+  <div class="page-container">
+    <div class="hero-banner">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="badge-row">
+          <span class="badge badge-primary">Verified Tripzen Operator</span>
+          <span class="badge badge-accent">${item.difficulty}</span>
+          <span class="badge badge-dark">⏱️ ${item.duration}</span>
+          <span class="badge badge-dark">🏔️ ${item.altitude}</span>
+        </div>
+        <h1 class="hero-title">${item.title}</h1>
+        <p class="hero-subtitle">${item.subtitle}</p>
+      </div>
+    </div>
+
+    <div class="content-body">
+      <!-- Quick Facts -->
+      <div class="facts-grid">
+        ${item.quickFacts.map(f => `
+          <div class="fact-card">
+            <div class="fact-card-label">${f.label}</div>
+            <div class="fact-card-val">${f.val}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- Overview -->
+      <div class="overview-text">
+        <strong>Trek Overview:</strong> ${item.overview}
+      </div>
+
+      <!-- Day by Day Itinerary -->
+      <h2 class="section-title">📅 Detailed Day-by-Day Itinerary</h2>
+      <div class="timeline">
+        ${item.days.map(d => `
+          <div class="day-box">
+            <div class="day-header">
+              <div class="day-title-wrap">
+                <span class="day-pill">DAY ${d.day}</span>
+                <span class="day-name">${d.title}</span>
+              </div>
+              <div class="day-stats">🏔️ ${d.altitude} • 🚶 ${d.distance}</div>
+            </div>
+            <div class="day-body">
+              <p>${d.details}</p>
+              <div class="day-meta-row">
+                <div class="day-meta-item">🍽️ <strong>Meals:</strong> ${d.meals}</div>
+                <div class="day-meta-item">⛺ <strong>Stay:</strong> ${d.stay}</div>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- Inclusions & Exclusions -->
+      <div class="two-col-grid">
+        <div class="list-card inclusions">
+          <h3>Inclusions</h3>
+          <ul>
+            ${item.inclusions.map(inc => `<li>${inc}</li>`).join('')}
+          </ul>
+        </div>
+        <div class="list-card exclusions">
+          <h3>Exclusions</h3>
+          <ul>
+            ${item.exclusions.map(exc => `<li>${exc}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+
+      <!-- Gear Checklist -->
+      <div class="list-card checklist" style="margin-bottom: 28px;">
+        <h3>Mandatory Packing & Gear Checklist</h3>
+        <ul style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
+          ${item.checklist.map(chk => `<li>${chk}</li>`).join('')}
+        </ul>
+      </div>
+
+      <!-- Safety & Altitude Protocol -->
+      <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 18px 20px; margin-bottom: 28px;">
+        <h4 style="color: #92400e; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+          🛡️ Tripzen High-Altitude Safety Protocols
+        </h4>
+        <p style="font-size: 0.86rem; color: #78350f; line-height: 1.55;">
+          All Tripzen Himalayan expeditions are led by certified Wilderness First Responders (WFR) and mountaineering leaders. Emergency medical kits, high-altitude oxygen canisters, and digital pulse oximeters are carried on all summit pushes. Regular acclimatization breaks and hydration schedules are strictly enforced.
+        </p>
+      </div>
+
+      <!-- Booking Card -->
+      <div class="booking-footer">
+        <div class="footer-left">
+          <h4>Ready for the Mountains?</h4>
+          <p>Operated by <strong>${item.operator}</strong> • 100% Razorpay Buyer Protection</p>
+        </div>
+        <div class="footer-price">
+          <span class="footer-price-val">${item.price}</span>
+          <span class="footer-price-sub">per person (taxes incl.)</span>
+        </div>
+      </div>
+
+      <div class="official-seal">
+        <div>Tripzen Technologies Pvt. Ltd. • ISO 9001:2015 Safety Certified</div>
+        <div>Official Itinerary Document ID: TZ-${item.slug.toUpperCase()}-2026</div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>`;
+}
+
+// Generate all 15 files
+const outDir = path.join(__dirname);
+if (!fs.existsSync(outDir)) {
+  fs.mkdirSync(outDir, { recursive: true });
+}
+
+ITINERARIES_DATA.forEach(item => {
+  const filePath = path.join(outDir, `${item.slug}.html`);
+  fs.writeFileSync(filePath, generateItineraryHtml(item), 'utf8');
+  console.log(`Generated: ${item.slug}.html`);
+});
+
+// Also output a JSON map that we can embed into app.js
+fs.writeFileSync(
+  path.join(outDir, 'itineraries-data.json'),
+  JSON.stringify(ITINERARIES_DATA, null, 2),
+  'utf8'
+);
+console.log('Successfully generated all 15 Tripzen itineraries and JSON data!');

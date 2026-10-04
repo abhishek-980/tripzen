@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TripZen Admin</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #17202f;
+      --muted: #687386;
+      --line: #dce3ee;
+      --brand: #166b5f;
+      --brand-dark: #0d4d45;
+      --danger: #a33a2b;
+      --shadow: 0 16px 40px rgba(22, 36, 56, 0.09);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 28px;
+      background: rgba(255, 255, 255, 0.94);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 750;
+      letter-spacing: 0;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      background: var(--brand);
+      color: white;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:hover { background: var(--brand-dark); }
+
+    button.secondary {
+      background: #e7edf3;
+      color: var(--ink);
+    }
+
+    main {
+      width: min(1280px, calc(100% - 32px));
+      margin: 24px auto 48px;
+    }
+
+    .login-panel, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .login-panel {
+      width: min(460px, 100%);
+      margin: 72px auto;
+      padding: 24px;
+    }
+
+    .login-panel h2, .panel h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input, select {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 11px;
+      color: var(--ink);
+      background: white;
+    }
+
+    .login-actions, .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .hidden { display: none !important; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat {
+      padding: 16px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: capitalize;
+    }
+
+    .panel {
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 620px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #f9fbfd;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    code {
+      display: inline-block;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: bottom;
+      padding: 2px 5px;
+      background: #eef3f7;
+      border-radius: 5px;
+      color: #344255;
+    }
+
+    .message {
+      margin-top: 14px;
+      color: var(--danger);
+      font-weight: 700;
+      min-height: 20px;
+    }
+
+    .json-cell {
+      max-width: 340px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @media (max-width: 760px) {
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 16px;
+      }
+
+      main {
+        width: calc(100% - 20px);
+        margin-top: 14px;
+      }
+
+      .panel-head {
+        align-items: stretch;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>TripZen Admin</h1>
+      <div class="muted" id="generatedAt">Backend data viewer</div>
+    </div>
+    <button class="secondary hidden" id="logoutButton" type="button">Logout</button>
+  </header>
+
+  <main>
+    <section class="login-panel" id="loginPanel">
+      <h2>Admin access</h2>
+      <p class="muted">Enter your admin password to view users, profiles, bookings, chats, and trip groups.</p>
+      <form id="loginForm">
+        <div class="field">
+          <label for="passwordInput">Admin password</label>
+          <input id="passwordInput" type="password" autocomplete="current-password" placeholder="tripzen-admin-123" />
+        </div>
+        <div class="login-actions">
+          <button type="submit">Open admin</button>
+        </div>
+        <div class="message" id="loginMessage"></div>
+      </form>
+    </section>
+
+    <section id="adminPanel" class="hidden">
+      <div class="stats" id="stats"></div>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 id="tableTitle">Users</h2>
+            <div class="muted" id="rowCount">0 rows</div>
+          </div>
+          <div class="toolbar">
+            <select id="datasetSelect" aria-label="Dataset"></select>
+            <input id="searchInput" type="search" placeholder="Search data" />
+            <button type="button" id="refreshButton">Refresh</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const datasets = [
+      'users',
+      'profiles',
+      'bookings',
+      'conversations',
+      'messages',
+      'tripGroups',
+      'joinRequests',
+      'packageSelections',
+      'packageBookingRequests',
+      'payments',
+    ];
+
+    const state = {
+      password: sessionStorage.getItem('tripzenAdminPassword') || '',
+      data: null,
+      dataset: 'users',
+      query: '',
+    };
+
+    const loginPanel = document.getElementById('loginPanel');
+    const adminPanel = document.getElementById('adminPanel');
+    const loginForm = document.getElementById('loginForm');
+    const passwordInput = document.getElementById('passwordInput');
+    const loginMessage = document.getElementById('loginMessage');
+    const logoutButton = document.getElementById('logoutButton');
+    const stats = document.getElementById('stats');
+    const datasetSelect = document.getElementById('datasetSelect');
+    const searchInput = document.getElementById('searchInput');
+    const refreshButton = document.getElementById('refreshButton');
+    const tableTitle = document.getElementById('tableTitle');
+    const rowCount = document.getElementById('rowCount');
+    const tableHead = document.getElementById('tableHead');
+    const tableBody = document.getElementById('tableBody');
+    const generatedAt = document.getElementById('generatedAt');
+
+    datasetSelect.innerHTML = datasets
+      .map((name) => `<option value="${name}">${labelFor(name)}</option>`)
+      .join('');
+
+    passwordInput.value = state.password;
+
+    function labelFor(value) {
+      return value.replace(/([A-Z])/g, ' $1').replace(/^./, (char) => char.toUpperCase());
+    }
+
+    function formatValue(value) {
+      if (Array.isArray(value)) return value.join(', ');
+      if (value && typeof value === 'object') return JSON.stringify(value);
+      if (value === true) return 'Yes';
+      if (value === false) return 'No';
+      return value == null ? '' : String(value);
+    }
+
+    function columnsFor(rows) {
+      const keys = [];
+      rows.forEach((row) => {
+        Object.keys(row || {}).forEach((key) => {
+          if (!keys.includes(key)) keys.push(key);
+        });
+      });
+      return keys.slice(0, 12);
+    }
+
+    function filteredRows() {
+      const rows = Array.isArray(state.data?.[state.dataset]) ? state.data[state.dataset] : [];
+      const query = state.query.trim().toLowerCase();
+      if (!query) return rows;
+      return rows.filter((row) => JSON.stringify(row).toLowerCase().includes(query));
+    }
+
+    function renderStats() {
+      const totals = state.data?.totals || {};
+      stats.innerHTML = Object.entries(totals)
+        .map(([key, value]) => `<div class="stat"><strong>${value}</strong><span>${labelFor(key)}</span></div>`)
+        .join('');
+    }
+
+    function renderTable() {
+      const rows = filteredRows();
+      const columns = columnsFor(rows);
+      tableTitle.textContent = labelFor(state.dataset);
+      rowCount.textContent = `${rows.length} row${rows.length === 1 ? '' : 's'}`;
+      tableHead.innerHTML = `<tr>${columns.map((key) => `<th>${labelFor(key)}</th>`).join('')}</tr>`;
+      tableBody.innerHTML = rows.map((row) => {
+        return `<tr>${columns.map((key) => {
+          const value = formatValue(row[key]);
+          const isId = key.toLowerCase().endsWith('id') || key === 'id';
+          const className = value.length > 80 ? 'json-cell' : '';
+          return `<td class="${className}">${isId ? `<code>${escapeHtml(value)}</code>` : escapeHtml(value)}</td>`;
+        }).join('')}</tr>`;
+      }).join('') || `<tr><td colspan="${Math.max(columns.length, 1)}">No data found.</td></tr>`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    async function loadAdminData() {
+      loginMessage.textContent = '';
+      const response = await fetch('/api/admin/data', {
+        headers: { 'x-admin-password': state.password },
+      });
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('Backend is not loading the new admin API. Stop the server, start it again, then refresh this page.');
+      }
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.message || 'Could not load admin data. Check the password and make sure the server is running.');
+      }
+      state.data = payload;
+      sessionStorage.setItem('tripzenAdminPassword', state.password);
+      generatedAt.textContent = `Last loaded ${new Date(payload.generatedAt).toLocaleString()}`;
+      loginPanel.classList.add('hidden');
+      adminPanel.classList.remove('hidden');
+      logoutButton.classList.remove('hidden');
+      renderStats();
+      renderTable();
+    }
+
+    loginForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      state.password = passwordInput.value.trim();
+      if (!state.password) {
+        loginMessage.textContent = 'Enter the admin password.';
+        return;
+      }
+      try {
+        await loadAdminData();
+      } catch (error) {
+        loginMessage.textContent = error.message;
+      }
+    });
+
+    datasetSelect.addEventListener('change', () => {
+      state.dataset = datasetSelect.value;
+      renderTable();
+    });
+
+    searchInput.addEventListener('input', () => {
+      state.query = searchInput.value;
+      renderTable();
+    });
+
+    refreshButton.addEventListener('click', () => {
+      loadAdminData().catch((error) => {
+        loginMessage.textContent = error.message;
+      });
+    });
+
+    logoutButton.addEventListener('click', () => {
+      sessionStorage.removeItem('tripzenAdminPassword');
+      state.password = '';
+      state.data = null;
+      passwordInput.value = '';
+      adminPanel.classList.add('hidden');
+      logoutButton.classList.add('hidden');
+      loginPanel.classList.remove('hidden');
+      generatedAt.textContent = 'Backend data viewer';
+    });
+
+    if (state.password) {
+      loadAdminData().catch(() => {
+        sessionStorage.removeItem('tripzenAdminPassword');
+      });
+    }
+  </script>
+</body>
+</html>
