@@ -3,26 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TripZen Admin</title>
+  <title>TripZen Admin Operations & Order Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/png" href="./assets/tripzen-logo.png" />
   <style>
     :root {
-      color-scheme: light;
-      --bg: #f5f7fb;
+      --bg: #f6f8fa;
       --panel: #ffffff;
-      --ink: #17202f;
-      --muted: #687386;
-      --line: #dce3ee;
-      --brand: #166b5f;
-      --brand-dark: #0d4d45;
-      --danger: #a33a2b;
-      --shadow: 0 16px 40px rgba(22, 36, 56, 0.09);
+      --ink: #112720;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --forest: #14382d;
+      --forest-dark: #0b221b;
+      --accent: #e8873a;
+      --danger: #dc2626;
+      --success: #059669;
+      --shadow: 0 10px 28px rgba(17, 39, 32, 0.06);
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: 'Manrope', ui-sans-serif, system-ui, -apple-system, sans-serif;
       background: var(--bg);
       color: var(--ink);
     }
@@ -30,22 +35,37 @@
     header {
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 100;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      padding: 18px 28px;
-      background: rgba(255, 255, 255, 0.94);
+      padding: 16px 28px;
+      background: rgba(255, 255, 255, 0.95);
       border-bottom: 1px solid var(--line);
       backdrop-filter: blur(12px);
     }
 
-    h1 {
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--ink);
+    }
+
+    .brand-wrap img {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+    }
+
+    .brand-wrap h1 {
       margin: 0;
-      font-size: 22px;
-      font-weight: 750;
-      letter-spacing: 0;
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--forest);
     }
 
     button, input, select {
@@ -55,41 +75,44 @@
     button {
       border: 0;
       border-radius: 8px;
-      padding: 10px 14px;
-      background: var(--brand);
+      padding: 9px 15px;
+      background: var(--forest);
       color: white;
       cursor: pointer;
       font-weight: 700;
+      transition: background 0.15s ease;
     }
 
-    button:hover { background: var(--brand-dark); }
+    button:hover { background: var(--forest-dark); }
 
     button.secondary {
-      background: #e7edf3;
+      background: #e2e8f0;
       color: var(--ink);
     }
+
+    button.secondary:hover { background: #cbd5e1; }
 
     main {
       width: min(1280px, calc(100% - 32px));
       margin: 24px auto 48px;
     }
 
-    .login-panel, .panel {
+    .login-panel {
+      width: min(440px, 100%);
+      margin: 80px auto;
+      padding: 32px;
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 16px;
       box-shadow: var(--shadow);
+      text-align: center;
     }
 
-    .login-panel {
-      width: min(460px, 100%);
-      margin: 72px auto;
-      padding: 24px;
-    }
-
-    .login-panel h2, .panel h2 {
+    .login-panel h2 {
       margin: 0 0 8px;
-      font-size: 18px;
+      font-size: 22px;
+      color: var(--forest);
+      font-family: 'Syne', sans-serif;
     }
 
     .muted {
@@ -101,79 +124,257 @@
       display: grid;
       gap: 8px;
       margin-top: 18px;
+      text-align: left;
     }
 
     label {
       color: var(--muted);
-      font-size: 13px;
-      font-weight: 700;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
     }
 
     input, select {
       width: 100%;
       min-height: 42px;
-      border: 1px solid var(--line);
+      border: 1.5px solid var(--line);
       border-radius: 8px;
-      padding: 9px 11px;
+      padding: 9px 12px;
       color: var(--ink);
       background: white;
+      font-size: 14px;
     }
 
-    .login-actions, .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 18px;
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--forest);
     }
 
     .hidden { display: none !important; }
 
     .stats {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 12px;
-      margin-bottom: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
     }
 
     .stat {
-      padding: 16px;
+      padding: 18px 20px;
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
     }
 
     .stat strong {
       display: block;
       font-size: 26px;
-      line-height: 1;
+      font-weight: 800;
+      color: var(--forest);
+      line-height: 1.1;
     }
 
     .stat span {
       display: block;
-      margin-top: 8px;
+      margin-top: 6px;
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Tab Switcher */
+    .admin-nav-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1.5px solid var(--line);
+      padding-bottom: 8px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      padding: 9px 18px;
+      border-radius: 8px;
+      cursor: pointer;
       font-weight: 700;
-      text-transform: capitalize;
+      border: none;
+    }
+
+    .tab-btn:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--ink);
+    }
+
+    .tab-btn.active {
+      background: var(--forest);
+      color: white;
     }
 
     .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
       overflow: hidden;
+      box-shadow: var(--shadow);
     }
 
     .panel-head {
       display: flex;
       justify-content: space-between;
-      align-items: end;
+      align-items: center;
       gap: 16px;
-      padding: 18px;
+      padding: 18px 22px;
       border-bottom: 1px solid var(--line);
+      flex-wrap: wrap;
     }
 
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Orders Management Cards */
+    .orders-grid {
+      display: grid;
+      gap: 16px;
+      padding: 22px;
+    }
+
+    .order-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.15s ease;
+    }
+
+    .order-card:hover {
+      border-color: rgba(20, 56, 45, 0.3);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+    }
+
+    .order-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 18px;
+      background: rgba(20, 56, 45, 0.03);
+      border-bottom: 1px solid var(--line);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .ref-badge {
+      font-family: monospace;
+      font-weight: 800;
+      font-size: 14px;
+      color: var(--forest);
+      background: rgba(20, 56, 45, 0.1);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .order-card-body {
+      display: grid;
+      grid-template-columns: 1.1fr 1.3fr 1fr;
+      gap: 18px;
+      padding: 18px;
+    }
+
+    @media (max-width: 860px) {
+      .order-card-body { grid-template-columns: 1fr; }
+    }
+
+    .order-col {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .col-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+    }
+
+    .user-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .package-name {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--forest);
+    }
+
+    .amount-text {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--success);
+    }
+
+    .info-row {
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .info-row span { color: var(--muted); }
+
+    .action-btn-sm {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .action-btn-sm.wa {
+      background: #128C7E;
+      color: white;
+    }
+
+    .order-card-foot {
+      padding: 12px 18px;
+      background: rgba(0,0,0,0.015);
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .notes-box {
+      flex: 1 1 320px;
+      display: flex;
+      gap: 6px;
+    }
+
+    .notes-box input {
+      height: 34px;
+      font-size: 13px;
+    }
+
+    /* Table styles for raw DB */
     .table-wrap {
       overflow: auto;
-      max-height: 620px;
+      max-height: 600px;
     }
 
     table {
@@ -183,7 +384,7 @@
     }
 
     th, td {
-      padding: 12px 14px;
+      padding: 11px 14px;
       border-bottom: 1px solid var(--line);
       text-align: left;
       vertical-align: top;
@@ -193,97 +394,108 @@
     th {
       position: sticky;
       top: 0;
-      z-index: 1;
-      background: #f9fbfd;
+      background: #f8fafc;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0;
+      font-weight: 800;
     }
 
     code {
-      display: inline-block;
-      max-width: 220px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      vertical-align: bottom;
+      font-family: monospace;
       padding: 2px 5px;
       background: #eef3f7;
-      border-radius: 5px;
-      color: #344255;
+      border-radius: 4px;
+      color: #334155;
     }
 
     .message {
-      margin-top: 14px;
+      margin-top: 12px;
       color: var(--danger);
       font-weight: 700;
-      min-height: 20px;
-    }
-
-    .json-cell {
-      max-width: 340px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    @media (max-width: 760px) {
-      header {
-        align-items: flex-start;
-        flex-direction: column;
-        padding: 16px;
-      }
-
-      main {
-        width: calc(100% - 20px);
-        margin-top: 14px;
-      }
-
-      .panel-head {
-        align-items: stretch;
-        flex-direction: column;
-      }
+      font-size: 13px;
     }
   </style>
 </head>
 <body>
   <header>
-    <div>
-      <h1>TripZen Admin</h1>
-      <div class="muted" id="generatedAt">Backend data viewer</div>
+    <a href="/#/" class="brand-wrap">
+      <img src="./assets/tripzen-logo.png" alt="TripZen" />
+      <div>
+        <h1>TripZen Admin</h1>
+        <div class="muted" style="font-size: 11px;">Operations & Order Manager</div>
+      </div>
+    </a>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <a href="/#/" target="_blank" style="text-decoration: none; font-size: 13px; font-weight: 700; color: var(--forest); margin-right: 8px;">
+        🌐 View Main Website ➔
+      </a>
+      <button class="secondary hidden" id="logoutButton" type="button">Logout</button>
     </div>
-    <button class="secondary hidden" id="logoutButton" type="button">Logout</button>
   </header>
 
   <main>
     <section class="login-panel" id="loginPanel">
-      <h2>Admin access</h2>
-      <p class="muted">Enter your admin password to view users, profiles, bookings, chats, and trip groups.</p>
+      <div style="font-size: 40px; margin-bottom: 8px;">👑</div>
+      <h2>Admin Control Desk</h2>
+      <p class="muted">Enter your administrator password to manage traveler reservations, payment statuses, and system records.</p>
       <form id="loginForm">
         <div class="field">
-          <label for="passwordInput">Admin password</label>
-          <input id="passwordInput" type="password" autocomplete="current-password" placeholder="tripzen-admin-123" />
+          <label for="passwordInput">ADMINISTRATOR PASSWORD</label>
+          <input id="passwordInput" type="password" autocomplete="current-password" placeholder="tripzen-admin-123" required />
         </div>
-        <div class="login-actions">
-          <button type="submit">Open admin</button>
+        <div style="margin-top: 18px;">
+          <button type="submit" style="width: 100%; padding: 12px;">Open Admin Operations ➔</button>
         </div>
         <div class="message" id="loginMessage"></div>
       </form>
     </section>
 
     <section id="adminPanel" class="hidden">
+      <!-- STATS KPI STRIP -->
       <div class="stats" id="stats"></div>
 
-      <section class="panel">
+      <!-- NAVIGATION TABS -->
+      <div class="admin-nav-tabs">
+        <button type="button" class="tab-btn active" id="tabOrdersBtn">📋 Orders & Bookings Management</button>
+        <button type="button" class="tab-btn" id="tabRawDbBtn">🗄️ Raw Database Tables</button>
+      </div>
+
+      <!-- VIEW 1: ORDERS & BOOKINGS MANAGEMENT -->
+      <section id="ordersView" class="panel">
         <div class="panel-head">
           <div>
-            <h2 id="tableTitle">Users</h2>
+            <h2 style="margin: 0 0 4px; font-size: 18px; color: var(--forest); font-family: 'Syne', sans-serif;">Customer Reservations</h2>
+            <div class="muted" id="ordersCount">Loading...</div>
+          </div>
+          <div class="toolbar">
+            <input id="orderSearchInput" type="search" placeholder="Search traveler, phone, ref, destination..." style="width: 280px; height: 38px;" />
+            <select id="orderStatusFilter" style="width: auto; height: 38px;">
+              <option value="All">Status: All</option>
+              <option value="confirmed">🟢 Confirmed</option>
+              <option value="in-progress">🔵 In Progress</option>
+              <option value="completed">🏁 Completed</option>
+              <option value="cancelled">🔴 Cancelled</option>
+              <option value="refunded">💸 Refunded</option>
+            </select>
+            <button type="button" id="refreshOrdersBtn">🔄 Refresh</button>
+          </div>
+        </div>
+
+        <div class="orders-grid" id="ordersGrid"></div>
+      </section>
+
+      <!-- VIEW 2: RAW DATABASE TABLES -->
+      <section id="rawDbView" class="panel hidden">
+        <div class="panel-head">
+          <div>
+            <h2 id="tableTitle" style="margin: 0 0 4px; font-size: 18px; color: var(--forest);">Users</h2>
             <div class="muted" id="rowCount">0 rows</div>
           </div>
           <div class="toolbar">
-            <select id="datasetSelect" aria-label="Dataset"></select>
-            <input id="searchInput" type="search" placeholder="Search data" />
-            <button type="button" id="refreshButton">Refresh</button>
+            <select id="datasetSelect" aria-label="Dataset" style="width: auto; height: 38px;"></select>
+            <input id="searchInput" type="search" placeholder="Search table..." style="width: 220px; height: 38px;" />
+            <button type="button" id="refreshDbButton">Refresh</button>
           </div>
         </div>
         <div class="table-wrap">
@@ -300,21 +512,26 @@
     const datasets = [
       'users',
       'profiles',
-      'bookings',
+      'payments',
+      'tripGroups',
       'conversations',
       'messages',
-      'tripGroups',
+      'bookings',
       'joinRequests',
       'packageSelections',
       'packageBookingRequests',
-      'payments',
     ];
 
     const state = {
       password: sessionStorage.getItem('tripzenAdminPassword') || '',
-      data: null,
+      dbData: null,
+      bookings: [],
+      totals: null,
       dataset: 'users',
       query: '',
+      orderQuery: '',
+      orderStatus: 'All',
+      currentTab: 'orders',
     };
 
     const loginPanel = document.getElementById('loginPanel');
@@ -326,12 +543,21 @@
     const stats = document.getElementById('stats');
     const datasetSelect = document.getElementById('datasetSelect');
     const searchInput = document.getElementById('searchInput');
-    const refreshButton = document.getElementById('refreshButton');
     const tableTitle = document.getElementById('tableTitle');
     const rowCount = document.getElementById('rowCount');
     const tableHead = document.getElementById('tableHead');
     const tableBody = document.getElementById('tableBody');
-    const generatedAt = document.getElementById('generatedAt');
+
+    const ordersView = document.getElementById('ordersView');
+    const rawDbView = document.getElementById('rawDbView');
+    const tabOrdersBtn = document.getElementById('tabOrdersBtn');
+    const tabRawDbBtn = document.getElementById('tabRawDbBtn');
+    const ordersGrid = document.getElementById('ordersGrid');
+    const ordersCount = document.getElementById('ordersCount');
+    const orderSearchInput = document.getElementById('orderSearchInput');
+    const orderStatusFilter = document.getElementById('orderStatusFilter');
+    const refreshOrdersBtn = document.getElementById('refreshOrdersBtn');
+    const refreshDbButton = document.getElementById('refreshDbButton');
 
     datasetSelect.innerHTML = datasets
       .map((name) => `<option value="${name}">${labelFor(name)}</option>`)
@@ -343,6 +569,252 @@
       return value.replace(/([A-Z])/g, ' $1').replace(/^./, (char) => char.toUpperCase());
     }
 
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Tab Handlers
+    tabOrdersBtn.addEventListener('click', () => {
+      state.currentTab = 'orders';
+      tabOrdersBtn.classList.add('active');
+      tabRawDbBtn.classList.remove('active');
+      ordersView.classList.remove('hidden');
+      rawDbView.classList.add('hidden');
+    });
+
+    tabRawDbBtn.addEventListener('click', () => {
+      state.currentTab = 'raw';
+      tabRawDbBtn.classList.add('active');
+      tabOrdersBtn.classList.remove('active');
+      rawDbView.classList.remove('hidden');
+      ordersView.classList.add('hidden');
+      renderTable();
+    });
+
+    function adminHeaders(extra = {}) {
+      const headers = { ...extra };
+      if (state.password) headers['x-admin-password'] = state.password;
+      const uid = localStorage.getItem('tripzenUserId');
+      if (uid) headers['x-user-id'] = uid;
+      return headers;
+    }
+
+    async function loadAdminBookings() {
+      const res = await fetch('/api/admin/bookings', {
+        headers: adminHeaders(),
+      });
+      if (!res.ok) throw new Error('Failed to load bookings.');
+      const data = await res.json();
+      state.bookings = data.bookings || [];
+      state.totals = data.totals || null;
+      renderStats();
+      renderOrders();
+    }
+
+    function renderStats() {
+      const bList = state.bookings;
+      const revenue = bList.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+      const travelers = bList.reduce((sum, b) => sum + (Number(b.travelerCount) || 1), 0);
+      const confirmed = bList.filter((b) => (b.bookingStatus || b.status) === 'confirmed').length;
+
+      stats.innerHTML = `
+        <div class="stat" style="border-left: 4px solid var(--success);">
+          <strong>INR ${revenue.toLocaleString('en-IN')}</strong>
+          <span>Total Revenue</span>
+        </div>
+        <div class="stat" style="border-left: 4px solid var(--forest);">
+          <strong>${bList.length} Orders</strong>
+          <span>Total Bookings</span>
+        </div>
+        <div class="stat" style="border-left: 4px solid #2563eb;">
+          <strong>${travelers} Persons</strong>
+          <span>Travelers Confirmed</span>
+        </div>
+        <div class="stat" style="border-left: 4px solid #d97706;">
+          <strong>${confirmed} Active</strong>
+          <span>Confirmed Treks</span>
+        </div>
+      `;
+    }
+
+    function renderOrders() {
+      const q = state.orderQuery.toLowerCase().trim();
+      const statusFilter = state.orderStatus;
+
+      const filtered = state.bookings.filter((b) => {
+        if (statusFilter !== 'All') {
+          const s = (b.bookingStatus || b.status || '').toLowerCase();
+          if (s !== statusFilter.toLowerCase()) return false;
+        }
+        if (!q) return true;
+        return (
+          (b.bookingRef || '').toLowerCase().includes(q) ||
+          (b.leadName || '').toLowerCase().includes(q) ||
+          (b.leadPhone || '').toLowerCase().includes(q) ||
+          (b.packageName || '').toLowerCase().includes(q) ||
+          (b.destination || '').toLowerCase().includes(q) ||
+          (b.razorpayPaymentId || '').toLowerCase().includes(q)
+        );
+      });
+
+      ordersCount.textContent = `${filtered.length} reservation${filtered.length === 1 ? '' : 's'} displayed`;
+
+      if (filtered.length === 0) {
+        ordersGrid.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--muted);">No reservations found matching the search criteria.</div>`;
+        return;
+      }
+
+      ordersGrid.innerHTML = filtered.map((b) => {
+        const curStatus = (b.bookingStatus || b.status || 'confirmed').toLowerCase();
+        const cleanPhone = (b.leadPhone || '').replace(/\D/g, '');
+        const rawCleanPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
+        const waChatUrl = `https://api.whatsapp.com/send?phone=${rawCleanPhone}&text=${encodeURIComponent('Hi ' + (b.leadName || 'Traveler') + ', this is TripZen Operations regarding your booking ' + b.bookingRef + '.')}`;
+
+        return `
+          <div class="order-card" data-id="${escapeHtml(b.id)}">
+            <div class="order-card-head">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="ref-badge">${escapeHtml(b.bookingRef)}</span>
+                <span class="muted" style="font-size: 12px;">🕒 ${escapeHtml(b.bookingTime || 'Confirmed')}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 12px; font-weight: 700; color: var(--muted);">Status:</span>
+                <select class="change-status-sel" data-id="${escapeHtml(b.id)}" style="height: 32px; padding: 4px 8px; font-size: 13px; font-weight: 700;">
+                  <option value="confirmed" ${curStatus === 'confirmed' ? 'selected' : ''}>🟢 Confirmed</option>
+                  <option value="in-progress" ${curStatus === 'in-progress' ? 'selected' : ''}>🔵 In Progress</option>
+                  <option value="completed" ${curStatus === 'completed' ? 'selected' : ''}>🏁 Completed</option>
+                  <option value="cancelled" ${curStatus === 'cancelled' ? 'selected' : ''}>🔴 Cancelled</option>
+                  <option value="refunded" ${curStatus === 'refunded' ? 'selected' : ''}>💸 Refunded</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="order-card-body">
+              <div class="order-col">
+                <div class="col-title">CUSTOMER</div>
+                <div class="user-name">${escapeHtml(b.leadName || 'Traveler')}</div>
+                <div class="info-row"><span>📱 Phone:</span> <strong>${escapeHtml(b.formattedPhone || b.leadPhone || 'N/A')}</strong></div>
+                <div class="info-row"><span>✉️ Email:</span> ${escapeHtml(b.leadEmail || b.userEmail || 'Direct')}</div>
+                <div style="margin-top: 8px; display: flex; gap: 6px;">
+                  <a href="${escapeHtml(waChatUrl)}" target="_blank" class="action-btn-sm wa">💬 WhatsApp</a>
+                  <a href="tel:${escapeHtml(b.leadPhone || '')}" class="action-btn-sm" style="background: #e2e8f0; color: var(--ink);">📞 Call</a>
+                </div>
+              </div>
+
+              <div class="order-col">
+                <div class="col-title">TREK & BATCH</div>
+                <div class="package-name">${escapeHtml(b.packageName)}</div>
+                <div class="info-row"><span>📍 Destination:</span> <strong>${escapeHtml(b.destination)}</strong></div>
+                <div class="info-row"><span>🏢 Operator:</span> ${escapeHtml(b.company || 'TripZen Official')}</div>
+                <div class="info-row"><span>🗓️ Batch:</span> ${escapeHtml(b.preferredMonth || 'Upcoming Weekend')}</div>
+                <div class="info-row"><span>👥 Travelers:</span> <strong>${escapeHtml(String(b.travelerCount))} Person(s)</strong></div>
+              </div>
+
+              <div class="order-col">
+                <div class="col-title">PAYMENT</div>
+                <div class="amount-text">INR ${Number(b.amount).toLocaleString('en-IN')}</div>
+                <div class="info-row"><span>Razorpay ID:</span> <code>${escapeHtml(b.razorpayPaymentId || 'N/A')}</code></div>
+                <div class="info-row"><span>User ID:</span> <code>${escapeHtml(b.userId || 'Guest')}</code></div>
+              </div>
+            </div>
+
+            <div class="order-card-foot">
+              <div class="notes-box">
+                <input class="note-inp" data-id="${escapeHtml(b.id)}" placeholder="Logistics notes (e.g. guide name, pickup location...)" value="${escapeHtml(b.adminNotes || '')}" />
+                <button type="button" class="save-note-btn secondary" data-id="${escapeHtml(b.id)}" style="padding: 6px 12px; font-size: 12px;">💾 Save</button>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="resend-wa-btn secondary" data-id="${escapeHtml(b.id)}" style="font-size: 12px; padding: 6px 10px;">🔁 Send WA</button>
+                ${b.itineraryUrl ? `<a href="${escapeHtml(b.itineraryUrl)}" target="_blank" class="action-btn-sm" style="background: #e2e8f0; color: var(--ink);">📄 Itinerary</a>` : ''}
+                <button type="button" class="del-btn secondary" data-id="${escapeHtml(b.id)}" style="color: var(--danger); font-size: 12px; padding: 6px 10px;">🗑️</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      attachOrderEvents();
+    }
+
+    function attachOrderEvents() {
+      // Change status
+      document.querySelectorAll('.change-status-sel').forEach((sel) => {
+        sel.addEventListener('change', async (e) => {
+          const id = sel.getAttribute('data-id');
+          await fetch(`/api/admin/bookings/${id}`, {
+            method: 'PATCH',
+            headers: adminHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ bookingStatus: e.target.value }),
+          });
+          await loadAdminBookings();
+        });
+      });
+
+      // Save note
+      document.querySelectorAll('.save-note-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          const inp = document.querySelector(`.note-inp[data-id="${id}"]`);
+          await fetch(`/api/admin/bookings/${id}`, {
+            method: 'PATCH',
+            headers: adminHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ adminNotes: inp ? inp.value.trim() : '' }),
+          });
+          btn.textContent = '✓ Saved';
+          setTimeout(() => { btn.textContent = '💾 Save'; }, 1500);
+        });
+      });
+
+      // Resend WhatsApp
+      document.querySelectorAll('.resend-wa-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          btn.textContent = '⏳ Sending...';
+          const res = await fetch(`/api/admin/bookings/${id}/resend-whatsapp`, {
+            method: 'POST',
+            headers: adminHeaders(),
+          });
+          const data = await res.json();
+          if (data.directSendUrl) window.open(data.directSendUrl, '_blank');
+          btn.textContent = '✓ Sent';
+          setTimeout(() => { btn.textContent = '🔁 Send WA'; }, 2000);
+        });
+      });
+
+      // Delete
+      document.querySelectorAll('.del-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          if (!confirm('Delete this reservation record?')) return;
+          await fetch(`/api/admin/bookings/${id}`, {
+            method: 'DELETE',
+            headers: adminHeaders(),
+          });
+          await loadAdminBookings();
+        });
+      });
+    }
+
+    orderSearchInput.addEventListener('input', (e) => {
+      state.orderQuery = e.target.value;
+      renderOrders();
+    });
+
+    orderStatusFilter.addEventListener('change', (e) => {
+      state.orderStatus = e.target.value;
+      renderOrders();
+    });
+
+    refreshOrdersBtn.addEventListener('click', () => {
+      loadAdminBookings().catch(console.error);
+    });
+
+    // RAW DB FUNCTIONS
     function formatValue(value) {
       if (Array.isArray(value)) return value.join(', ');
       if (value && typeof value === 'object') return JSON.stringify(value);
@@ -362,17 +834,10 @@
     }
 
     function filteredRows() {
-      const rows = Array.isArray(state.data?.[state.dataset]) ? state.data[state.dataset] : [];
+      const rows = Array.isArray(state.dbData?.[state.dataset]) ? state.dbData[state.dataset] : [];
       const query = state.query.trim().toLowerCase();
       if (!query) return rows;
       return rows.filter((row) => JSON.stringify(row).toLowerCase().includes(query));
-    }
-
-    function renderStats() {
-      const totals = state.data?.totals || {};
-      stats.innerHTML = Object.entries(totals)
-        .map(([key, value]) => `<div class="stat"><strong>${value}</strong><span>${labelFor(key)}</span></div>`)
-        .join('');
     }
 
     function renderTable() {
@@ -385,51 +850,33 @@
         return `<tr>${columns.map((key) => {
           const value = formatValue(row[key]);
           const isId = key.toLowerCase().endsWith('id') || key === 'id';
-          const className = value.length > 80 ? 'json-cell' : '';
-          return `<td class="${className}">${isId ? `<code>${escapeHtml(value)}</code>` : escapeHtml(value)}</td>`;
+          return `<td>${isId ? `<code>${escapeHtml(value)}</code>` : escapeHtml(value)}</td>`;
         }).join('')}</tr>`;
-      }).join('') || `<tr><td colspan="${Math.max(columns.length, 1)}">No data found.</td></tr>`;
-    }
-
-    function escapeHtml(value) {
-      return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+      }).join('') || `<tr><td colspan="${Math.max(columns.length, 1)}">No records found.</td></tr>`;
     }
 
     async function loadAdminData() {
       loginMessage.textContent = '';
       const response = await fetch('/api/admin/data', {
-        headers: { 'x-admin-password': state.password },
+        headers: adminHeaders(),
       });
-      const contentType = response.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) {
-        throw new Error('Backend is not loading the new admin API. Stop the server, start it again, then refresh this page.');
+      if (!response.ok) {
+        throw new Error('Admin authorization failed. Check password.');
       }
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.message || 'Could not load admin data. Check the password and make sure the server is running.');
+      state.dbData = await response.json();
+      if (state.password) {
+        sessionStorage.setItem('tripzenAdminPassword', state.password);
       }
-      state.data = payload;
-      sessionStorage.setItem('tripzenAdminPassword', state.password);
-      generatedAt.textContent = `Last loaded ${new Date(payload.generatedAt).toLocaleString()}`;
       loginPanel.classList.add('hidden');
       adminPanel.classList.remove('hidden');
       logoutButton.classList.remove('hidden');
-      renderStats();
-      renderTable();
+      await loadAdminBookings();
     }
 
     loginForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       state.password = passwordInput.value.trim();
-      if (!state.password) {
-        loginMessage.textContent = 'Enter the admin password.';
-        return;
-      }
+      if (!state.password) return;
       try {
         await loadAdminData();
       } catch (error) {
@@ -447,24 +894,20 @@
       renderTable();
     });
 
-    refreshButton.addEventListener('click', () => {
-      loadAdminData().catch((error) => {
-        loginMessage.textContent = error.message;
-      });
+    refreshDbButton.addEventListener('click', () => {
+      loadAdminData().catch(console.error);
     });
 
     logoutButton.addEventListener('click', () => {
       sessionStorage.removeItem('tripzenAdminPassword');
       state.password = '';
-      state.data = null;
-      passwordInput.value = '';
+      state.dbData = null;
       adminPanel.classList.add('hidden');
       logoutButton.classList.add('hidden');
       loginPanel.classList.remove('hidden');
-      generatedAt.textContent = 'Backend data viewer';
     });
 
-    if (state.password) {
+    if (state.password || localStorage.getItem('tripzenUserId')) {
       loadAdminData().catch(() => {
         sessionStorage.removeItem('tripzenAdminPassword');
       });

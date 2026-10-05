@@ -1,6 +1,5 @@
 .env
 node_modules/
-data/store.json
 data/auth_info_baileys/
 public/uploads/
 scratch/

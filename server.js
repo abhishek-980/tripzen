@@ -154,6 +154,142 @@ function saveStore(store) {
 
 let db = loadStore();
 
+function migrateAndLinkBookings() {
+  let changed = false;
+  db.payments = db.payments || [];
+
+  db.payments.forEach((payment) => {
+    let matchedUser = null;
+    const cleanLeadPhone = String(payment.leadPhone || '').replace(/\D/g, '');
+    const leadName = normalizeText(payment.leadName).toLowerCase();
+    const storedEmail = normalizeText(payment.userEmail || payment.leadEmail).toLowerCase();
+
+    if (storedEmail) {
+      matchedUser = db.users.find((u) => u.email && u.email.toLowerCase() === storedEmail);
+    }
+
+    if (!matchedUser && leadName) {
+      matchedUser = db.users.find((u) => normalizeText(u.fullName).toLowerCase() === leadName);
+    }
+
+    if (!matchedUser && cleanLeadPhone) {
+      matchedUser = db.users.find((u) => {
+        const uPhone = String(u.phone || '').replace(/\D/g, '');
+        return uPhone && (uPhone === cleanLeadPhone || uPhone.endsWith(cleanLeadPhone) || cleanLeadPhone.endsWith(uPhone));
+      });
+    }
+
+    if (!matchedUser && payment.userId) {
+      matchedUser = db.users.find((u) => u.id === payment.userId);
+    }
+
+    if (matchedUser) {
+      const userProfile = db.profiles.find((p) => p.userId === matchedUser.id);
+      if (payment.userId !== matchedUser.id) {
+        payment.userId = matchedUser.id;
+        changed = true;
+      }
+      if (!payment.userEmail && matchedUser.email) {
+        payment.userEmail = matchedUser.email;
+        changed = true;
+      }
+      if (userProfile && payment.profileId !== userProfile.id) {
+        payment.profileId = userProfile.id;
+        changed = true;
+      }
+      if (!matchedUser.phone && cleanLeadPhone) {
+        matchedUser.phone = payment.leadPhone;
+        changed = true;
+      }
+    }
+
+    if (!payment.bookingStatus) {
+      payment.bookingStatus = (payment.status === 'paid' || payment.paidAt) ? 'confirmed' : 'pending';
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    saveStore(db);
+    console.log('[Tripzen] Auto-linked bookings to correct traveler accounts.');
+  }
+}
+
+function ensureAdminAndSeedData() {
+  const adminEmail = 'abhisheksharma39232@gmail.com';
+  let admin = db.users.find((u) => String(u.email || '').trim().toLowerCase() === adminEmail);
+
+  if (!admin) {
+    admin = {
+      id: 'usr_1775814622426_lafooo',
+      fullName: 'abhishek sharma',
+      email: adminEmail,
+      password: 'abhi@8080',
+      role: 'admin',
+      city: 'noida',
+      age: '26',
+      gender: 'Male',
+      travelStyle: 'Solo',
+      interests: [
+        '🌲 forest trails',
+        '🧗 adventure sports',
+        '🏛️ history & temples',
+        '🎒 budget backpacking',
+        '🏡 remote homestays',
+      ],
+      budgetRange: '7000-15000',
+      phone: '9876543210',
+      profileImage: '/uploads/usr_1775814622426_lafooo_1791113672717_80tri7.jpg',
+      createdAt: '2026-04-10T09:50:22.426Z',
+      profileCompleteness: 82,
+    };
+    db.users.push(admin);
+    console.log('[Tripzen] Verified admin account initialized: ' + adminEmail);
+    saveStore(db);
+  } else {
+    let updated = false;
+    if (admin.role !== 'admin') {
+      admin.role = 'admin';
+      updated = true;
+    }
+    if (!admin.password) {
+      admin.password = 'abhi@8080';
+      updated = true;
+    }
+    if (updated) {
+      saveStore(db);
+    }
+  }
+
+  const adminProfile = db.profiles.find((p) => p.userId === admin.id);
+  if (!adminProfile) {
+    db.profiles.push({
+      id: 'prf_1775814622426_lafooo',
+      userId: admin.id,
+      fullName: admin.fullName,
+      destination: 'Chopta Tungnath',
+      startDate: '2026-10-15',
+      endDate: '2026-10-20',
+      travelStyle: 'Solo',
+      interests: admin.interests || ['trekking'],
+      bio: 'TripZen Admin & Mountain Enthusiast',
+      budgetRange: '7000-15000',
+      genderPreference: 'Any',
+      profileImage: admin.profileImage || '',
+      createdAt: new Date().toISOString(),
+    });
+    saveStore(db);
+  }
+
+  if (db.users.length <= 1) {
+    console.log('[Tripzen] Database has no travelers. Seeding initial demo travelers and squads...');
+    seedDemoData();
+  }
+}
+
+migrateAndLinkBookings();
+ensureAdminAndSeedData();
+
 function uid(prefix) {
   return prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
 }
@@ -364,6 +500,8 @@ function sanitizeUser(user) {
     id: user.id,
     fullName: user.fullName,
     email: user.email,
+    role: user.role || (String(user.email || '').trim().toLowerCase() === 'abhisheksharma39232@gmail.com' ? 'admin' : 'user'),
+    phone: user.phone || '',
     age: user.age || '',
     gender: user.gender || '',
     city: user.city || '',
@@ -899,16 +1037,27 @@ app.post('/api/whatsapp/logout', async (req, res) => {
 
 
 function requireAdmin(req, res, next) {
-  const adminPassword = req.header('x-admin-password');
+  const adminPassword = req.header('x-admin-password') || req.query.adminPassword;
+  const userId = req.header('x-user-id') || req.query.adminUserId;
 
-  if (!adminPassword || adminPassword !== ADMIN_PASSWORD) {
-    return res.status(401).json({
-      success: false,
-      message: 'Admin access denied.',
-    });
+  if (adminPassword && adminPassword === ADMIN_PASSWORD) {
+    req.isAdmin = true;
+    return next();
   }
 
-  next();
+  if (userId) {
+    const user = db.users.find((u) => u.id === userId);
+    if (user && (user.email === 'abhisheksharma39232@gmail.com' || user.role === 'admin' || user.isAdmin)) {
+      req.isAdmin = true;
+      req.adminUser = user;
+      return next();
+    }
+  }
+
+  return res.status(401).json({
+    success: false,
+    message: 'Admin access denied.',
+  });
 }
 
 function sanitizeAdminUser(user) {
@@ -926,7 +1075,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.post('/api/register', (req, res) => {
-  const { fullName, email, password, age, gender, interests, city, travelStyle, pastTrips, budgetRange, profileImage } = req.body;
+  const { fullName, email, password, age, gender, interests, city, travelStyle, pastTrips, budgetRange, profileImage, phone } = req.body;
 
   if (!normalizeText(fullName) || !normalizeText(email) || !normalizeText(password)) {
     return res.status(400).json({
@@ -950,6 +1099,7 @@ app.post('/api/register', (req, res) => {
     fullName: normalizeText(fullName),
     email: normalizedEmail,
     password: String(password),
+    phone: normalizeText(phone),
     age: normalizeText(age),
     gender: normalizeText(gender),
     city: normalizeText(city),
@@ -977,17 +1127,56 @@ app.post('/api/register', (req, res) => {
 });
 
 app.post('/api/login', (req, res) => {
-  const { email, password } = req.body;
-  const normalizedEmail = String(email || '').trim().toLowerCase();
-  const rawPassword = String(password || '').trim();
+  const rawIdentifier = String(req.body.email || req.body.username || req.body.identifier || req.body.phone || '').trim();
+  const rawPassword = String(req.body.password || '').trim();
 
-  const user = db.users.find((item) => String(item.email || '').trim().toLowerCase() === normalizedEmail);
+  if (!rawIdentifier || !rawPassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide both your email/username and password.',
+    });
+  }
 
-  if (!user || String(user.password || '').trim() !== rawPassword) {
+  const normalizedId = rawIdentifier.toLowerCase();
+  const digitsOnly = rawIdentifier.replace(/\D/g, '');
+
+  // Match user by exact email, username (email prefix before @), full name, or registered phone number
+  const user = db.users.find((item) => {
+    const itemEmail = String(item.email || '').trim().toLowerCase();
+    const itemPrefix = itemEmail.split('@')[0];
+    const itemName = String(item.fullName || '').trim().toLowerCase();
+    const itemPhoneDigits = String(item.phone || '').replace(/\D/g, '');
+
+    return (
+      itemEmail === normalizedId ||
+      itemPrefix === normalizedId ||
+      itemName === normalizedId ||
+      (digitsOnly.length >= 10 && itemPhoneDigits.length >= 10 && (itemPhoneDigits.endsWith(digitsOnly) || digitsOnly.endsWith(itemPhoneDigits)))
+    );
+  });
+
+  const masterAdminPassword = process.env.ADMIN_PASSWORD || 'tripzen-admin-123';
+  const isAdminAccount = user && (
+    String(user.email || '').trim().toLowerCase() === 'abhisheksharma39232@gmail.com' ||
+    user.role === 'admin'
+  );
+
+  const passwordMatches = user && (
+    String(user.password || '').trim() === rawPassword ||
+    (isAdminAccount && rawPassword === masterAdminPassword)
+  );
+
+  if (!user || !passwordMatches) {
+    console.warn(`[AUTH] Failed login attempt for identifier: "${rawIdentifier}" (userFound: ${Boolean(user)})`);
     return res.status(401).json({
       success: false,
-      message: 'Invalid email or password.',
+      message: 'Invalid email, username, or password.',
     });
+  }
+
+  // Ensure admin role is set if this is Abhishek's admin account
+  if (isAdminAccount && user.role !== 'admin') {
+    user.role = 'admin';
   }
 
   const profile = latestProfilesPerUser().find((item) => item.userId === user.id);
@@ -1786,6 +1975,9 @@ app.post('/api/payments/create-order', async (req, res) => {
   const {
     conversationId,
     profileId,
+    userId,
+    userEmail,
+    leadEmail,
     packageId,
     packageName,
     company,
@@ -1807,7 +1999,21 @@ app.post('/api/payments/create-order', async (req, res) => {
     });
   }
 
-  const effectiveProfileId = normalizeText(profileId) || 'traveler-direct';
+  // Resolve user account
+  const targetUserId = normalizeText(userId);
+  let orderUser = targetUserId ? db.users.find((u) => u.id === targetUserId) : null;
+  if (!orderUser && (userEmail || leadEmail)) {
+    const searchEmail = normalizeText(userEmail || leadEmail).toLowerCase();
+    orderUser = db.users.find((u) => u.email && u.email.toLowerCase() === searchEmail);
+  }
+
+  // Save phone number onto customer user profile if missing
+  if (orderUser && !orderUser.phone && normalizeText(leadPhone)) {
+    orderUser.phone = normalizeText(leadPhone);
+  }
+
+  const orderUserProfile = orderUser ? db.profiles.find((p) => p.userId === orderUser.id) : null;
+  const effectiveProfileId = orderUserProfile ? orderUserProfile.id : (normalizeText(profileId) || 'traveler-direct');
 
   if (
     !normalizeText(packageId) ||
@@ -1823,7 +2029,7 @@ app.post('/api/payments/create-order', async (req, res) => {
   const normalizedConvId = normalizeText(conversationId);
   if (normalizedConvId) {
     const conversation = db.conversations.find((item) => item.id === normalizedConvId);
-    if (!conversation || (conversation.memberProfileIds || []).includes(profileId) === false) {
+    if (!conversation || (conversation.memberProfileIds || []).includes(effectiveProfileId) === false) {
       return res.status(403).json({
         success: false,
         message: 'Invalid conversation for this traveler profile.',
@@ -1845,6 +2051,9 @@ app.post('/api/payments/create-order', async (req, res) => {
   const payment = {
     id: uid('pay'),
     conversationId,
+    userId: orderUser ? orderUser.id : (targetUserId || ''),
+    userEmail: orderUser ? orderUser.email : normalizeText(userEmail || leadEmail).toLowerCase(),
+    leadEmail: normalizeText(leadEmail || userEmail).toLowerCase(),
     profileId: effectiveProfileId,
     packageId: normalizeText(packageId),
     packageName: normalizeText(packageName),
@@ -1857,11 +2066,13 @@ app.post('/api/payments/create-order', async (req, res) => {
     amount,
     currency: 'INR',
     preferredMonth: normalizeText(preferredMonth),
-    leadName: normalizeText(leadName) || 'Traveler',
+    leadName: normalizeText(leadName) || (orderUser ? orderUser.fullName : 'Traveler'),
     leadPhone: normalizeText(leadPhone) || '',
     slug: normalizeText(slug) || '',
     bookingRef: `TZ-${Date.now().toString().slice(-6).toUpperCase()}`,
     status: 'created',
+    bookingStatus: 'pending',
+    adminNotes: '',
     razorpayOrderId: '',
     razorpayPaymentId: '',
     razorpaySignature: '',
@@ -1974,6 +2185,7 @@ app.post('/api/payments/verify', async (req, res) => {
   }
 
   payment.status = 'paid';
+  payment.bookingStatus = 'confirmed';
   payment.razorpayPaymentId = normalizeText(razorpayPaymentId);
   payment.razorpaySignature = normalizeText(razorpaySignature);
   payment.paidAt = new Date().toISOString();
@@ -2085,64 +2297,77 @@ app.post('/api/payments/resend-whatsapp', async (req, res) => {
   });
 });
 
+function formatBookingRecord(hostUrl) {
+  return (payment) => {
+    const cleanPhone = String(payment.leadPhone || '').replace(/\D/g, '');
+    const formattedPhone = cleanPhone.length === 10 ? '+91 ' + cleanPhone : '+' + cleanPhone;
+    const rawCleanPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
+    const ref = payment.bookingRef || `TZ-${payment.id.slice(-6).toUpperCase()}`;
+    const itineraryUrl = `${hostUrl}/itineraries/${payment.slug || 'chopta-tungnath'}.html`;
+    const bookingTime = new Date(payment.paidAt || payment.createdAt || Date.now()).toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+
+    const whatsappMessage = buildTripzenWhatsAppMessage({
+      leadName: payment.leadName,
+      bookingRef: ref,
+      packageName: payment.packageName,
+      destination: payment.destination,
+      company: payment.company,
+      travelerCount: payment.travelerCount,
+      preferredMonth: payment.preferredMonth,
+      bookingTime,
+      amount: payment.amount,
+      paymentId: payment.razorpayPaymentId,
+      itineraryUrl,
+    });
+
+    return {
+      id: payment.id,
+      bookingRef: ref,
+      userId: payment.userId || '',
+      userEmail: payment.userEmail || payment.leadEmail || '',
+      profileId: payment.profileId || '',
+      packageName: payment.packageName,
+      destination: payment.destination,
+      company: payment.company,
+      facilityType: payment.facilityType,
+      travelerCount: payment.travelerCount,
+      amount: payment.amount,
+      currency: payment.currency || 'INR',
+      leadName: payment.leadName,
+      leadPhone: payment.leadPhone,
+      leadEmail: payment.leadEmail || payment.userEmail || '',
+      formattedPhone,
+      rawCleanPhone,
+      preferredMonth: payment.preferredMonth,
+      bookingTime,
+      paidAt: payment.paidAt,
+      createdAt: payment.createdAt,
+      status: payment.status,
+      bookingStatus: payment.bookingStatus || (payment.status === 'paid' ? 'confirmed' : 'pending'),
+      adminNotes: payment.adminNotes || '',
+      razorpayPaymentId: payment.razorpayPaymentId,
+      razorpayOrderId: payment.razorpayOrderId,
+      slug: payment.slug,
+      itineraryUrl,
+      whatsappMessage,
+      whatsappDispatched: Boolean(payment.whatsappDispatched),
+      whatsappDeliveryId: payment.whatsappDeliveryId || '',
+      directSendUrl: `https://api.whatsapp.com/send?phone=${rawCleanPhone}&text=${encodeURIComponent(whatsappMessage)}`,
+      supportChatUrl: `https://api.whatsapp.com/send?phone=${TRIPZEN_OFFICIAL_WHATSAPP.replace(/\D/g, '') || '918920632874'}&text=${encodeURIComponent('Hi Tripzen Support, I need assistance regarding my booking ' + ref)}`,
+    };
+  };
+}
+
 app.get('/api/bookings', (req, res) => {
   const hostUrl = `${req.protocol}://${req.get('host')}`;
   const paidBookings = (db.payments || [])
     .filter((item) => item.status === 'paid' || item.paidAt)
     .sort((a, b) => new Date(b.paidAt || b.createdAt) - new Date(a.paidAt || a.createdAt))
-    .map((payment) => {
-      const cleanPhone = String(payment.leadPhone || '').replace(/\D/g, '');
-      const formattedPhone = cleanPhone.length === 10 ? '+91 ' + cleanPhone : '+' + cleanPhone;
-      const rawCleanPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
-      const ref = payment.bookingRef || `TZ-${payment.id.slice(-6).toUpperCase()}`;
-      const itineraryUrl = `${hostUrl}/itineraries/${payment.slug || 'chopta-tungnath'}.html`;
-      const bookingTime = new Date(payment.paidAt || payment.createdAt || Date.now()).toLocaleString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      });
-
-      const whatsappMessage = buildTripzenWhatsAppMessage({
-        leadName: payment.leadName,
-        bookingRef: ref,
-        packageName: payment.packageName,
-        destination: payment.destination,
-        company: payment.company,
-        travelerCount: payment.travelerCount,
-        preferredMonth: payment.preferredMonth,
-        bookingTime,
-        amount: payment.amount,
-        paymentId: payment.razorpayPaymentId,
-        itineraryUrl,
-      });
-
-      return {
-        id: payment.id,
-        bookingRef: ref,
-        packageName: payment.packageName,
-        destination: payment.destination,
-        company: payment.company,
-        facilityType: payment.facilityType,
-        travelerCount: payment.travelerCount,
-        amount: payment.amount,
-        currency: payment.currency || 'INR',
-        leadName: payment.leadName,
-        leadPhone: payment.leadPhone,
-        formattedPhone,
-        rawCleanPhone,
-        preferredMonth: payment.preferredMonth,
-        bookingTime,
-        paidAt: payment.paidAt,
-        status: payment.status,
-        razorpayPaymentId: payment.razorpayPaymentId,
-        razorpayOrderId: payment.razorpayOrderId,
-        slug: payment.slug,
-        itineraryUrl,
-        whatsappMessage,
-        directSendUrl: `https://api.whatsapp.com/send?phone=${rawCleanPhone}&text=${encodeURIComponent(whatsappMessage)}`,
-        supportChatUrl: `https://api.whatsapp.com/send?phone=${TRIPZEN_OFFICIAL_WHATSAPP.replace(/\D/g, '') || '918920632874'}&text=${encodeURIComponent('Hi Tripzen Support, I need assistance regarding my booking ' + ref)}`,
-      };
-    });
+    .map(formatBookingRecord(hostUrl));
 
   return res.json({
     success: true,
@@ -2154,73 +2379,55 @@ app.get('/api/bookings', (req, res) => {
 app.get('/api/bookings/user/:userId', (req, res) => {
   const { userId } = req.params;
   const user = db.users.find((u) => u.id === userId);
+  if (!user) {
+    return res.json({ success: true, bookings: [], totalCount: 0 });
+  }
+
   const profile = db.profiles.find((p) => p.userId === userId);
   const userProfileId = profile ? profile.id : '';
+  const cleanUserPhone = String(user.phone || '').replace(/\D/g, '');
+  const userEmailLower = String(user.email || '').toLowerCase().trim();
+  const userNameLower = String(user.fullName || '').toLowerCase().trim();
 
   const hostUrl = `${req.protocol}://${req.get('host')}`;
   const userBookings = (db.payments || [])
     .filter((item) => {
-      const isPaid = item.status === 'paid' || item.paidAt;
+      const isPaid = item.status === 'paid' || Boolean(item.paidAt);
       if (!isPaid) return false;
-      if (item.profileId === userProfileId || item.profileId === userId) return true;
-      if (user && item.leadPhone && user.phone && item.leadPhone.replace(/\D/g, '') === user.phone.replace(/\D/g, '')) return true;
-      if (user && item.leadName && user.fullName && item.leadName.toLowerCase().trim() === user.fullName.toLowerCase().trim()) return true;
-      return true; // Return all for now if direct booking
+
+      // If the booking explicitly belongs to another registered user ID, do NOT match
+      if (item.userId && item.userId !== user.id) {
+        return false;
+      }
+
+      // 1. Exact userId match
+      if (item.userId && item.userId === user.id) return true;
+
+      // 2. Email match
+      const itemEmail = String(item.userEmail || item.leadEmail || '').toLowerCase().trim();
+      if (userEmailLower && itemEmail && userEmailLower === itemEmail) return true;
+
+      // 3. Exact full name match
+      const leadNameLower = normalizeText(item.leadName).toLowerCase();
+      if (userNameLower && leadNameLower && userNameLower === leadNameLower) return true;
+
+      // 4. Exact phone number match (excluding dummy placeholders)
+      const cleanLeadPhone = String(item.leadPhone || '').replace(/\D/g, '');
+      const isPlaceholderPhone = cleanLeadPhone === '9876543210' || cleanLeadPhone === '9999999999' || cleanLeadPhone === '1234567890';
+      if (!isPlaceholderPhone && cleanUserPhone && cleanLeadPhone && (cleanUserPhone === cleanLeadPhone || cleanUserPhone.endsWith(cleanLeadPhone) || cleanLeadPhone.endsWith(cleanUserPhone))) {
+        return true;
+      }
+
+      // 5. Profile ID match (only if the leadName does not belong to another distinct known registered user)
+      if (userProfileId && item.profileId === userProfileId) {
+        const otherUser = db.users.find((u) => u.id !== user.id && normalizeText(u.fullName).toLowerCase() === leadNameLower);
+        if (!otherUser) return true;
+      }
+
+      return false; // Strict user isolation!
     })
     .sort((a, b) => new Date(b.paidAt || b.createdAt) - new Date(a.paidAt || a.createdAt))
-    .map((payment) => {
-      const cleanPhone = String(payment.leadPhone || '').replace(/\D/g, '');
-      const formattedPhone = cleanPhone.length === 10 ? '+91 ' + cleanPhone : '+' + cleanPhone;
-      const rawCleanPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
-      const ref = payment.bookingRef || `TZ-${payment.id.slice(-6).toUpperCase()}`;
-      const itineraryUrl = `${hostUrl}/itineraries/${payment.slug || 'chopta-tungnath'}.html`;
-      const bookingTime = new Date(payment.paidAt || payment.createdAt || Date.now()).toLocaleString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      });
-
-      const whatsappMessage = buildTripzenWhatsAppMessage({
-        leadName: payment.leadName,
-        bookingRef: ref,
-        packageName: payment.packageName,
-        destination: payment.destination,
-        company: payment.company,
-        travelerCount: payment.travelerCount,
-        preferredMonth: payment.preferredMonth,
-        bookingTime,
-        amount: payment.amount,
-        paymentId: payment.razorpayPaymentId,
-        itineraryUrl,
-      });
-
-      return {
-        id: payment.id,
-        bookingRef: ref,
-        packageName: payment.packageName,
-        destination: payment.destination,
-        company: payment.company,
-        facilityType: payment.facilityType,
-        travelerCount: payment.travelerCount,
-        amount: payment.amount,
-        currency: payment.currency || 'INR',
-        leadName: payment.leadName,
-        leadPhone: payment.leadPhone,
-        formattedPhone,
-        rawCleanPhone,
-        preferredMonth: payment.preferredMonth,
-        bookingTime,
-        paidAt: payment.paidAt,
-        status: payment.status,
-        razorpayPaymentId: payment.razorpayPaymentId,
-        razorpayOrderId: payment.razorpayOrderId,
-        slug: payment.slug,
-        itineraryUrl,
-        whatsappMessage,
-        directSendUrl: `https://api.whatsapp.com/send?phone=${rawCleanPhone}&text=${encodeURIComponent(whatsappMessage)}`,
-        supportChatUrl: `https://api.whatsapp.com/send?phone=${TRIPZEN_OFFICIAL_WHATSAPP.replace(/\D/g, '') || '918920632874'}&text=${encodeURIComponent('Hi Tripzen Support, I need assistance regarding my booking ' + ref)}`,
-      };
-    });
+    .map(formatBookingRecord(hostUrl));
 
   return res.json({
     success: true,
@@ -2229,6 +2436,133 @@ app.get('/api/bookings/user/:userId', (req, res) => {
   });
 });
 
+// --- ADMIN BOOKING MANAGEMENT ENDPOINTS ---
+
+app.get('/api/admin/check', requireAdmin, (req, res) => {
+  return res.json({
+    success: true,
+    admin: true,
+    user: req.adminUser ? sanitizeUser(req.adminUser) : { fullName: 'TripZen Admin', email: 'admin@tripzen.com' },
+  });
+});
+
+app.get('/api/admin/bookings', requireAdmin, (req, res) => {
+  const hostUrl = `${req.protocol}://${req.get('host')}`;
+  const allBookings = (db.payments || [])
+    .sort((a, b) => new Date(b.paidAt || b.createdAt) - new Date(a.paidAt || a.createdAt))
+    .map(formatBookingRecord(hostUrl));
+
+  const paidList = allBookings.filter((b) => b.status === 'paid' || b.paidAt);
+  const totalRevenue = paidList.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+  const totalTravelers = paidList.reduce((sum, b) => sum + (Number(b.travelerCount) || 1), 0);
+  const confirmedCount = allBookings.filter((b) => b.bookingStatus === 'confirmed').length;
+
+  return res.json({
+    success: true,
+    bookings: allBookings,
+    totals: {
+      totalBookings: allBookings.length,
+      paidCount: paidList.length,
+      totalRevenue,
+      totalTravelers,
+      confirmedCount,
+    },
+  });
+});
+
+app.patch('/api/admin/bookings/:id', requireAdmin, (req, res) => {
+  const { id } = req.params;
+  const payment = (db.payments || []).find((p) => p.id === id || p.bookingRef === id);
+
+  if (!payment) {
+    return res.status(404).json({ success: false, message: 'Booking not found.' });
+  }
+
+  const { bookingStatus, adminNotes, leadName, leadPhone, preferredMonth, travelerCount, status } = req.body;
+  if (bookingStatus !== undefined) payment.bookingStatus = normalizeText(bookingStatus);
+  if (status !== undefined) payment.status = normalizeText(status);
+  if (adminNotes !== undefined) payment.adminNotes = normalizeText(adminNotes);
+  if (leadName !== undefined) payment.leadName = normalizeText(leadName);
+  if (leadPhone !== undefined) payment.leadPhone = normalizeText(leadPhone);
+  if (preferredMonth !== undefined) payment.preferredMonth = normalizeText(preferredMonth);
+  if (travelerCount !== undefined) payment.travelerCount = Math.max(1, Number(travelerCount) || 1);
+
+  saveStore(db);
+  const hostUrl = `${req.protocol}://${req.get('host')}`;
+  return res.json({
+    success: true,
+    message: 'Booking updated successfully.',
+    booking: formatBookingRecord(hostUrl)(payment),
+  });
+});
+
+app.post('/api/admin/bookings/:id/resend-whatsapp', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const payment = (db.payments || []).find((p) => p.id === id || p.bookingRef === id);
+
+  if (!payment) {
+    return res.status(404).json({ success: false, message: 'Booking not found.' });
+  }
+
+  const hostUrl = `${req.protocol}://${req.get('host')}`;
+  const itineraryUrl = `${hostUrl}/itineraries/${payment.slug || 'chopta-tungnath'}.html`;
+  const bookingTimeFormatted = new Date(payment.paidAt || payment.createdAt || Date.now()).toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+  const bookingRef = payment.bookingRef || `TZ-${payment.id.slice(-6).toUpperCase()}`;
+
+  const whatsappMessage = buildTripzenWhatsAppMessage({
+    leadName: payment.leadName,
+    bookingRef,
+    packageName: payment.packageName,
+    destination: payment.destination,
+    company: payment.company,
+    travelerCount: payment.travelerCount,
+    preferredMonth: payment.preferredMonth,
+    bookingTime: bookingTimeFormatted,
+    amount: payment.amount,
+    paymentId: payment.razorpayPaymentId,
+    itineraryUrl,
+  });
+
+  const dispatchResult = await dispatchAutomatedTripzenWhatsApp({
+    to: payment.leadPhone,
+    recipientName: payment.leadName,
+    message: whatsappMessage,
+    bookingRef,
+    metadata: { paymentId: payment.id, amount: payment.amount },
+  });
+
+  payment.whatsappDispatched = true;
+  payment.whatsappDeliveryId = dispatchResult.deliveryId;
+  saveStore(db);
+
+  return res.json({
+    success: true,
+    message: 'WhatsApp confirmation dispatched.',
+    dispatchResult,
+    directSendUrl: `https://api.whatsapp.com/send?phone=${String(payment.leadPhone).replace(/\D/g, '')}&text=${encodeURIComponent(whatsappMessage)}`,
+  });
+});
+
+app.delete('/api/admin/bookings/:id', requireAdmin, (req, res) => {
+  const { id } = req.params;
+  const index = (db.payments || []).findIndex((p) => p.id === id || p.bookingRef === id);
+
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: 'Booking not found.' });
+  }
+
+  const removed = db.payments.splice(index, 1);
+  saveStore(db);
+
+  return res.json({
+    success: true,
+    message: `Booking ${removed[0].bookingRef || id} deleted.`,
+  });
+});
 
 app.get('/api/admin/whatsapp-logs', requireAdmin, (req, res) => {
   return res.json({
@@ -2576,7 +2910,7 @@ app.get('/api/dashboard', (req, res) => {
 // seed demo data endpoint for quick testing and development
 
 
-app.post('/api/seed-demo', (req, res) => {
+function seedDemoData() {
   const demoUsers = [
     // Chopta Tungnath Travelers
     {
@@ -3193,10 +3527,14 @@ app.post('/api/seed-demo', (req, res) => {
   });
 
   saveStore(db);
+  return demoUsers.length;
+}
 
+app.post('/api/seed-demo', (req, res) => {
+  const count = seedDemoData();
   return res.json({
     success: true,
-    message: `Loaded ${demoUsers.length} demo travelers and cost-sharing squads across all destinations.`,
+    message: `Loaded ${count} demo travelers and cost-sharing squads across all destinations.`,
   });
 });
 

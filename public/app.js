@@ -1386,6 +1386,15 @@ const state = {
   bookings: [],
   bookingsLoading: false,
   bookingSearchQuery: '',
+  adminBookings: [],
+  adminBookingsLoading: false,
+  adminSearchQuery: '',
+  adminStatusFilter: 'All',
+  adminDestinationFilter: 'All',
+  adminTotals: null,
+  adminStatusMessage: '',
+  adminStatusType: '',
+  adminUnlocked: sessionStorage.getItem('tripzenAdminUnlocked') === 'true',
   selectedMatchProfileId: '',
   matchTravelStyleFilter: '',
   matchCompatibilityMin: 50,
@@ -1408,14 +1417,31 @@ const CHAT_POLL_INTERVAL = 3000;
 const DEFAULT_TITLE = 'TripZen | Travel Matchmaking';
 document.title = DEFAULT_TITLE;
 
+function isAdminUser() {
+  if (state.adminUnlocked || sessionStorage.getItem('tripzenAdminUnlocked') === 'true') return true;
+  const email = (state.user?.email || '').toLowerCase().trim();
+  if (email === 'abhisheksharma39232@gmail.com') return true;
+  if (state.user?.role === 'admin' || state.user?.isAdmin) return true;
+  return false;
+}
+
 function absoluteApiUrl(base, path) {
   return `${base}${path}`;
 }
 
 async function requestJson(base, url, method, payload) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (state.user?.id) {
+    headers['x-user-id'] = state.user.id;
+  }
+  const adminPwd = sessionStorage.getItem('tripzenAdminPassword');
+  if (adminPwd) {
+    headers['x-admin-password'] = adminPwd;
+  }
+
   const response = await fetch(absoluteApiUrl(base, url), {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: payload ? JSON.stringify(payload) : undefined,
   });
 
@@ -1577,6 +1603,10 @@ function matchProfileIdFromRoute(route = normalizedRoute()) {
 function normalizedRoute() {
   const route = state.route || '/';
   
+  if (route === '/admin') {
+    return '/admin';
+  }
+
   if (state.user && (route === '/' || route === '/auth')) {
     return '/profile';
   }
@@ -1600,6 +1630,7 @@ function normalizedRoute() {
 
 function isDashboardRoute(route = normalizedRoute()) {
   return (
+    route === '/admin' ||
     route === '/profile' ||
     route === '/preferences' ||
     route === '/matches' ||
@@ -1617,6 +1648,7 @@ function isDashboardRoute(route = normalizedRoute()) {
 
 function routeNeedsTripData(route = normalizedRoute()) {
   return (
+    route === '/admin' ||
     route === '/profile' ||
     route === '/preferences' ||
     route === '/matches' ||
@@ -1769,6 +1801,7 @@ function topbar() {
           <a href="#/join-book" class="stitch-nav-item ${current === '/join-book' || current === '/packages' ? 'active' : ''}">Packages</a>
           <a href="#/groups" class="stitch-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">Cost Sharing</a>
           <a href="#/bookings" class="stitch-nav-item ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}">My Bookings ${state.bookings.length > 0 ? `<span class="nav-counter-pill">${state.bookings.length}</span>` : ''}</a>
+          ${isAdminUser() ? `<a href="#/admin" class="stitch-nav-item admin-nav-pill ${current === '/admin' ? 'active' : ''}">👑 Admin Panel</a>` : ''}
         </nav>
 
         <div class="stitch-topbar-actions">
@@ -1845,12 +1878,20 @@ function dashboardSidebar() {
           <span class="sidebar-nav-icon">ℹ️</span>
           <span>About TripZen</span>
         </a>
+        ${isAdminUser() ? `
+          <a href="#/admin" class="sidebar-nav-link admin-nav-link ${current === '/admin' ? 'active' : ''}">
+            <span class="sidebar-nav-icon">👑</span>
+            <span>Admin Operations</span>
+          </a>
+        ` : ''}
       </nav>
 
       <div class="sidebar-footer">
-        <a href="/admin.html" class="sidebar-logout-btn" target="_blank" style="color: #5f756d;">
-          <span>⚙️ Admin Portal</span>
-        </a>
+        ${isAdminUser() ? `
+          <a href="/admin.html" class="sidebar-logout-btn" target="_blank" style="color: #5f756d;">
+            <span>⚙️ Raw Data DB</span>
+          </a>
+        ` : ''}
         <button type="button" class="sidebar-logout-btn" id="logoutBtn">
           <span>🚪 Log Out</span>
         </button>
@@ -3444,12 +3485,12 @@ function authPage() {
                 `
                 : `
                   <label class="field-label">
-                    <span>EMAIL ADDRESS</span>
-                    <input name="email" type="email" required placeholder="name@example.com" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
+                    <span>EMAIL OR USERNAME</span>
+                    <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="name@example.com or username" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
                   </label>
                   <label class="field-label">
                     <span>PASSWORD</span>
-                    <input name="password" type="password" required placeholder="••••••••" class="stitch-input" />
+                    <input name="password" type="password" autocomplete="current-password" required placeholder="••••••••" class="stitch-input" />
                   </label>
                 `
             }
@@ -3719,6 +3760,7 @@ function aboutPage() {
 
 function pageContent() {
   const route = normalizedRoute();
+  if (route === '/admin') return adminPanelPage();
   if (route === '/auth') return authPage();
   if (route === '/profile') return profilePage();
   if (route === '/preferences') return preferencesPage();
@@ -3859,19 +3901,336 @@ async function loadTripGroups(destination = state.groupDestinationFilter) {
 async function loadBookings() {
   try {
     state.bookingsLoading = true;
-    const userId = state.user?.id || 'all';
-    let data;
-    try {
-      data = await api(`/api/bookings/user/${userId}`);
-    } catch (err) {
-      data = await api('/api/bookings');
+    const userId = state.user?.id;
+    if (!userId) {
+      state.bookings = [];
+      return;
     }
+    const data = await api(`/api/bookings/user/${userId}`);
     state.bookings = (data && data.bookings) ? data.bookings : [];
   } catch (error) {
     state.bookings = [];
   } finally {
     state.bookingsLoading = false;
   }
+}
+
+async function loadAdminBookings() {
+  if (!isAdminUser()) return;
+  try {
+    state.adminBookingsLoading = true;
+    renderApp();
+    const data = await api('/api/admin/bookings');
+    state.adminBookings = (data && data.bookings) ? data.bookings : [];
+    state.adminTotals = (data && data.totals) ? data.totals : null;
+  } catch (error) {
+    state.adminStatusMessage = error.message || 'Failed to load administrator bookings.';
+    state.adminStatusType = 'error';
+  } finally {
+    state.adminBookingsLoading = false;
+    renderApp();
+  }
+}
+
+function adminPanelPage() {
+  if (!isAdminUser()) {
+    return `
+      <div class="animate-fade-in" style="max-width: 520px; margin: 60px auto; padding: 32px; background: var(--surface); border: 1px solid var(--surface-border); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 12px;">🔒</div>
+        <h2 style="font-size: 1.5rem; color: var(--ink); margin-bottom: 8px;">Admin Operations Access</h2>
+        <p style="color: var(--muted); font-size: 0.92rem; line-height: 1.6; margin-bottom: 24px;">
+          This area is restricted to authorized TripZen administrators. Please enter your administrator key or log in with the administrator account.
+        </p>
+        <form id="adminUnlockForm" style="display: grid; gap: 14px; text-align: left;">
+          <label class="field-label">
+            <span>ADMINISTRATOR PASSWORD</span>
+            <input type="password" id="adminPasswordGateInput" class="stitch-input" placeholder="Enter admin password" required />
+          </label>
+          <button type="submit" class="primary-btn" style="padding: 12px; font-weight: 700;">
+            <span>Unlock Admin Operations ➔</span>
+          </button>
+          <div id="adminUnlockError" style="display: none; color: #dc2626; font-size: 0.88rem; font-weight: 700; text-align: center;"></div>
+        </form>
+      </div>
+    `;
+  }
+
+  const query = (state.adminSearchQuery || '').toLowerCase().trim();
+  const statusFilter = state.adminStatusFilter || 'All';
+  const destinationFilter = state.adminDestinationFilter || 'All';
+
+  const filtered = (state.adminBookings || []).filter((b) => {
+    if (statusFilter !== 'All') {
+      const bStatus = (b.bookingStatus || b.status || '').toLowerCase();
+      if (bStatus !== statusFilter.toLowerCase()) return false;
+    }
+    if (destinationFilter !== 'All') {
+      if ((b.destination || '').toLowerCase() !== destinationFilter.toLowerCase()) return false;
+    }
+    if (!query) return true;
+    return (
+      (b.bookingRef || '').toLowerCase().includes(query) ||
+      (b.leadName || '').toLowerCase().includes(query) ||
+      (b.leadPhone || '').toLowerCase().includes(query) ||
+      (b.leadEmail || '').toLowerCase().includes(query) ||
+      (b.packageName || '').toLowerCase().includes(query) ||
+      (b.destination || '').toLowerCase().includes(query) ||
+      (b.company || '').toLowerCase().includes(query) ||
+      (b.razorpayPaymentId || '').toLowerCase().includes(query) ||
+      (b.adminNotes || '').toLowerCase().includes(query)
+    );
+  });
+
+  const totals = state.adminTotals || {
+    totalRevenue: filtered.reduce((sum, b) => sum + (Number(b.amount) || 0), 0),
+    totalBookings: filtered.length,
+    totalTravelers: filtered.reduce((sum, b) => sum + (Number(b.travelerCount) || 1), 0),
+    confirmedCount: filtered.filter((b) => (b.bookingStatus || '').toLowerCase() === 'confirmed').length,
+  };
+
+  return `
+    <div class="animate-fade-in admin-panel-wrapper">
+      <div class="page-header-stitch">
+        <div class="page-header-row">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="background: rgba(232, 135, 58, 0.15); color: var(--accent); padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.5px;">ADMIN CONTROL DESK</span>
+              <span style="font-size: 0.8rem; color: var(--muted);">• Only visible to you</span>
+            </div>
+            <h1>TripZen Booking & Order Operations</h1>
+            <p>Monitor all customer bookings, manage reservation statuses, review Razorpay transaction IDs, and dispatch WhatsApp vouchers.</p>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="ghost-btn" id="refreshAdminBookingsBtn" style="white-space: nowrap;">
+              <span>🔄 Refresh Orders</span>
+            </button>
+            <a href="/whatsapp-link.html" target="_blank" class="ghost-btn" style="white-space: nowrap; text-decoration: none;">
+              <span>💬 WhatsApp Gateway</span>
+            </a>
+            <a href="/admin.html" target="_blank" class="ghost-btn" style="white-space: nowrap; text-decoration: none;">
+              <span>⚙️ Raw Data DB</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI METRICS STRIP -->
+      <div class="bookings-metrics-grid animate-fade-in" style="margin-bottom: 24px;">
+        <div class="booking-metric-card" style="border-left: 4px solid #059669;">
+          <div class="booking-metric-icon" style="background: rgba(16, 185, 129, 0.1); color: #059669;">💳</div>
+          <div class="booking-metric-info">
+            <span class="booking-metric-label">Total Revenue Collected</span>
+            <strong class="booking-metric-val">INR ${(totals.totalRevenue || 0).toLocaleString('en-IN')}</strong>
+          </div>
+        </div>
+
+        <div class="booking-metric-card" style="border-left: 4px solid #2563eb;">
+          <div class="booking-metric-icon" style="background: rgba(59, 130, 246, 0.1); color: #2563eb;">🎟️</div>
+          <div class="booking-metric-info">
+            <span class="booking-metric-label">Total Reservations</span>
+            <strong class="booking-metric-val">${state.adminBookings.length} Order${state.adminBookings.length === 1 ? '' : 's'}</strong>
+          </div>
+        </div>
+
+        <div class="booking-metric-card" style="border-left: 4px solid #d97706;">
+          <div class="booking-metric-icon" style="background: rgba(245, 158, 11, 0.1); color: #d97706;">👥</div>
+          <div class="booking-metric-info">
+            <span class="booking-metric-label">Total Travelers</span>
+            <strong class="booking-metric-val">${totals.totalTravelers || 0} Headcount</strong>
+          </div>
+        </div>
+
+        <div class="booking-metric-card" style="border-left: 4px solid #10b981;">
+          <div class="booking-metric-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">🟢</div>
+          <div class="booking-metric-info">
+            <span class="booking-metric-label">Confirmed & Active</span>
+            <strong class="booking-metric-val">${totals.confirmedCount || 0} Bookings</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEARCH & FILTER TOOLBAR -->
+      <div class="packages-filter-bar-stitch" style="margin-bottom: 24px; display: flex; gap: 12px; flex-wrap: wrap;">
+        <div class="search-input-wrap filter-bar-search" style="flex: 1 1 320px;">
+          <span class="search-input-icon">🔍</span>
+          <input
+            id="adminSearchInput"
+            class="stitch-input"
+            placeholder="Search traveler name, phone, email, booking ref (TZ-...), payment ID, destination..."
+            value="${escapeHtml(state.adminSearchQuery || '')}"
+          />
+        </div>
+
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <select id="adminStatusFilterSelect" class="stitch-input" style="width: auto; min-width: 150px; height: 42px; font-weight: 600;">
+            <option value="All" ${statusFilter === 'All' ? 'selected' : ''}>📌 Status: All</option>
+            <option value="confirmed" ${statusFilter === 'confirmed' ? 'selected' : ''}>🟢 Confirmed</option>
+            <option value="in-progress" ${statusFilter === 'in-progress' ? 'selected' : ''}>🔵 In Progress</option>
+            <option value="completed" ${statusFilter === 'completed' ? 'selected' : ''}>🏁 Completed</option>
+            <option value="cancelled" ${statusFilter === 'cancelled' ? 'selected' : ''}>🔴 Cancelled</option>
+            <option value="refunded" ${statusFilter === 'refunded' ? 'selected' : ''}>💸 Refunded</option>
+          </select>
+
+          <select id="adminDestFilterSelect" class="stitch-input" style="width: auto; min-width: 170px; height: 42px; font-weight: 600;">
+            <option value="All" ${destinationFilter === 'All' ? 'selected' : ''}>📍 Destination: All</option>
+            ${DESTINATIONS.map((d) => `<option value="${escapeHtml(d.name)}" ${destinationFilter === d.name ? 'selected' : ''}>${escapeHtml(d.name)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
+      ${state.adminStatusMessage ? `<div class="status ${state.adminStatusType || 'info'}" style="margin-bottom: 16px;">${escapeHtml(state.adminStatusMessage)}</div>` : ''}
+
+      <!-- ORDERS LIST CONTAINER -->
+      <div class="admin-orders-container">
+        ${
+          state.adminBookingsLoading
+            ? `<div style="text-align: center; padding: 48px; color: var(--muted);">⏳ Loading customer orders...</div>`
+            : filtered.length > 0
+              ? filtered
+                  .map((b) => {
+                    const currentStatus = (b.bookingStatus || b.status || 'confirmed').toLowerCase();
+                    const cleanPhone = (b.leadPhone || '').replace(/\D/g, '');
+                    const rawCleanPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
+                    const waChatUrl = `https://api.whatsapp.com/send?phone=${rawCleanPhone}&text=${encodeURIComponent('Hi ' + (b.leadName || 'Traveler') + ', this is TripZen Operations regarding your booking ' + b.bookingRef + ' for ' + b.packageName + '.')}`;
+
+                    return `
+                      <div class="admin-order-card animate-fade-in" data-booking-id="${escapeHtml(b.id)}">
+                        <div class="admin-order-card-header">
+                          <div class="admin-order-header-left">
+                            <span class="admin-ref-pill">${escapeHtml(b.bookingRef)}</span>
+                            <span class="admin-time-stamp">🕒 ${escapeHtml(b.bookingTime || 'Recently')}</span>
+                            ${b.whatsappDispatched ? `<span class="admin-wa-badge">✓ WhatsApp Sent</span>` : `<span class="admin-wa-pending-badge">⏳ WhatsApp Pending</span>`}
+                          </div>
+                          <div class="admin-order-header-right">
+                            <div class="admin-status-control">
+                              <span style="font-size: 0.8rem; font-weight: 700; color: var(--muted); margin-right: 6px;">Status:</span>
+                              <select class="admin-status-dropdown" data-change-status-id="${escapeHtml(b.id)}">
+                                <option value="confirmed" ${currentStatus === 'confirmed' ? 'selected' : ''}>🟢 Confirmed</option>
+                                <option value="in-progress" ${currentStatus === 'in-progress' ? 'selected' : ''}>🔵 In Progress</option>
+                                <option value="completed" ${currentStatus === 'completed' ? 'selected' : ''}>🏁 Completed</option>
+                                <option value="cancelled" ${currentStatus === 'cancelled' ? 'selected' : ''}>🔴 Cancelled</option>
+                                <option value="refunded" ${currentStatus === 'refunded' ? 'selected' : ''}>💸 Refunded</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="admin-order-body-grid">
+                          <!-- Column 1: Customer Contact -->
+                          <div class="admin-order-col">
+                            <div class="admin-col-label">👤 CUSTOMER DETAILS</div>
+                            <div class="admin-user-title">${escapeHtml(b.leadName || 'Traveler')}</div>
+                            <div class="admin-contact-item">
+                              <span>📱 Phone:</span>
+                              <strong>${escapeHtml(b.formattedPhone || b.leadPhone || 'N/A')}</strong>
+                            </div>
+                            <div class="admin-contact-item">
+                              <span>✉️ Email:</span>
+                              <span>${escapeHtml(b.leadEmail || b.userEmail || 'Direct / Guest')}</span>
+                            </div>
+                            <div class="admin-contact-actions" style="margin-top: 10px; display: flex; gap: 8px;">
+                              <a href="${escapeHtml(waChatUrl)}" target="_blank" rel="noopener noreferrer" class="admin-action-btn wa-btn">
+                                💬 WhatsApp Chat
+                              </a>
+                              <a href="tel:${escapeHtml(b.leadPhone || '')}" class="admin-action-btn call-btn">
+                                📞 Call
+                              </a>
+                            </div>
+                          </div>
+
+                          <!-- Column 2: Trek & Batch -->
+                          <div class="admin-order-col">
+                            <div class="admin-col-label">🏔️ TREK & LOGISTICS</div>
+                            <div class="admin-package-title">${escapeHtml(b.packageName)}</div>
+                            <div class="admin-contact-item">
+                              <span>📍 Destination:</span>
+                              <strong>${escapeHtml(b.destination)}</strong>
+                            </div>
+                            <div class="admin-contact-item">
+                              <span>🏢 Operator:</span>
+                              <strong>${escapeHtml(b.company || 'TripZen Official')}</strong>
+                            </div>
+                            <div class="admin-contact-item">
+                              <span>🗓️ Batch:</span>
+                              <span>${escapeHtml(b.preferredMonth || 'Upcoming Weekend')}</span>
+                            </div>
+                            <div class="admin-contact-item">
+                              <span>👥 Travelers:</span>
+                              <strong>${escapeHtml(String(b.travelerCount))} Person(s)</strong>
+                            </div>
+                          </div>
+
+                          <!-- Column 3: Payment & Accounting -->
+                          <div class="admin-order-col">
+                            <div class="admin-col-label">💳 PAYMENT & REVENUE</div>
+                            <div class="admin-price-amount">INR ${Number(b.amount).toLocaleString('en-IN')}</div>
+                            <div class="admin-contact-item">
+                              <span>Razorpay ID:</span>
+                              <span style="font-family: monospace; font-size: 0.8rem; color: var(--accent);">${escapeHtml(b.razorpayPaymentId || 'N/A')}</span>
+                            </div>
+                            <div class="admin-contact-item">
+                              <span>Payment Status:</span>
+                              <span style="color: #059669; font-weight: 700;">${escapeHtml(b.status || 'paid')}</span>
+                            </div>
+                            <div class="admin-contact-item">
+                              <span>User ID:</span>
+                              <span style="font-family: monospace; font-size: 0.78rem; color: var(--muted);">${escapeHtml(b.userId || 'Guest')}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Admin Notes & Action Bar -->
+                        <div class="admin-order-footer">
+                          <div class="admin-notes-wrap">
+                            <span class="admin-notes-lbl">📝 Admin Operations Note / Logistics:</span>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                              <input
+                                class="stitch-input admin-note-input"
+                                data-note-input-id="${escapeHtml(b.id)}"
+                                placeholder="Add notes (e.g. Guide Ramesh assigned, pick up at Rishikesh 6 AM...)"
+                                value="${escapeHtml(b.adminNotes || '')}"
+                              />
+                              <button type="button" class="ghost-btn admin-save-note-btn" data-save-note-id="${escapeHtml(b.id)}" style="white-space: nowrap; padding: 8px 14px; font-size: 0.82rem;">
+                                💾 Save
+                              </button>
+                            </div>
+                          </div>
+
+                          <div class="admin-footer-btn-strip">
+                            <button type="button" class="ghost-btn admin-resend-wa-btn" data-resend-wa-id="${escapeHtml(b.id)}" title="Re-dispatch official WhatsApp confirmation">
+                              🔁 Resend WhatsApp
+                            </button>
+                            ${
+                              b.itineraryUrl
+                                ? `
+                                  <a href="${escapeHtml(b.itineraryUrl)}" target="_blank" rel="noopener noreferrer" class="ghost-btn" style="text-decoration: none;" title="Open official itinerary guide">
+                                    📄 Itinerary
+                                  </a>
+                                `
+                                : ''
+                            }
+                            <button type="button" class="ghost-btn admin-delete-btn" data-delete-booking-id="${escapeHtml(b.id)}" style="color: #dc2626;" title="Delete this booking record">
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    `;
+                  })
+                  .join('')
+              : `
+                <div style="background: var(--surface); padding: 56px 24px; border-radius: var(--radius-xl); text-align: center; border: 1px solid var(--surface-border);">
+                  <div style="font-size: 3rem; margin-bottom: 12px;">🔍</div>
+                  <h2 style="font-size: 1.4rem; color: var(--ink); margin-bottom: 8px;">No Reservations Found</h2>
+                  <p style="color: var(--muted); max-width: 480px; margin: 0 auto; font-size: 0.92rem;">
+                    No bookings matched your search or filters. Clear the search bar or reset the status dropdown.
+                  </p>
+                </div>
+              `
+        }
+      </div>
+    </div>
+  `;
 }
 
 async function markConversationAsRead(conversationId) {
@@ -4031,6 +4390,8 @@ async function handleAuthSubmit(event) {
   if (payload.email) {
     payload.email = String(payload.email).trim().toLowerCase();
     state.authEmailDraft = payload.email;
+    payload.username = payload.email;
+    payload.identifier = payload.email;
   }
   if (payload.password) {
     payload.password = String(payload.password).trim();
@@ -4791,7 +5152,7 @@ function renderCheckoutModal() {
               </label>
               <label class="field-label">
                 <span>WHATSAPP PHONE</span>
-                <input id="checkoutLeadPhone" class="stitch-input" value="${escapeHtml(state.checkoutPhone || '9876543210')}" placeholder="10-digit Mobile Number" required />
+                <input id="checkoutLeadPhone" class="stitch-input" value="${escapeHtml(state.user?.phone || state.checkoutPhone || '')}" placeholder="10-digit Mobile Number" required />
               </label>
             </div>
           </div>
@@ -4848,7 +5209,8 @@ async function startPackagePayment(packageId, options = {}) {
   const count = options.travelerCount || state.checkoutTravelers || 1;
   const month = options.preferredMonth || state.checkoutDate || tripPackage.month;
   const leadName = options.leadName || state.user?.fullName || 'Traveler';
-  const leadPhone = options.leadPhone || state.checkoutPhone || '9876543210';
+  const leadPhone = options.leadPhone || state.user?.phone || state.checkoutPhone || '9876543210';
+  const leadEmail = state.user?.email || '';
 
   if (!window.Razorpay) {
     state.paymentStatus = 'Razorpay checkout could not load. Check your internet connection and refresh.';
@@ -4863,6 +5225,9 @@ async function startPackagePayment(packageId, options = {}) {
     const orderData = await api('/api/payments/create-order', 'POST', {
       conversationId: state.activeConversationId || '',
       profileId: profileId,
+      userId: state.user?.id || '',
+      userEmail: state.user?.email || '',
+      leadEmail: leadEmail,
       packageId: tripPackage.id,
       packageName: tripPackage.packageName,
       company: tripPackage.company,
@@ -5713,6 +6078,9 @@ function hydrateUI() {
   if (logoutButton) {
     logoutButton.addEventListener('click', () => {
       localStorage.removeItem('tripzenUserId');
+      sessionStorage.removeItem('tripzenAdminUnlocked');
+      sessionStorage.removeItem('tripzenAdminPassword');
+      state.adminUnlocked = false;
       state.user = null;
       state.profile = null;
       state.matches = [];
@@ -5733,6 +6101,7 @@ function hydrateUI() {
       state.groupStatusType = '';
       state.tripGroups = [];
       state.bookings = [];
+      state.adminBookings = [];
       state.groupTitle = '';
       state.groupEstimatedCost = '';
       state.groupMaxMembers = '4';
@@ -5747,6 +6116,152 @@ function hydrateUI() {
       routeTo('/auth');
     });
   }
+
+  hydrateAdminUI();
+}
+
+function hydrateAdminUI() {
+  const unlockForm = document.getElementById('adminUnlockForm');
+  if (unlockForm) {
+    unlockForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pwd = document.getElementById('adminPasswordGateInput')?.value.trim();
+      const errBox = document.getElementById('adminUnlockError');
+      if (!pwd) return;
+
+      sessionStorage.setItem('tripzenAdminPassword', pwd);
+      try {
+        const testRes = await api('/api/admin/check');
+        if (testRes && testRes.success) {
+          sessionStorage.setItem('tripzenAdminUnlocked', 'true');
+          state.adminUnlocked = true;
+          state.adminStatusMessage = '✓ Admin Operations unlocked successfully!';
+          state.adminStatusType = 'success';
+          await loadAdminBookings();
+        }
+      } catch (err) {
+        sessionStorage.removeItem('tripzenAdminUnlocked');
+        sessionStorage.removeItem('tripzenAdminPassword');
+        state.adminUnlocked = false;
+        if (errBox) {
+          errBox.textContent = 'Invalid administrator password. Access denied.';
+          errBox.style.display = 'block';
+        }
+      }
+    });
+  }
+
+  const refreshBtn = document.getElementById('refreshAdminBookingsBtn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+      await loadAdminBookings();
+    });
+  }
+
+  const searchInput = document.getElementById('adminSearchInput');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      state.adminSearchQuery = e.target.value;
+      renderApp();
+      const updated = document.getElementById('adminSearchInput');
+      if (updated) {
+        updated.focus();
+        updated.setSelectionRange(updated.value.length, updated.value.length);
+      }
+    });
+  }
+
+  const statusSelect = document.getElementById('adminStatusFilterSelect');
+  if (statusSelect) {
+    statusSelect.addEventListener('change', (e) => {
+      state.adminStatusFilter = e.target.value;
+      renderApp();
+    });
+  }
+
+  const destSelect = document.getElementById('adminDestFilterSelect');
+  if (destSelect) {
+    destSelect.addEventListener('change', (e) => {
+      state.adminDestinationFilter = e.target.value;
+      renderApp();
+    });
+  }
+
+  // Admin status dropdown changes
+  document.querySelectorAll('.admin-status-dropdown').forEach((sel) => {
+    sel.addEventListener('change', async (e) => {
+      const bookingId = sel.getAttribute('data-change-status-id');
+      const newStatus = e.target.value;
+      try {
+        await api(`/api/admin/bookings/${bookingId}`, 'PATCH', { bookingStatus: newStatus });
+        state.adminStatusMessage = `✓ Booking status updated to "${newStatus}".`;
+        state.adminStatusType = 'success';
+        await loadAdminBookings();
+      } catch (err) {
+        state.adminStatusMessage = err.message || 'Failed to update status.';
+        state.adminStatusType = 'error';
+        renderApp();
+      }
+    });
+  });
+
+  // Admin save note buttons
+  document.querySelectorAll('.admin-save-note-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const bookingId = btn.getAttribute('data-save-note-id');
+      const input = document.querySelector(`.admin-note-input[data-note-input-id="${bookingId}"]`);
+      const notes = input ? input.value.trim() : '';
+      try {
+        await api(`/api/admin/bookings/${bookingId}`, 'PATCH', { adminNotes: notes });
+        state.adminStatusMessage = `✓ Note saved for booking.`;
+        state.adminStatusType = 'success';
+        await loadAdminBookings();
+      } catch (err) {
+        state.adminStatusMessage = err.message || 'Failed to save note.';
+        state.adminStatusType = 'error';
+        renderApp();
+      }
+    });
+  });
+
+  // Admin resend WhatsApp buttons
+  document.querySelectorAll('.admin-resend-wa-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const bookingId = btn.getAttribute('data-resend-wa-id');
+      try {
+        btn.textContent = '⏳ Sending...';
+        const res = await api(`/api/admin/bookings/${bookingId}/resend-whatsapp`, 'POST');
+        state.adminStatusMessage = `✓ WhatsApp confirmation dispatched!`;
+        state.adminStatusType = 'success';
+        if (res.directSendUrl) {
+          window.open(res.directSendUrl, '_blank');
+        }
+        await loadAdminBookings();
+      } catch (err) {
+        state.adminStatusMessage = err.message || 'Failed to send WhatsApp.';
+        state.adminStatusType = 'error';
+        renderApp();
+      }
+    });
+  });
+
+  // Admin delete booking buttons
+  document.querySelectorAll('.admin-delete-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const bookingId = btn.getAttribute('data-delete-booking-id');
+      if (!confirm('Are you sure you want to delete this booking record? This cannot be undone.')) return;
+      try {
+        await api(`/api/admin/bookings/${bookingId}`, 'DELETE');
+        state.adminStatusMessage = `✓ Booking removed from database.`;
+        state.adminStatusType = 'success';
+        await loadAdminBookings();
+      } catch (err) {
+        state.adminStatusMessage = err.message || 'Failed to delete booking.';
+        state.adminStatusType = 'error';
+        renderApp();
+      }
+    });
+  });
 }
 
 window.addEventListener('hashchange', async () => {
@@ -5755,6 +6270,9 @@ window.addEventListener('hashchange', async () => {
     await loadMatches();
     await loadTripGroups();
     await loadBookings();
+    if (state.route === '/admin' && isAdminUser()) {
+      await loadAdminBookings();
+    }
     await loadConversations();
     startLiveSync();
   } else {
@@ -5779,6 +6297,9 @@ async function init() {
     await loadMatches();
     await loadTripGroups();
     await loadBookings();
+    if (state.route === '/admin' && isAdminUser()) {
+      await loadAdminBookings();
+    }
     await loadConversations();
     startLiveSync();
   }

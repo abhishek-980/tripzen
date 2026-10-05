@@ -4090,3 +4090,233 @@ video {
   background: rgba(0,0,0,0.05);
   color: var(--ink);
 }
+
+/* ==========================================================================
+   ADMIN OPERATIONS PANEL STYLES
+   ========================================================================== */
+
+.admin-nav-pill {
+  background: rgba(232, 135, 58, 0.15) !important;
+  color: #c25e16 !important;
+  font-weight: 800 !important;
+  border: 1px solid rgba(232, 135, 58, 0.35) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.admin-nav-link {
+  border-left: 3px solid #e8873a !important;
+  background: rgba(232, 135, 58, 0.08) !important;
+  color: #c25e16 !important;
+  font-weight: 800 !important;
+}
+
+.admin-orders-container {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-order-card {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  transition: all var(--transition-fast);
+}
+
+.admin-order-card:hover {
+  border-color: rgba(20, 56, 45, 0.25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.admin-order-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: rgba(20, 56, 45, 0.03);
+  border-bottom: 1px solid var(--surface-border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-order-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-ref-pill {
+  font-family: monospace;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--forest);
+  background: rgba(20, 56, 45, 0.1);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.admin-time-stamp {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.admin-wa-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #047857;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.admin-wa-pending-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.admin-status-dropdown {
+  padding: 6px 12px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--ink);
+  cursor: pointer;
+  outline: none;
+}
+
+.admin-status-dropdown:focus {
+  border-color: var(--forest);
+}
+
+.admin-order-body-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.3fr 1fr;
+  gap: 20px;
+  padding: 20px;
+}
+
+@media (max-width: 900px) {
+  .admin-order-body-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-order-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-col-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.admin-user-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.admin-package-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--forest);
+}
+
+.admin-price-amount {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #047857;
+}
+
+.admin-contact-item {
+  font-size: 0.86rem;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-contact-item span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.admin-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.admin-action-btn.wa-btn {
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  color: white;
+}
+
+.admin-action-btn.wa-btn:hover {
+  opacity: 0.92;
+}
+
+.admin-action-btn.call-btn {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--ink);
+}
+
+.admin-action-btn.call-btn:hover {
+  background: rgba(0, 0, 0, 0.09);
+}
+
+.admin-order-footer {
+  padding: 14px 20px;
+  background: rgba(0, 0, 0, 0.015);
+  border-top: 1px solid var(--surface-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.admin-notes-wrap {
+  flex: 1 1 360px;
+}
+
+.admin-notes-lbl {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.admin-note-input {
+  flex: 1;
+  height: 36px !important;
+  font-size: 0.85rem !important;
+  padding: 6px 10px !important;
+}
+
+.admin-footer-btn-strip {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
