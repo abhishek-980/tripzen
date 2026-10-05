@@ -1825,7 +1825,7 @@ function topbar() {
               `
               : `
                 <button type="button" class="stitch-signin-link" id="topbarSignInBtn">Sign In</button>
-                <button type="button" class="primary-btn link-btn" id="topbarGetStartedBtn">Get Started</button>
+                <button type="button" class="primary-btn link-btn desktop-only" id="topbarGetStartedBtn">Get Started</button>
               `
           }
           <button type="button" class="mobile-nav-toggle-btn" id="mobileNavToggleBtn" aria-label="Toggle Navigation">
@@ -1881,7 +1881,11 @@ function topbar() {
             </div>
             <button type="button" class="ghost-btn" id="mobileLogoutBtn" style="padding: 7px 14px; font-size: 0.84rem; flex-shrink: 0;">Log Out</button>
           </div>
-        ` : ''}
+        ` : `
+          <div class="mobile-nav-user-bar" style="display: flex; gap: 8px; flex-direction: column;">
+            <button type="button" class="primary-btn" id="mobileSignInBtn" style="width: 100%; padding: 12px; font-size: 0.95rem;">Sign In / Join TripZen ➔</button>
+          </div>
+        `}
       </div>
     </header>
   `;
@@ -3479,7 +3483,7 @@ function authPage() {
                     <input name="password" type="password" required placeholder="••••••••" class="stitch-input" />
                   </label>
 
-                  <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; align-items: start;">
+                  <div class="auth-age-gender-row">
                     <label class="field-label">
                       <span>AGE</span>
                       <input name="age" placeholder="28" class="stitch-input" />
@@ -6386,6 +6390,14 @@ function hydrateUI() {
     mobileLogoutBtn.addEventListener('click', () => {
       const logoutBtn = document.getElementById('logoutBtn');
       if (logoutBtn) logoutBtn.click();
+    });
+  }
+
+  const mobileSignInBtn = document.getElementById('mobileSignInBtn');
+  if (mobileSignInBtn) {
+    mobileSignInBtn.addEventListener('click', () => {
+      state.mobileNavOpen = false;
+      routeTo('/auth');
     });
   }
 

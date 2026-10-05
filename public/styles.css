@@ -2262,6 +2262,13 @@ video {
   box-shadow: var(--shadow-xs);
 }
 
+.auth-age-gender-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 12px;
+  align-items: start;
+}
+
 /* Cool Interactive Gender Pills */
 .interactive-choice-grid {
   display: grid;
@@ -3005,6 +3012,13 @@ video {
   display: none;
 }
 
+@media (max-width: 900px) {
+  .auth-hero-container {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
 @media (max-width: 768px) {
   /* Prevent horizontal rubber-banding */
   html, body {
@@ -3259,10 +3273,136 @@ video {
   .packages-cards-grid-stitch,
   .group-cards-grid,
   .matches-layout-grid,
-  .profile-setup-grid {
+  .profile-setup-grid,
+  .curate-grid {
     grid-template-columns: 1fr !important;
     gap: 16px !important;
   }
+  .curate-wrapper {
+    padding: 10px 0 32px !important;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+  .curate-form-card {
+    padding: 16px 14px !important;
+    border-radius: var(--radius-md) !important;
+  }
+  .profile-facts-stitch {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    padding: 12px 14px !important;
+  }
+  .group-squad-hero {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 16px 14px !important;
+    gap: 12px !important;
+  }
+  .booking-meta-strip-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+  }
+
+  /* Mobile Auth & Hero Section */
+  .auth-hero-wrapper {
+    padding: 16px 12px 36px !important;
+    min-height: calc(100vh - 58px) !important;
+    align-items: flex-start !important;
+    box-sizing: border-box;
+  }
+  .auth-hero-container {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+  .auth-hero-left {
+    text-align: center;
+    align-items: center;
+    gap: 12px;
+  }
+  .auth-hero-left h1 {
+    font-size: clamp(1.6rem, 5.5vw, 2.1rem) !important;
+    line-height: 1.2 !important;
+  }
+  .auth-hero-left p {
+    font-size: 0.92rem !important;
+    max-width: 100% !important;
+  }
+  .auth-hero-points {
+    justify-content: center;
+    gap: 6px;
+  }
+  .hero-pill-point {
+    font-size: 0.76rem !important;
+    padding: 5px 10px !important;
+  }
+  .traveler-corner-love-card {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box;
+    padding: 12px 14px !important;
+    text-align: left;
+  }
+  .traveler-corner-love-card blockquote {
+    font-size: 0.88rem !important;
+  }
+  .auth-card-stitch {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 20px 16px !important;
+    box-sizing: border-box;
+  }
+  .auth-header-center h2 {
+    font-size: 1.35rem !important;
+  }
+  .auth-age-gender-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .interactive-choice-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+  }
+  .choice-pill-btn {
+    padding: 8px 4px !important;
+    font-size: 0.8rem !important;
+  }
+  .interactive-style-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+  .style-choice-card {
+    padding: 10px 8px !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* Modals on Mobile */
+  .checkout-modal-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 94vh !important;
+    margin: 0 !important;
+    border-radius: var(--radius-lg) !important;
+  }
+  .checkout-modal-body {
+    padding: 16px 14px !important;
+  }
+  .checkout-form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .itinerary-modal-card {
+    max-width: 96vw !important;
+    max-height: 94vh !important;
+    margin: 0 auto !important;
+  }
+  .itinerary-modal-hero {
+    padding: 20px 16px !important;
+  }
+
   .packages-filter-bar-stitch {
     display: grid;
     grid-template-columns: 1fr 1fr;
