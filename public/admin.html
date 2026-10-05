@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TripZen Admin Operations & Order Management</title>
+  <title>TripZen RAW Data DB & Admin Panel</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
@@ -422,8 +422,8 @@
     <a href="/#/" class="brand-wrap">
       <img src="./assets/tripzen-logo.png" alt="TripZen" />
       <div>
-        <h1>TripZen Admin</h1>
-        <div class="muted" style="font-size: 11px;">Operations & Order Manager</div>
+        <h1>TripZen RAW Data DB</h1>
+        <div class="muted" style="font-size: 11px;">Database Tables &amp; Admin Management</div>
       </div>
     </a>
     <div style="display: flex; gap: 10px; align-items: center;">
@@ -436,16 +436,16 @@
 
   <main>
     <section class="login-panel" id="loginPanel">
-      <div style="font-size: 40px; margin-bottom: 8px;">👑</div>
-      <h2>Admin Control Desk</h2>
-      <p class="muted">Enter your administrator password to manage traveler reservations, payment statuses, and system records.</p>
+      <div style="font-size: 40px; margin-bottom: 8px;">🗄️</div>
+      <h2>RAW Data DB &amp; Admin Panel</h2>
+      <p class="muted">Enter your administrator password to inspect raw database collections, orders, and system records.</p>
       <form id="loginForm">
         <div class="field">
           <label for="passwordInput">ADMINISTRATOR PASSWORD</label>
           <input id="passwordInput" type="password" autocomplete="current-password" placeholder="tripzen-admin-123" required />
         </div>
         <div style="margin-top: 18px;">
-          <button type="submit" style="width: 100%; padding: 12px;">Open Admin Operations ➔</button>
+          <button type="submit" style="width: 100%; padding: 12px;">Open RAW Data DB ➔</button>
         </div>
         <div class="message" id="loginMessage"></div>
       </form>
@@ -457,12 +457,34 @@
 
       <!-- NAVIGATION TABS -->
       <div class="admin-nav-tabs">
-        <button type="button" class="tab-btn active" id="tabOrdersBtn">📋 Orders & Bookings Management</button>
-        <button type="button" class="tab-btn" id="tabRawDbBtn">🗄️ Raw Database Tables</button>
+        <button type="button" class="tab-btn active" id="tabRawDbBtn">🗄️ RAW Database Tables</button>
+        <button type="button" class="tab-btn" id="tabOrdersBtn">📋 Orders &amp; Bookings Management</button>
       </div>
 
-      <!-- VIEW 1: ORDERS & BOOKINGS MANAGEMENT -->
-      <section id="ordersView" class="panel">
+      <!-- VIEW 1: RAW DATABASE TABLES -->
+      <section id="rawDbView" class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 id="tableTitle" style="margin: 0 0 4px; font-size: 18px; color: var(--forest);">Users</h2>
+            <div class="muted" id="rowCount">0 rows</div>
+          </div>
+          <div class="toolbar">
+            <select id="datasetSelect" aria-label="Dataset" style="width: auto; height: 38px;"></select>
+            <input id="searchInput" type="search" placeholder="Search table..." style="width: 220px; height: 38px;" />
+            <button type="button" id="downloadJsonBtn" class="secondary" style="height: 38px;">⬇️ Export JSON</button>
+            <button type="button" id="refreshDbButton">🔄 Refresh</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- VIEW 2: ORDERS & BOOKINGS MANAGEMENT -->
+      <section id="ordersView" class="panel hidden">
         <div class="panel-head">
           <div>
             <h2 style="margin: 0 0 4px; font-size: 18px; color: var(--forest); font-family: 'Syne', sans-serif;">Customer Reservations</h2>
@@ -483,27 +505,6 @@
         </div>
 
         <div class="orders-grid" id="ordersGrid"></div>
-      </section>
-
-      <!-- VIEW 2: RAW DATABASE TABLES -->
-      <section id="rawDbView" class="panel hidden">
-        <div class="panel-head">
-          <div>
-            <h2 id="tableTitle" style="margin: 0 0 4px; font-size: 18px; color: var(--forest);">Users</h2>
-            <div class="muted" id="rowCount">0 rows</div>
-          </div>
-          <div class="toolbar">
-            <select id="datasetSelect" aria-label="Dataset" style="width: auto; height: 38px;"></select>
-            <input id="searchInput" type="search" placeholder="Search table..." style="width: 220px; height: 38px;" />
-            <button type="button" id="refreshDbButton">Refresh</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead id="tableHead"></thead>
-            <tbody id="tableBody"></tbody>
-          </table>
-        </div>
       </section>
     </section>
   </main>
@@ -531,7 +532,7 @@
       query: '',
       orderQuery: '',
       orderStatus: 'All',
-      currentTab: 'orders',
+      currentTab: 'raw',
     };
 
     const loginPanel = document.getElementById('loginPanel');
@@ -871,6 +872,7 @@
       adminPanel.classList.remove('hidden');
       logoutButton.classList.remove('hidden');
       await loadAdminBookings();
+      renderTable();
     }
 
     loginForm.addEventListener('submit', async (event) => {
@@ -883,6 +885,20 @@
         loginMessage.textContent = error.message;
       }
     });
+
+    const downloadJsonBtn = document.getElementById('downloadJsonBtn');
+    if (downloadJsonBtn) {
+      downloadJsonBtn.addEventListener('click', () => {
+        const rows = filteredRows();
+        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(rows, null, 2));
+        const dlAnchor = document.createElement('a');
+        dlAnchor.setAttribute('href', dataStr);
+        dlAnchor.setAttribute('download', `tripzen_${state.dataset}_${Date.now()}.json`);
+        document.body.appendChild(dlAnchor);
+        dlAnchor.click();
+        dlAnchor.remove();
+      });
+    }
 
     datasetSelect.addEventListener('change', () => {
       state.dataset = datasetSelect.value;

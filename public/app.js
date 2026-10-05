@@ -1609,6 +1609,7 @@ function normalizedRoute() {
   const route = state.route || '/';
   
   if (route === '/admin') {
+    window.location.href = '/admin.html';
     return '/admin';
   }
 
@@ -1809,7 +1810,7 @@ function topbar() {
           <a href="#/join-book" class="stitch-nav-item ${current === '/join-book' || current === '/packages' ? 'active' : ''}">Packages</a>
           <a href="#/groups" class="stitch-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">Cost Sharing</a>
           <a href="#/bookings" class="stitch-nav-item ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}">My Bookings ${state.bookings.length > 0 ? `<span class="nav-counter-pill">${state.bookings.length}</span>` : ''}</a>
-          ${isAdminUser() ? `<a href="#/admin" class="stitch-nav-item admin-nav-pill ${current === '/admin' ? 'active' : ''}">👑 Admin Panel</a>` : ''}
+          ${isAdminUser() ? `<a href="/admin.html" target="_blank" class="stitch-nav-item admin-nav-pill">🗄️ RAW Data DB</a>` : ''}
         </nav>
 
         <div class="stitch-topbar-actions">
@@ -1886,6 +1887,12 @@ function dashboardSidebar() {
           <span class="sidebar-nav-icon">ℹ️</span>
           <span>About TripZen</span>
         </a>
+        ${isAdminUser() ? `
+          <a href="/admin.html" target="_blank" class="sidebar-nav-link admin-nav-link" style="color: var(--accent); font-weight: 700;">
+            <span class="sidebar-nav-icon">🗄️</span>
+            <span>RAW Data DB</span>
+          </a>
+        ` : ''}
       </nav>
 
       <div class="sidebar-footer">
@@ -2658,9 +2665,14 @@ function chatPage() {
                   </div>
                 </div>
 
-                <div class="chat-messages-container" id="chatMessagesContainer">
-                  <div class="date-divider-pill">Today</div>
-                  ${messagesMarkup}
+                <div class="chat-messages-wrapper">
+                  <div class="chat-messages-container" id="chatMessagesContainer">
+                    <div class="date-divider-pill">Previous &amp; Recent Messages</div>
+                    ${messagesMarkup}
+                  </div>
+                  <button type="button" id="chatScrollBottomBtn" class="chat-scroll-bottom-btn hidden" title="Jump to latest messages">
+                    <span>⬇️ Latest Messages</span>
+                  </button>
                 </div>
 
                 <form id="chatForm" class="chat-input-toolbar">
@@ -3931,23 +3943,17 @@ async function loadAdminBookings() {
 
 function adminPanelPage() {
   if (!isAdminUser()) {
+    window.location.href = '/admin.html';
     return `
       <div class="animate-fade-in" style="max-width: 520px; margin: 60px auto; padding: 32px; background: var(--surface); border: 1px solid var(--surface-border); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); text-align: center;">
-        <div style="font-size: 3rem; margin-bottom: 12px;">🔒</div>
-        <h2 style="font-size: 1.5rem; color: var(--ink); margin-bottom: 8px;">Admin Operations Access</h2>
+        <div style="font-size: 3rem; margin-bottom: 12px;">🗄️</div>
+        <h2 style="font-size: 1.5rem; color: var(--ink); margin-bottom: 8px;">Opening RAW Data DB...</h2>
         <p style="color: var(--muted); font-size: 0.92rem; line-height: 1.6; margin-bottom: 24px;">
-          This area is restricted to authorized TripZen administrators. Please enter your administrator key or log in with the administrator account.
+          Redirecting you to the TripZen RAW Database &amp; Admin Management Panel.
         </p>
-        <form id="adminUnlockForm" style="display: grid; gap: 14px; text-align: left;">
-          <label class="field-label">
-            <span>ADMINISTRATOR PASSWORD</span>
-            <input type="password" id="adminPasswordGateInput" class="stitch-input" placeholder="Enter admin password" required />
-          </label>
-          <button type="submit" class="primary-btn" style="padding: 12px; font-weight: 700;">
-            <span>Unlock Admin Operations ➔</span>
-          </button>
-          <div id="adminUnlockError" style="display: none; color: #dc2626; font-size: 0.88rem; font-weight: 700; text-align: center;"></div>
-        </form>
+        <a href="/admin.html" class="primary-btn" style="padding: 12px 24px; font-weight: 700; text-decoration: none; display: inline-block;">
+          <span>Open RAW Data DB ➔</span>
+        </a>
       </div>
     `;
   }
@@ -4179,7 +4185,7 @@ function adminPanelPage() {
                         <!-- Admin Notes & Action Bar -->
                         <div class="admin-order-footer">
                           <div class="admin-notes-wrap">
-                            <span class="admin-notes-lbl">📝 Admin Operations Note / Logistics:</span>
+                            <span class="admin-notes-lbl">📝 Admin Note / Logistics:</span>
                             <div style="display: flex; gap: 8px; align-items: center;">
                               <input
                                 class="stitch-input admin-note-input"
@@ -4835,6 +4841,10 @@ function appendChatMessageDOM(msg, isMine) {
   const emptyNotice = container.querySelector('.chat-empty-notice');
   if (emptyNotice) emptyNotice.remove();
 
+  // Check if user was already scrolled near the bottom before appending
+  const threshold = 140; // px
+  const isNearBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) <= threshold;
+
   const msgRow = document.createElement('div');
   msgRow.className = `message-row-wrap ${isMine ? 'outgoing' : 'incoming'} animate-fade-in`;
   msgRow.id = `msg-${msg.id}`;
@@ -4845,8 +4855,17 @@ function appendChatMessageDOM(msg, isMine) {
     <span class="message-time-sub">${escapeHtml(formatMessageTime(msg.createdAt))}</span>
   `;
   container.appendChild(msgRow);
-  // Auto-scroll to bottom smoothly
-  container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+
+  // If user sent the message or was already near bottom, scroll down smoothly
+  // If user scrolled up to read previous chats, preserve their reading position!
+  if (isMine || isNearBottom) {
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    const jumpBtn = document.getElementById('chatScrollBottomBtn');
+    if (jumpBtn) jumpBtn.classList.add('hidden');
+  } else {
+    const jumpBtn = document.getElementById('chatScrollBottomBtn');
+    if (jumpBtn) jumpBtn.classList.remove('hidden');
+  }
 }
 
 function updateConversationSnippetInDOM(conversationId, snippet, timestamp) {
@@ -6226,8 +6245,33 @@ function hydrateUI() {
     }
 
     const chatContainer = document.getElementById('chatMessagesContainer');
+    const scrollBottomBtn = document.getElementById('chatScrollBottomBtn');
+
     if (chatContainer) {
+      // Scroll to bottom on initial render
       chatContainer.scrollTop = chatContainer.scrollHeight;
+      setTimeout(() => {
+        if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+      }, 60);
+
+      // Listen for user scroll: if scrolled up to read previous chats, show jump button
+      chatContainer.addEventListener('scroll', () => {
+        const distFromBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight;
+        if (scrollBottomBtn) {
+          if (distFromBottom > 160) {
+            scrollBottomBtn.classList.remove('hidden');
+          } else {
+            scrollBottomBtn.classList.add('hidden');
+          }
+        }
+      });
+    }
+
+    if (scrollBottomBtn && chatContainer) {
+      scrollBottomBtn.addEventListener('click', () => {
+        chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+        scrollBottomBtn.classList.add('hidden');
+      });
     }
   }
 
@@ -6292,7 +6336,7 @@ function hydrateAdminUI() {
         if (testRes && testRes.success) {
           sessionStorage.setItem('tripzenAdminUnlocked', 'true');
           state.adminUnlocked = true;
-          state.adminStatusMessage = '✓ Admin Operations unlocked successfully!';
+          state.adminStatusMessage = '✓ RAW Data DB unlocked successfully!';
           state.adminStatusType = 'success';
           await loadAdminBookings();
         }
