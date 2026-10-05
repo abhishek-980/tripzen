@@ -1148,32 +1148,94 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true, app: 'Tripzen', destinations: DESTINATIONS });
 });
 
+// Helper to flexibly find user by user ID, email, username, phone digits, or full name
+function findUserByIdentifier(rawIdentifier) {
+  if (!rawIdentifier) return null;
+  const raw = String(rawIdentifier).trim();
+  const normalizedId = raw.toLowerCase();
+  const digitsOnly = raw.replace(/\D/g, '');
+
+  return db.users.find((item) => {
+    if (!item) return false;
+    const itemId = String(item.id || '').trim().toLowerCase();
+    const itemEmail = String(item.email || '').trim().toLowerCase();
+    const itemPrefix = itemEmail.includes('@') ? itemEmail.split('@')[0] : '';
+    const itemName = String(item.fullName || '').trim().toLowerCase();
+    const itemFirstName = itemName.split(/\s+/)[0] || '';
+    const itemPhoneDigits = String(item.phone || '').replace(/\D/g, '');
+    const emailDigits = itemEmail.replace(/\D/g, '');
+
+    // 1. User ID (e.g. usr_1775814622426_lafooo)
+    if (itemId && itemId === normalizedId) return true;
+
+    // 2. Exact email
+    if (itemEmail && itemEmail === normalizedId) return true;
+
+    // 3. Username before @
+    if (itemPrefix && itemPrefix === normalizedId) return true;
+
+    // 4. Exact full name
+    if (itemName && itemName === normalizedId) return true;
+
+    // 5. First name if >= 3 characters
+    if (itemFirstName && itemFirstName.length >= 3 && itemFirstName === normalizedId) return true;
+
+    // 6. Registered phone number match (10 or more digits)
+    if (digitsOnly.length >= 10) {
+      if (itemPhoneDigits.length >= 10 && (itemPhoneDigits.endsWith(digitsOnly) || digitsOnly.endsWith(itemPhoneDigits))) {
+        return true;
+      }
+      if (emailDigits.length >= 10 && (emailDigits.endsWith(digitsOnly) || digitsOnly.endsWith(emailDigits))) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+}
+
 app.post('/api/register', (req, res) => {
   const { fullName, email, password, age, gender, interests, city, travelStyle, pastTrips, budgetRange, profileImage, phone } = req.body;
 
-  if (!normalizeText(fullName) || !normalizeText(email) || !normalizeText(password)) {
+  const rawName = normalizeText(fullName);
+  const rawEmail = normalizeText(email);
+  const rawPassword = String(password || '').trim();
+  const rawPhone = normalizeText(phone);
+
+  if (!rawName || !rawEmail || !rawPassword) {
     return res.status(400).json({
       success: false,
-      message: 'Name, email, and password are required.',
+      message: 'Full Name, Email/Username, and Password are required.',
     });
   }
 
-  const normalizedEmail = normalizeText(email).toLowerCase();
-  const existingUser = db.users.find((user) => user.email === normalizedEmail);
+  const normalizedEmail = rawEmail.toLowerCase();
+  const phoneDigits = rawPhone.replace(/\D/g, '');
+
+  // Check if user already exists by email or 10-digit phone
+  const existingUser = db.users.find((user) => {
+    const userEmail = String(user.email || '').trim().toLowerCase();
+    const userPhoneDigits = String(user.phone || '').replace(/\D/g, '');
+
+    const emailMatches = userEmail === normalizedEmail;
+    const phoneMatches = phoneDigits && phoneDigits.length >= 10 && userPhoneDigits && userPhoneDigits.length >= 10 && (userPhoneDigits.endsWith(phoneDigits) || phoneDigits.endsWith(userPhoneDigits));
+
+    return emailMatches || phoneMatches;
+  });
 
   if (existingUser) {
     return res.status(409).json({
       success: false,
-      message: 'A user with this email already exists.',
+      message: 'An account with this email or mobile number already exists. Please log in or use Forgot Password.',
     });
   }
 
   const user = {
     id: uid('usr'),
-    fullName: normalizeText(fullName),
+    fullName: rawName,
     email: normalizedEmail,
-    password: String(password),
-    phone: normalizeText(phone),
+    password: rawPassword,
+    phone: rawPhone,
     age: normalizeText(age),
     gender: normalizeText(gender),
     city: normalizeText(city),
@@ -1185,16 +1247,18 @@ app.post('/api/register', (req, res) => {
     profileCompleteness: 0,
     profileImage:
       persistProfileImage(profileImage, normalizedEmail.replace(/[^a-z0-9]/gi, '_')) ||
-      avatarForUser({ fullName, email: normalizedEmail, id: normalizedEmail }),
+      avatarForUser({ fullName: rawName, email: normalizedEmail, id: normalizedEmail }),
     createdAt: new Date().toISOString(),
   };
 
   db.users.push(user);
   saveStore(db);
 
+  console.log(`[AUTH] New user registered successfully: ${user.fullName} (${user.id}, ${user.email}, ${user.phone})`);
+
   return res.status(201).json({
     success: true,
-    message: 'Registration completed.',
+    message: 'Registration completed successfully! Welcome to TripZen.',
     user: sanitizeUser(user),
     hasPreferences: false,
   });
@@ -1207,27 +1271,11 @@ app.post('/api/login', (req, res) => {
   if (!rawIdentifier || !rawPassword) {
     return res.status(400).json({
       success: false,
-      message: 'Please provide both your email/username and password.',
+      message: 'Please provide both your User ID / Email / Phone and Password.',
     });
   }
 
-  const normalizedId = rawIdentifier.toLowerCase();
-  const digitsOnly = rawIdentifier.replace(/\D/g, '');
-
-  // Match user by exact email, username (email prefix before @), full name, or registered phone number
-  const user = db.users.find((item) => {
-    const itemEmail = String(item.email || '').trim().toLowerCase();
-    const itemPrefix = itemEmail.split('@')[0];
-    const itemName = String(item.fullName || '').trim().toLowerCase();
-    const itemPhoneDigits = String(item.phone || '').replace(/\D/g, '');
-
-    return (
-      itemEmail === normalizedId ||
-      itemPrefix === normalizedId ||
-      itemName === normalizedId ||
-      (digitsOnly.length >= 10 && itemPhoneDigits.length >= 10 && (itemPhoneDigits.endsWith(digitsOnly) || digitsOnly.endsWith(itemPhoneDigits)))
-    );
-  });
+  const user = findUserByIdentifier(rawIdentifier);
 
   const masterAdminPassword = process.env.ADMIN_PASSWORD || 'tripzen-admin-123';
   const isAdminAccount = user && (
@@ -1235,8 +1283,10 @@ app.post('/api/login', (req, res) => {
     user.role === 'admin'
   );
 
+  const storedPassword = String(user?.password || '').trim();
   const passwordMatches = user && (
-    String(user.password || '').trim() === rawPassword ||
+    storedPassword === rawPassword ||
+    String(user.password || '') === rawPassword ||
     (isAdminAccount && rawPassword === masterAdminPassword)
   );
 
@@ -1244,7 +1294,7 @@ app.post('/api/login', (req, res) => {
     console.warn(`[AUTH] Failed login attempt for identifier: "${rawIdentifier}" (userFound: ${Boolean(user)})`);
     return res.status(401).json({
       success: false,
-      message: 'Invalid email, username, or password.',
+      message: 'Invalid User ID, email, or password. If you forgot your password, click "Forgot Password".',
     });
   }
 
@@ -1257,9 +1307,56 @@ app.post('/api/login', (req, res) => {
   user.profileCompleteness = calculateProfileCompleteness(user, profile);
   saveStore(db);
 
+  console.log(`[AUTH] User logged in: ${user.fullName} (${user.id})`);
+
   return res.json({
     success: true,
     message: 'Login successful.',
+    user: sanitizeUser(user),
+    profile: sanitizeProfile(profile),
+    hasPreferences: Boolean(profile),
+  });
+});
+
+app.post('/api/reset-password', (req, res) => {
+  const rawIdentifier = String(req.body.identifier || req.body.email || req.body.phone || req.body.username || '').trim();
+  const rawPassword = String(req.body.newPassword || req.body.password || '').trim();
+
+  if (!rawIdentifier || !rawPassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide your registered User ID / Email / Phone and a new password.',
+    });
+  }
+
+  if (rawPassword.length < 4) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 4 characters long.',
+    });
+  }
+
+  const user = findUserByIdentifier(rawIdentifier);
+
+  if (!user) {
+    console.warn(`[AUTH] Password reset attempt failed: No user found for "${rawIdentifier}"`);
+    return res.status(404).json({
+      success: false,
+      message: 'No registered account found with that User ID, email, or phone number. Please check your details or create a new account.',
+    });
+  }
+
+  // Update password
+  user.password = rawPassword;
+  saveStore(db);
+
+  console.log(`[AUTH] Password successfully regenerated for user ${user.id} (${user.email || user.phone})`);
+
+  const profile = latestProfilesPerUser().find((item) => item.userId === user.id);
+
+  return res.json({
+    success: true,
+    message: 'Password regenerated successfully! You are now logged in.',
     user: sanitizeUser(user),
     profile: sanitizeProfile(profile),
     hasPreferences: Boolean(profile),

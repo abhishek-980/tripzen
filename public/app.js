@@ -1335,8 +1335,8 @@ const state = {
   user: null,
   profile: null,
   matches: [],
-  dashboard: null,
-  authMode: 'signup',
+  authMode: localStorage.getItem('tripzenSavedIdentifier') ? 'login' : 'signup',
+  authEmailDraft: localStorage.getItem('tripzenSavedIdentifier') || '',
   authStatus: '',
   authStatusType: '',
   profileStatus: '',
@@ -3400,6 +3400,18 @@ function tripGroupCardsMarkup(groupsList = state.tripGroups) {
 
 function authPage() {
   const isSignup = state.authMode === 'signup';
+  const isForgotPassword = state.authMode === 'forgot_password';
+  const isLogin = !isSignup && !isForgotPassword;
+
+  let headerTitle = 'Welcome Back';
+  let headerSubtitle = 'Sign in to access your matches and trip chats';
+  if (isSignup) {
+    headerTitle = 'Create Account';
+    headerSubtitle = 'Join compatible travelers for your next journey';
+  } else if (isForgotPassword) {
+    headerTitle = 'Reset Password';
+    headerSubtitle = 'Enter your details to regenerate a new password';
+  }
 
   return `
     <div class="auth-hero-wrapper animate-fade-in">
@@ -3457,13 +3469,13 @@ function authPage() {
               <img src="./assets/tripzen-logo.png" alt="TripZen Logo" class="stitch-brand-logo-img" style="width: 44px; height: 44px; border-radius: 12px;" />
               <span>TripZen</span>
             </a>
-            <h2>${isSignup ? 'Create Account' : 'Welcome Back'}</h2>
-            <p>${isSignup ? 'Join compatible travelers for your next journey' : 'Sign in to access your matches and trip chats'}</p>
+            <h2>${headerTitle}</h2>
+            <p>${headerSubtitle}</p>
           </div>
 
           <div class="auth-toggle-pill">
             <button type="button" class="auth-toggle-btn ${isSignup ? 'active' : ''}" data-auth-mode="signup">Signup</button>
-            <button type="button" class="auth-toggle-btn ${!isSignup ? 'active' : ''}" data-auth-mode="login">Login</button>
+            <button type="button" class="auth-toggle-btn ${isLogin ? 'active' : ''}" data-auth-mode="login">Login</button>
           </div>
 
           <form id="authForm" class="form-field-group">
@@ -3475,12 +3487,19 @@ function authPage() {
                     <input name="fullName" required placeholder="Elena Rostova" class="stitch-input" />
                   </label>
                   <label class="field-label">
-                    <span>EMAIL ADDRESS</span>
-                    <input name="email" type="email" required placeholder="elena@example.com" class="stitch-input" />
+                    <span>EMAIL OR USERNAME</span>
+                    <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="elena@example.com or username" class="stitch-input" />
+                  </label>
+                  <label class="field-label">
+                    <span>MOBILE / PHONE NUMBER</span>
+                    <input name="phone" type="tel" autocomplete="tel" placeholder="+91 98765 43210 (10-digit number)" class="stitch-input" />
                   </label>
                   <label class="field-label">
                     <span>PASSWORD</span>
-                    <input name="password" type="password" required placeholder="••••••••" class="stitch-input" />
+                    <div class="password-input-wrap">
+                      <input name="password" type="password" required placeholder="••••••••" class="stitch-input password-input-field" />
+                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
+                    </div>
                   </label>
 
                   <div class="auth-age-gender-row">
@@ -3558,21 +3577,53 @@ function authPage() {
                     <input type="hidden" name="travelStyle" id="authTravelStyleInput" value="Solo" />
                   </div>
                 `
+                : isForgotPassword
+                ? `
+                  <div class="auth-notice-box" style="margin-bottom: 16px; padding: 12px 14px; background: rgba(35, 89, 70, 0.08); border-radius: 12px; border-left: 3px solid var(--accent); font-size: 0.86rem; color: var(--ink);">
+                    <span>🔑 Enter your registered Email, Username, 10-digit Phone, or User ID to set your new password.</span>
+                  </div>
+                  <label class="field-label">
+                    <span>REGISTERED USER ID / EMAIL / PHONE</span>
+                    <input name="identifier" type="text" autocomplete="username" autocapitalize="none" required placeholder="User ID, email, or 10-digit mobile" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
+                  </label>
+                  <label class="field-label">
+                    <span>NEW PASSWORD</span>
+                    <div class="password-input-wrap">
+                      <input name="newPassword" type="password" required minlength="4" placeholder="Enter new password (min 4 chars)" class="stitch-input password-input-field" />
+                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
+                    </div>
+                  </label>
+                  <label class="field-label">
+                    <span>CONFIRM NEW PASSWORD</span>
+                    <div class="password-input-wrap">
+                      <input name="confirmPassword" type="password" required minlength="4" placeholder="Re-enter new password" class="stitch-input password-input-field" />
+                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
+                    </div>
+                  </label>
+                `
                 : `
                   <label class="field-label">
-                    <span>EMAIL OR USERNAME</span>
-                    <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="name@example.com or username" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
+                    <span>USER ID, EMAIL, USERNAME OR MOBILE</span>
+                    <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="User ID, email, or 10-digit mobile" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
                   </label>
-                  <label class="field-label">
-                    <span>PASSWORD</span>
-                    <input name="password" type="password" autocomplete="current-password" required placeholder="••••••••" class="stitch-input" />
-                  </label>
+                  <div class="field-label">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                      <span style="font-size: 0.78rem; font-weight: 700; color: var(--muted); letter-spacing: 0.04em;">PASSWORD</span>
+                      <button type="button" class="auth-text-link" id="forgotPasswordLink">Forgot Password?</button>
+                    </div>
+                    <div class="password-input-wrap">
+                      <input name="password" type="password" autocomplete="current-password" required placeholder="••••••••" class="stitch-input password-input-field" />
+                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
+                    </div>
+                  </div>
                 `
             }
 
-            <button type="submit" class="primary-btn wide-btn" style="margin-top: 12px;">
-              ${isSignup ? 'Create Account ➔' : 'Continue ➔'}
+            <button type="submit" class="primary-btn wide-btn" style="margin-top: 14px;">
+              ${isSignup ? 'Create Account ➔' : (isForgotPassword ? 'Regenerate Password & Sign In ➔' : 'Continue ➔')}
             </button>
+
+            ${isForgotPassword ? `<button type="button" class="auth-back-link" id="backToLoginBtn">← Back to Login</button>` : ''}
           </form>
 
           ${statusMarkup(state.authStatus, state.authStatusType)}
@@ -4514,14 +4565,74 @@ async function handleAuthSubmit(event) {
   const formData = new FormData(form);
   const payload = Object.fromEntries(formData.entries());
 
-  if (payload.email) {
-    payload.email = String(payload.email).trim().toLowerCase();
-    state.authEmailDraft = payload.email;
-    payload.username = payload.email;
-    payload.identifier = payload.email;
+  // 1. FORGOT PASSWORD FLOW
+  if (state.authMode === 'forgot_password') {
+    const rawIdentifier = String(payload.identifier || '').trim();
+    const newPassword = String(payload.newPassword || '').trim();
+    const confirmPassword = String(payload.confirmPassword || '').trim();
+
+    if (!rawIdentifier) {
+      state.authStatusType = 'error';
+      state.authStatus = 'Please enter your registered User ID, email, or mobile number.';
+      renderApp();
+      return;
+    }
+
+    if (!newPassword || newPassword.length < 4) {
+      state.authStatusType = 'error';
+      state.authStatus = 'New password must be at least 4 characters long.';
+      renderApp();
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      state.authStatusType = 'error';
+      state.authStatus = 'Passwords do not match. Please verify both password fields.';
+      renderApp();
+      return;
+    }
+
+    try {
+      const data = await api('/api/reset-password', 'POST', {
+        identifier: rawIdentifier,
+        newPassword: newPassword,
+      });
+
+      localStorage.setItem('tripzenUserId', data.user.id);
+      localStorage.setItem('tripzenSavedIdentifier', rawIdentifier);
+      state.authEmailDraft = rawIdentifier;
+      state.user = data.user;
+      state.profile = data.profile || null;
+      state.authStatusType = 'success';
+      state.authStatus = 'Password regenerated successfully! Welcome back.';
+      requestBrowserNotificationPermission();
+
+      if (data.hasPreferences || (data.profile && data.profile.destination)) {
+        state.route = '/matches';
+        window.location.hash = '/matches';
+      } else if (state.user && state.user.fullName && (state.user.profileCompleteness || 0) >= 40) {
+        state.route = '/preferences';
+        window.location.hash = '/preferences';
+      } else {
+        state.route = '/profile';
+        window.location.hash = '/profile';
+      }
+      renderApp();
+    } catch (err) {
+      state.authStatusType = 'error';
+      state.authStatus = err.message || 'Failed to regenerate password. Please check your details.';
+      renderApp();
+    }
+    return;
   }
-  if (payload.password) {
-    payload.password = String(payload.password).trim();
+
+  // 2. SIGNUP & LOGIN FLOW
+  const rawIdentifier = String(payload.email || payload.identifier || payload.username || payload.phone || '').trim();
+  const rawPassword = String(payload.password || '').trim();
+
+  if (rawIdentifier) {
+    state.authEmailDraft = rawIdentifier;
+    localStorage.setItem('tripzenSavedIdentifier', rawIdentifier);
   }
 
   try {
@@ -4533,8 +4644,8 @@ async function handleAuthSubmit(event) {
       // If user attempted signup on an existing account, auto-attempt login seamlessly with the same credentials
       if (state.authMode === 'signup' && (err.message.includes('already exists') || err.message.includes('exist'))) {
         data = await api('/api/login', 'POST', {
-          email: payload.email,
-          password: payload.password,
+          email: rawIdentifier,
+          password: rawPassword,
         });
       } else {
         throw err;
@@ -4542,6 +4653,7 @@ async function handleAuthSubmit(event) {
     }
 
     localStorage.setItem('tripzenUserId', data.user.id);
+    localStorage.setItem('tripzenSavedIdentifier', rawIdentifier || data.user.email || data.user.phone || '');
     state.user = data.user;
     state.profile = data.profile || null;
     state.authStatusType = 'success';
@@ -4564,7 +4676,7 @@ async function handleAuthSubmit(event) {
     if (state.authMode === 'signup' && (error.message.includes('already exists') || error.message.includes('exist'))) {
       state.authMode = 'login';
       state.authStatusType = 'info';
-      state.authStatus = 'Account found! Please enter your password to log in.';
+      state.authStatus = 'An account with this email/phone already exists. Please enter your password to log in, or click "Forgot Password".';
     } else {
       state.authStatusType = 'error';
       state.authStatus = error.message;
@@ -5707,6 +5819,48 @@ function hydrateUI() {
     });
   });
 
+  // Forgot Password & Reset Handlers
+  const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+  if (forgotPasswordLink) {
+    forgotPasswordLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      state.authMode = 'forgot_password';
+      state.authStatus = '';
+      state.authStatusType = '';
+      renderApp();
+      setTimeout(() => {
+        const input = document.querySelector('input[name="identifier"]');
+        if (input) input.focus();
+      }, 50);
+    });
+  }
+
+  const backToLoginBtn = document.getElementById('backToLoginBtn');
+  if (backToLoginBtn) {
+    backToLoginBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      state.authMode = 'login';
+      state.authStatus = '';
+      state.authStatusType = '';
+      renderApp();
+    });
+  }
+
+  // Password Visibility Toggles
+  document.querySelectorAll('.password-toggle-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const wrap = btn.closest('.password-input-wrap');
+      const input = wrap ? wrap.querySelector('.password-input-field') : null;
+      if (input) {
+        const isPassword = input.getAttribute('type') === 'password';
+        input.setAttribute('type', isPassword ? 'text' : 'password');
+        btn.textContent = isPassword ? '🔒' : '👁️';
+        btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+      }
+    });
+  });
+
   // Topbar & Hero Get Started / Sign In Button Handlers
   const topbarSignInBtn = document.getElementById('topbarSignInBtn');
   if (topbarSignInBtn) {
@@ -6368,8 +6522,10 @@ function hydrateUI() {
       state.groupTitle = '';
       state.groupEstimatedCost = '';
       state.groupMaxMembers = '4';
-      state.selectedMatchProfileId = '';
-      state.authStatus = '';
+      state.authMode = 'login';
+      state.authEmailDraft = localStorage.getItem('tripzenSavedIdentifier') || '';
+      state.authStatus = 'You have been safely logged out. Enter your password to log in again.';
+      state.authStatusType = 'info';
       state.preferenceStatus = '';
       state.matchStatus = '';
       state.conversations = [];
