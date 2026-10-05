@@ -1404,6 +1404,8 @@ const state = {
   activeConversationId: '',
   messages: [],
   loading: true,
+  mobileNavOpen: false,
+  mobileShowConversationList: false,
   globalStatus: '',
   globalStatusType: '',
 };
@@ -1590,6 +1592,7 @@ function escapeHtml(value) {
 function routeTo(path) {
   const target = path || '/';
   state.route = target;
+  state.mobileNavOpen = false;
   if (window.location.hash !== `#${target}`) {
     window.location.hash = target;
   }
@@ -1806,9 +1809,9 @@ function topbar() {
           <a href="#/profile" class="stitch-nav-item ${current === '/profile' ? 'active' : ''}">Profile</a>
           <a href="#/preferences" class="stitch-nav-item ${current === '/preferences' ? 'active' : ''}">Plan Trip</a>
           <a href="#/matches" class="stitch-nav-item ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}">Matches</a>
-          <a href="#/chat" class="stitch-nav-item ${current === '/chat' ? 'active' : ''}">Inbox</a>
+          <a href="#/chat" class="stitch-nav-item ${current === '/chat' ? 'active' : ''}">Inbox ${state.unreadConversationCount > 0 ? `<span class="nav-counter-pill">${state.unreadConversationCount}</span>` : ''}</a>
           <a href="#/join-book" class="stitch-nav-item ${current === '/join-book' || current === '/packages' ? 'active' : ''}">Packages</a>
-          <a href="#/groups" class="stitch-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">Cost Sharing</a>
+          <a href="#/groups" class="stitch-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">Cost Sharing ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}</a>
           <a href="#/bookings" class="stitch-nav-item ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}">My Bookings ${state.bookings.length > 0 ? `<span class="nav-counter-pill">${state.bookings.length}</span>` : ''}</a>
           ${isAdminUser() ? `<a href="/admin.html" target="_blank" class="stitch-nav-item admin-nav-pill">🗄️ RAW Data DB</a>` : ''}
         </nav>
@@ -1817,15 +1820,68 @@ function topbar() {
           ${
             state.user
               ? `
-                <a href="#/profile" class="stitch-signin-link" title="View / Edit Profile">👤 ${escapeHtml(state.user.fullName)}</a>
-                <button type="button" class="ghost-btn" id="logoutBtn">Logout</button>
+                <a href="#/profile" class="stitch-signin-link desktop-only" title="View / Edit Profile">👤 ${escapeHtml(state.user.fullName)}</a>
+                <button type="button" class="ghost-btn desktop-only" id="logoutBtn">Logout</button>
               `
               : `
                 <button type="button" class="stitch-signin-link" id="topbarSignInBtn">Sign In</button>
                 <button type="button" class="primary-btn link-btn" id="topbarGetStartedBtn">Get Started</button>
               `
           }
+          <button type="button" class="mobile-nav-toggle-btn" id="mobileNavToggleBtn" aria-label="Toggle Navigation">
+            <span class="hamburger-icon">${state.mobileNavOpen ? '✕' : '☰'}</span>
+          </button>
         </div>
+      </div>
+
+      <!-- Mobile Dropdown Navigation Drawer -->
+      <div class="mobile-nav-drawer ${state.mobileNavOpen ? 'open' : ''}" id="mobileNavDrawer">
+        <div class="mobile-nav-links">
+          <a href="#/profile" class="mobile-nav-item ${current === '/profile' ? 'active' : ''}">
+            <span class="mobile-nav-icon">👤</span> <span>Profile Setup</span>
+          </a>
+          <a href="#/preferences" class="mobile-nav-item ${current === '/preferences' ? 'active' : ''}">
+            <span class="mobile-nav-icon">🎛️</span> <span>Plan Trip</span>
+          </a>
+          <a href="#/matches" class="mobile-nav-item ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}">
+            <span class="mobile-nav-icon">✨</span> <span>Discover Matches</span>
+          </a>
+          <a href="#/chat" class="mobile-nav-item ${current === '/chat' ? 'active' : ''}">
+            <span class="mobile-nav-icon">✉️</span> <span>Messages &amp; Chat</span>
+            ${state.unreadConversationCount > 0 ? `<span class="nav-counter-pill">${state.unreadConversationCount}</span>` : ''}
+          </a>
+          <a href="#/join-book" class="mobile-nav-item ${current === '/join-book' || current === '/packages' ? 'active' : ''}">
+            <span class="mobile-nav-icon">📦</span> <span>Curated Packages</span>
+          </a>
+          <a href="#/groups" class="mobile-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">
+            <span class="mobile-nav-icon">👥</span> <span>Cost Sharing</span>
+            ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}
+          </a>
+          <a href="#/bookings" class="mobile-nav-item ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}">
+            <span class="mobile-nav-icon">🎟️</span> <span>My Bookings</span>
+            ${state.bookings.length > 0 ? `<span class="nav-counter-pill">${state.bookings.length}</span>` : ''}
+          </a>
+          <a href="#/about" class="mobile-nav-item ${current === '/about' ? 'active' : ''}">
+            <span class="mobile-nav-icon">ℹ️</span> <span>About TripZen</span>
+          </a>
+          ${isAdminUser() ? `
+            <a href="/admin.html" target="_blank" class="mobile-nav-item" style="color: var(--accent); font-weight: 700;">
+              <span class="mobile-nav-icon">🗄️</span> <span>RAW Data DB</span>
+            </a>
+          ` : ''}
+        </div>
+        ${state.user ? `
+          <div class="mobile-nav-user-bar">
+            <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+              <img src="${escapeHtml(state.user.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(state.user.fullName || 'Traveler')}`)}" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" />
+              <div style="min-width: 0;">
+                <strong style="display: block; font-size: 0.92rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(state.user.fullName)}</strong>
+                <span style="font-size: 0.78rem; color: var(--muted); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(state.user.email || state.user.phone || 'Traveler')}</span>
+              </div>
+            </div>
+            <button type="button" class="ghost-btn" id="mobileLogoutBtn" style="padding: 7px 14px; font-size: 0.84rem; flex-shrink: 0;">Log Out</button>
+          </div>
+        ` : ''}
       </div>
     </header>
   `;
@@ -1852,45 +1908,45 @@ function dashboardSidebar() {
       </div>
 
       <nav class="sidebar-nav-list">
-        <a href="#/profile" class="sidebar-nav-link ${current === '/profile' ? 'active' : ''}">
+        <a href="#/profile" class="sidebar-nav-link ${current === '/profile' ? 'active' : ''}" title="Profile Setup">
           <span class="sidebar-nav-icon">👤</span>
-          <span>Profile Setup</span>
+          <span class="sidebar-nav-label">Profile</span>
         </a>
-        <a href="#/preferences" class="sidebar-nav-link ${current === '/preferences' ? 'active' : ''}">
+        <a href="#/preferences" class="sidebar-nav-link ${current === '/preferences' ? 'active' : ''}" title="Plan Trip">
           <span class="sidebar-nav-icon">🎛️</span>
-          <span>Trip & Dates</span>
+          <span class="sidebar-nav-label">Plan</span>
         </a>
-        <a href="#/matches" class="sidebar-nav-link ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}">
+        <a href="#/matches" class="sidebar-nav-link ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}" title="Discover Matches">
           <span class="sidebar-nav-icon">🧭</span>
-          <span>Discover Matches</span>
+          <span class="sidebar-nav-label">Matches</span>
         </a>
-        <a href="#/chat" class="sidebar-nav-link ${current === '/chat' ? 'active' : ''}">
+        <a href="#/chat" class="sidebar-nav-link ${current === '/chat' ? 'active' : ''}" title="Messages & Chat">
           <span class="sidebar-nav-icon">✉️</span>
-          <span>Messages & Chat</span>
+          <span class="sidebar-nav-label">Chat</span>
           ${state.unreadConversationCount > 0 ? `<span class="sidebar-nav-badge">${state.unreadConversationCount}</span>` : ''}
         </a>
-        <a href="#/join-book" class="sidebar-nav-link ${current === '/join-book' || current === '/packages' ? 'active' : ''}">
+        <a href="#/join-book" class="sidebar-nav-link ${current === '/join-book' || current === '/packages' ? 'active' : ''}" title="Curated Packages">
           <span class="sidebar-nav-icon">📦</span>
-          <span>Curated Packages</span>
+          <span class="sidebar-nav-label">Packages</span>
         </a>
-        <a href="#/groups" class="sidebar-nav-link ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">
+        <a href="#/groups" class="sidebar-nav-link ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}" title="Cost Sharing">
           <span class="sidebar-nav-icon">👥</span>
-          <span>Cost Sharing</span>
+          <span class="sidebar-nav-label">Groups</span>
           ${state.tripGroups.length > 0 ? `<span class="sidebar-nav-badge" style="background: rgba(35,89,70,0.12); color: var(--forest);">${state.tripGroups.length}</span>` : ''}
         </a>
-        <a href="#/bookings" class="sidebar-nav-link ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}">
+        <a href="#/bookings" class="sidebar-nav-link ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}" title="My Bookings">
           <span class="sidebar-nav-icon">🎟️</span>
-          <span>My Bookings</span>
+          <span class="sidebar-nav-label">Bookings</span>
           ${state.bookings.length > 0 ? `<span class="sidebar-nav-badge" style="background: rgba(16,185,129,0.15); color: #047857; font-weight: 800;">${state.bookings.length}</span>` : ''}
         </a>
-        <a href="#/about" class="sidebar-nav-link ${current === '/about' ? 'active' : ''}">
+        <a href="#/about" class="sidebar-nav-link ${current === '/about' ? 'active' : ''} desktop-only" title="About TripZen">
           <span class="sidebar-nav-icon">ℹ️</span>
-          <span>About TripZen</span>
+          <span class="sidebar-nav-label">About</span>
         </a>
         ${isAdminUser() ? `
-          <a href="/admin.html" target="_blank" class="sidebar-nav-link admin-nav-link" style="color: var(--accent); font-weight: 700;">
+          <a href="/admin.html" target="_blank" class="sidebar-nav-link admin-nav-link desktop-only" style="color: var(--accent); font-weight: 700;" title="RAW Data DB">
             <span class="sidebar-nav-icon">🗄️</span>
-            <span>RAW Data DB</span>
+            <span class="sidebar-nav-label">RAW DB</span>
           </a>
         ` : ''}
       </nav>
@@ -2612,9 +2668,12 @@ function chatPage() {
       </div>
     `;
 
+  const isMobileShowingList = Boolean(state.mobileShowConversationList);
+  const containerClass = `inbox-stitch-container ${isMobileShowingList ? 'showing-list' : 'showing-chat'}`;
+
   return `
     <div class="animate-fade-in">
-      <div class="inbox-stitch-container" id="chatSection">
+      <div class="${containerClass}" id="chatSection">
         <!-- Middle: Messages List Column -->
         <aside class="inbox-conversations-column">
           <div class="conversations-header">
@@ -2645,6 +2704,9 @@ function chatPage() {
               ? `
                 <div class="chat-room-header">
                   <div class="chat-partner-info">
+                    <button type="button" class="mobile-chat-back-btn" id="mobileChatBackBtn" title="Back to conversations list">
+                      ←
+                    </button>
                     <div class="avatar-online-wrap">
                       <img
                         class="conversation-item-avatar"
@@ -4761,6 +4823,7 @@ async function handleRespondJoinRequest(requestId, action) {
 
 async function handleOpenConversation(conversationId) {
   state.activeConversationId = conversationId;
+  state.mobileShowConversationList = false;
   state.notificationMessage = '';
   await loadMessages(conversationId);
   await loadPackageSelections(conversationId);
@@ -6315,6 +6378,41 @@ function hydrateUI() {
       state.messages = [];
       stopLiveSync();
       routeTo('/auth');
+    });
+  }
+
+  const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+  if (mobileLogoutBtn) {
+    mobileLogoutBtn.addEventListener('click', () => {
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) logoutBtn.click();
+    });
+  }
+
+  const mobileNavToggleBtn = document.getElementById('mobileNavToggleBtn');
+  if (mobileNavToggleBtn) {
+    mobileNavToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      state.mobileNavOpen = !state.mobileNavOpen;
+      renderApp();
+    });
+  }
+
+  const mobileNavDrawer = document.getElementById('mobileNavDrawer');
+  if (mobileNavDrawer) {
+    mobileNavDrawer.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => {
+        state.mobileNavOpen = false;
+        renderApp();
+      });
+    });
+  }
+
+  const mobileChatBackBtn = document.getElementById('mobileChatBackBtn');
+  if (mobileChatBackBtn) {
+    mobileChatBackBtn.addEventListener('click', () => {
+      state.mobileShowConversationList = true;
+      renderApp();
     });
   }
 
