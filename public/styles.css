@@ -4909,3 +4909,109 @@ video {
   line-height: 1.45;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
+
+/* Phone OTP Input Group */
+.phone-input-wrap {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.98);
+  overflow: hidden;
+  transition: all var(--transition-fast);
+}
+
+.phone-input-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+  background: #ffffff;
+}
+
+.phone-prefix-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 14px;
+  background: rgba(35, 89, 70, 0.08);
+  border-right: 1px solid var(--line);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.phone-input-wrap input {
+  flex: 1;
+  border: none !important;
+  background: transparent !important;
+  padding: 12px 14px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
+  outline: none !important;
+  box-shadow: none !important;
+  letter-spacing: 0.05em;
+}
+
+.otp-box-input {
+  width: 100%;
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.35em;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--line);
+  background: #ffffff;
+  color: var(--ink);
+  transition: all var(--transition-fast);
+}
+
+.otp-box-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+  outline: none;
+}
+
+.otp-preview-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px dashed #059669;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  color: #065f46;
+  margin: 12px 0 16px;
+}
+
+.otp-quick-fill-btn {
+  background: #059669;
+  color: #ffffff;
+  border: none;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(5, 150, 105, 0.25);
+  transition: transform var(--transition-fast), background-color var(--transition-fast);
+}
+
+.otp-quick-fill-btn:hover {
+  background: #047857;
+  transform: scale(1.05);
+}
+
+.auth-method-switcher {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+  font-size: 0.85rem;
+}

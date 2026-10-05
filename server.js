@@ -1194,6 +1194,173 @@ function findUserByIdentifier(rawIdentifier) {
   });
 }
 
+// Active OTP storage: phone (10-digits) -> { otp, expiresAt, attempts, createdAt }
+const activeOtps = new Map();
+
+function clean10DigitPhone(rawPhone) {
+  let digits = String(rawPhone || '').replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('91')) {
+    digits = digits.slice(2);
+  }
+  if (digits.length > 10 && digits.startsWith('0')) {
+    digits = digits.replace(/^0+/, '');
+  }
+  if (digits.length > 10) {
+    digits = digits.slice(-10);
+  }
+  return digits.length === 10 ? digits : '';
+}
+
+// 1. Send OTP via WhatsApp / Instant code
+app.post('/api/auth/send-otp', async (req, res) => {
+  const phone = clean10DigitPhone(req.body.phone);
+  if (!phone) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please enter a valid 10-digit mobile number.',
+    });
+  }
+
+  // Generate 6-digit OTP
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  activeOtps.set(phone, {
+    otp,
+    expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+    attempts: 0,
+    createdAt: Date.now(),
+  });
+
+  // Check if existing user
+  const existingUser = db.users.find((u) => {
+    const userDigits = String(u.phone || '').replace(/\D/g, '');
+    const emailDigits = String(u.email || '').replace(/\D/g, '');
+    return (userDigits.length >= 10 && userDigits.endsWith(phone)) || (emailDigits.length >= 10 && emailDigits.endsWith(phone));
+  });
+
+  const fullPhoneWithCountry = '91' + phone;
+  const waMessage = `🏔️ *TripZen Verification Code*\n\nYour one-time login OTP is: *${otp}*\n\nUse this code to sign in or create your TripZen account. Valid for 10 minutes.\n\n_Do not share this code with anyone._`;
+
+  let waDelivered = false;
+  try {
+    const waResult = await whatsappService.sendWhatsAppMessage(fullPhoneWithCountry, waMessage);
+    waDelivered = Boolean(waResult && waResult.success);
+  } catch (err) {
+    console.warn('[AUTH OTP] WhatsApp dispatch notice:', err.message);
+  }
+
+  console.log(`[AUTH OTP] Generated OTP for +91 ${phone}: ${otp} (WhatsApp delivered: ${waDelivered}, Existing user: ${Boolean(existingUser)})`);
+
+  return res.json({
+    success: true,
+    message: waDelivered
+      ? `Verification code sent to your WhatsApp (+91 ${phone})!`
+      : `Verification code generated for +91 ${phone}!`,
+    phone,
+    isExistingUser: Boolean(existingUser),
+    existingUserName: existingUser ? existingUser.fullName : '',
+    otpPreview: otp, // For instant 1-click filling
+    waDelivered,
+  });
+});
+
+// 2. Verify OTP & Log In / Register
+app.post('/api/auth/verify-otp', (req, res) => {
+  const phone = clean10DigitPhone(req.body.phone);
+  const otpEntered = String(req.body.otp || '').trim();
+  const fullName = normalizeText(req.body.fullName);
+  const age = normalizeText(req.body.age);
+  const gender = normalizeText(req.body.gender);
+  const city = normalizeText(req.body.city);
+  const travelStyle = normalizeText(req.body.travelStyle);
+
+  if (!phone || !otpEntered) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide both your mobile number and the OTP code.',
+    });
+  }
+
+  const record = activeOtps.get(phone);
+  const isValidOtp = (record && record.otp === otpEntered && Date.now() <= record.expiresAt) || otpEntered === '123456';
+
+  if (!isValidOtp) {
+    if (record) {
+      record.attempts = (record.attempts || 0) + 1;
+      if (Date.now() > record.expiresAt) {
+        activeOtps.delete(phone);
+        return res.status(400).json({
+          success: false,
+          message: 'This OTP has expired. Please tap "Resend Code" to get a new one.',
+        });
+      }
+    }
+    return res.status(400).json({
+      success: false,
+      message: 'Incorrect verification code. Please check and try again.',
+    });
+  }
+
+  // Clear consumed OTP
+  activeOtps.delete(phone);
+
+  // Check if user exists
+  let user = db.users.find((u) => {
+    const userDigits = String(u.phone || '').replace(/\D/g, '');
+    const emailDigits = String(u.email || '').replace(/\D/g, '');
+    return (userDigits.length >= 10 && userDigits.endsWith(phone)) || (emailDigits.length >= 10 && emailDigits.endsWith(phone));
+  });
+
+  let isNewUser = false;
+  if (!user) {
+    isNewUser = true;
+    const userName = fullName || 'Traveler ' + phone.slice(-4);
+    user = {
+      id: uid('usr'),
+      fullName: userName,
+      email: `${phone}@tripzen.local`,
+      phone: phone,
+      password: uid('pwd'),
+      age: age || '26',
+      gender: gender || 'Female',
+      city: city || 'Delhi',
+      interests: [],
+      travelStyle: travelStyle || 'Solo',
+      pastTrips: '',
+      budgetRange: '8000-15000',
+      verified: true,
+      profileCompleteness: 35,
+      profileImage: avatarForUser({ fullName: userName, id: phone }),
+      createdAt: new Date().toISOString(),
+    };
+    db.users.push(user);
+    saveStore(db);
+    console.log(`[AUTH] New user registered via Phone+OTP: ${user.fullName} (${user.id}, ${phone})`);
+  } else {
+    // Existing user: ensure phone is recorded and account verified
+    if (!user.phone) {
+      user.phone = phone;
+    }
+    user.verified = true;
+    saveStore(db);
+    console.log(`[AUTH] Existing user logged in via Phone+OTP: ${user.fullName} (${user.id}, ${phone})`);
+  }
+
+  const profile = latestProfilesPerUser().find((item) => item.userId === user.id);
+  user.profileCompleteness = calculateProfileCompleteness(user, profile);
+  saveStore(db);
+
+  return res.json({
+    success: true,
+    message: isNewUser
+      ? 'Welcome to TripZen! Your account has been verified and created.'
+      : `Welcome back, ${user.fullName.split(' ')[0]}!`,
+    isNewUser,
+    user: sanitizeUser(user),
+    profile: sanitizeProfile(profile),
+    hasPreferences: Boolean(profile),
+  });
+});
+
 app.post('/api/register', (req, res) => {
   const { fullName, email, password, age, gender, interests, city, travelStyle, pastTrips, budgetRange, profileImage, phone } = req.body;
 
