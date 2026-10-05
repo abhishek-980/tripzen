@@ -237,6 +237,11 @@
       <div class="pairing-code-box">
         <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px;">Live Pairing Code for 8920632874</div>
         <div id="pairingCodeVal" class="pairing-code-val">--------</div>
+        <div style="margin-top: 8px;">
+          <button id="copyCodeBtn" type="button" class="btn" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; padding: 6px 14px; font-size: 0.82rem;">
+            <span>📋</span> Copy Pairing Code
+          </button>
+        </div>
       </div>
 
       <button id="refreshCodeBtn" class="btn" style="margin-bottom: 12px;">
@@ -260,7 +265,7 @@
     <p style="font-size: 0.86rem; color: var(--text-muted);">Send an instant test message to any phone number to verify connection</p>
     
     <div class="input-row">
-      <input type="text" id="testPhoneInput" class="input-field" value="7982307329" placeholder="Recipient 10-digit number" />
+      <input type="text" id="testPhoneInput" class="input-field" value="8920632874" placeholder="Recipient 10-digit number" />
       <button id="sendTestMsgBtn" class="btn"><span>🚀</span> Send Test WhatsApp</button>
       <button id="logoutBtn" class="btn btn-secondary"><span>⚠️</span> Reset / Re-link Session</button>
     </div>
@@ -268,11 +273,14 @@
     <div id="testResultMsg" style="margin-top: 14px; font-size: 0.9rem; font-weight: 700;"></div>
   </div>
 
-  <div style="margin-top: 30px;">
+  <div style="margin-top: 30px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+    <a href="/admin.html" class="btn btn-secondary"><span>🗄️</span> Go to RAW Data DB &amp; Orders</a>
     <a href="/" class="btn btn-secondary"><span>←</span> Return to TripZen Home</a>
   </div>
 
   <script>
+    let isRequestingCode = false;
+
     async function fetchStatus() {
       try {
         const res = await fetch('/api/whatsapp/status');
@@ -286,35 +294,40 @@
 
         if (data.status === 'connected') {
           badge.className = 'status-badge status-connected';
-          statusText.innerHTML = `🟢 Bot Active & Connected as <strong>${data.linkedNumber || data.officialNumber}</strong>`;
-          qrLoading.textContent = '✓ Already Linked & Online';
+          statusText.innerHTML = `🟢 Bot Active &amp; Connected as <strong>${data.linkedNumber || data.officialNumber}</strong>`;
+          qrLoading.textContent = '✓ Connected! Messages will auto-send from your number.';
           qrImg.style.display = 'none';
           codeVal.textContent = 'CONNECTED';
           codeVal.style.color = '#34d399';
-        } else if (data.status === 'pairing') {
+        } else {
           badge.className = 'status-badge status-pairing';
-          statusText.innerHTML = `🟡 Ready to Link Number <strong>${data.officialNumber}</strong>`;
+          statusText.innerHTML = `🟡 Ready to Link Number <strong>${data.officialNumber || '+91 89206 32874'}</strong>`;
+
           if (data.qrCodeDataUrl) {
             qrImg.src = data.qrCodeDataUrl;
             qrImg.style.display = 'block';
             qrLoading.style.display = 'none';
           }
-          if (data.pairingCode) {
-            codeVal.textContent = data.pairingCode;
+
+          if (data.formattedPairingCode || data.pairingCode) {
+            codeVal.textContent = data.formattedPairingCode || data.pairingCode;
             codeVal.style.color = '#34d399';
+          } else if (!isRequestingCode && data.status !== 'connected') {
+            // Auto-request code on first load
+            requestCode();
           }
-        } else {
-          badge.className = 'status-badge status-disconnected';
-          statusText.innerHTML = `🔴 Bot Disconnected`;
         }
       } catch (err) {
         console.error('Status fetch error:', err);
       }
     }
 
-    document.getElementById('refreshCodeBtn').addEventListener('click', async () => {
+    async function requestCode() {
+      if (isRequestingCode) return;
+      isRequestingCode = true;
       const codeVal = document.getElementById('pairingCodeVal');
-      codeVal.textContent = 'Generating...';
+      if (codeVal.textContent === '--------') codeVal.textContent = 'Generating...';
+
       try {
         const res = await fetch('/api/whatsapp/request-code', {
           method: 'POST',
@@ -323,12 +336,28 @@
         });
         const result = await res.json();
         if (result.success && result.pairingCode) {
-          codeVal.textContent = result.pairingCode;
-        } else {
-          fetchStatus();
+          const raw = result.pairingCode;
+          codeVal.textContent = raw.length === 8 ? `${raw.slice(0, 4)} - ${raw.slice(4)}` : raw;
+          codeVal.style.color = '#34d399';
         }
       } catch (e) {
-        alert('Failed to request code: ' + e.message);
+        console.warn('Pairing code request note:', e.message);
+      } finally {
+        isRequestingCode = false;
+      }
+    }
+
+    document.getElementById('refreshCodeBtn').addEventListener('click', requestCode);
+
+    document.getElementById('copyCodeBtn').addEventListener('click', () => {
+      const codeVal = document.getElementById('pairingCodeVal').textContent.replace(/\s|-/g, '');
+      if (codeVal && codeVal !== '--------' && codeVal !== 'Generating...' && codeVal !== 'CONNECTED') {
+        navigator.clipboard.writeText(codeVal).then(() => {
+          const btn = document.getElementById('copyCodeBtn');
+          const original = btn.innerHTML;
+          btn.innerHTML = '<span>✓</span> Copied to Clipboard!';
+          setTimeout(() => { btn.innerHTML = original; }, 2500);
+        });
       }
     });
 
@@ -349,7 +378,7 @@
           resultBox.textContent = `✓ Message sent successfully to +${result.recipientNumber}! Check your WhatsApp now.`;
           resultBox.style.color = '#34d399';
         } else {
-          resultBox.textContent = `⚠️ Could not send via socket (${result.reason || result.error || 'Device not linked'}). Use QR/Code above to link first!`;
+          resultBox.textContent = `⚠️ Could not send via socket (${result.reason || result.error || 'Device not linked'}). Scan QR or enter Code above in WhatsApp first!`;
           resultBox.style.color = '#f87171';
         }
       } catch (e) {
@@ -367,7 +396,7 @@
     });
 
     fetchStatus();
-    setInterval(fetchStatus, 3000);
+    setInterval(fetchStatus, 2500);
   </script>
 </body>
 </html>

@@ -959,9 +959,31 @@ async function dispatchAutomatedTripzenWhatsApp({ to, recipientName, message, bo
       provider = 'WhatsApp Official Multi-Device Bot (+91 89206 32874)';
       providerResponse = { messageId: socketResult.messageId };
       isRealSocketDelivered = true;
-      console.log(`[WhatsApp Real Dispatch] ✅ Message successfully delivered to +${formattedPhone} from official number (+91 89206 32874)!`);
+      console.log(`[WhatsApp Real Dispatch] ✅ Message successfully delivered to customer +${formattedPhone} from official number (+91 89206 32874)!`);
     } else {
       console.log(`[WhatsApp Socket Notice] ${socketResult?.reason || socketResult?.error || 'Socket not connected'}`);
+    }
+
+    // Also send instant booking alert to Abhishek Sharma's WhatsApp (+91 89206 32874)
+    if (formattedPhone !== '918920632874') {
+      const adminAlertText = [
+        `🔔 *NEW TRIPZEN BOOKING RECEIVED!* 🔔`,
+        `━━━━━━━━━━━━━━━━━━━━`,
+        `• *Booking Ref:* ${bookingRef}`,
+        `• *Customer:* ${recipientName} (+${formattedPhone})`,
+        metadata.packageName ? `• *Package:* ${metadata.packageName}` : '',
+        metadata.destination ? `• *Destination:* ${metadata.destination}` : '',
+        metadata.amount ? `• *Amount Paid:* INR ${Number(metadata.amount).toLocaleString('en-IN')}` : '',
+        `• *Date & Time:* ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })}`,
+        `━━━━━━━━━━━━━━━━━━━━`,
+        `View & Manage: https://tripzen.co.in/admin.html`,
+      ].filter(Boolean).join('\n');
+
+      whatsappService.sendWhatsAppMessage('918920632874', adminAlertText)
+        .then((res) => {
+          if (res?.success) console.log(`[WhatsApp Admin Alert] ✅ New booking alert delivered to Abhishek Sharma (+91 89206 32874)!`);
+        })
+        .catch((err) => console.warn('[WhatsApp Admin Alert Notice]:', err.message));
     }
   } catch (err) {
     console.error('[WhatsApp Socket Error]:', err.message);
@@ -2234,7 +2256,12 @@ app.post('/api/payments/verify', async (req, res) => {
       recipientName: payment.leadName,
       message: whatsappMessage,
       bookingRef,
-      metadata: { paymentId: payment.id, amount: payment.amount },
+      metadata: {
+        paymentId: payment.id,
+        amount: payment.amount,
+        packageName: payment.packageName,
+        destination: payment.destination,
+      },
     });
 
     return res.json({
@@ -2301,7 +2328,12 @@ app.post('/api/payments/verify', async (req, res) => {
     recipientName: payment.leadName,
     message: whatsappMessage,
     bookingRef,
-    metadata: { paymentId: payment.id, amount: payment.amount },
+    metadata: {
+      paymentId: payment.id,
+      amount: payment.amount,
+      packageName: payment.packageName,
+      destination: payment.destination,
+    },
   });
 
   payment.whatsappDispatched = true;
@@ -2358,7 +2390,13 @@ app.post('/api/payments/resend-whatsapp', async (req, res) => {
     recipientName: payment.leadName,
     message: whatsappMessage,
     bookingRef: ref,
-    metadata: { paymentId: payment.id, resend: true },
+    metadata: {
+      paymentId: payment.id,
+      amount: payment.amount,
+      packageName: payment.packageName,
+      destination: payment.destination,
+      resend: true,
+    },
   });
 
   return res.json({
@@ -2607,7 +2645,12 @@ app.post('/api/admin/bookings/:id/resend-whatsapp', requireAdmin, async (req, re
     recipientName: payment.leadName,
     message: whatsappMessage,
     bookingRef,
-    metadata: { paymentId: payment.id, amount: payment.amount },
+    metadata: {
+      paymentId: payment.id,
+      amount: payment.amount,
+      packageName: payment.packageName,
+      destination: payment.destination,
+    },
   });
 
   payment.whatsappDispatched = true;

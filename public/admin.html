@@ -426,7 +426,10 @@
         <div class="muted" style="font-size: 11px;">Database Tables &amp; Admin Management</div>
       </div>
     </a>
-    <div style="display: flex; gap: 10px; align-items: center;">
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <a href="/whatsapp-link.html" target="_blank" style="text-decoration: none; font-size: 13px; font-weight: 800; color: #065f46; background: rgba(16, 185, 129, 0.15); border: 1.5px solid rgba(16, 185, 129, 0.35); padding: 7px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+        <span>💬</span> <span>WhatsApp Gateway (+91 89206 32874)</span>
+      </a>
       <a href="/#/" target="_blank" style="text-decoration: none; font-size: 13px; font-weight: 700; color: var(--forest); margin-right: 8px;">
         🌐 View Main Website ➔
       </a>
@@ -454,6 +457,27 @@
     <section id="adminPanel" class="hidden">
       <!-- STATS KPI STRIP -->
       <div class="stats" id="stats"></div>
+
+      <!-- WHATSAPP BOT STATUS BANNER -->
+      <div id="waStatusBanner" style="margin-bottom: 22px; padding: 14px 18px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; background: rgba(16, 185, 129, 0.08); border: 1.5px solid rgba(16, 185, 129, 0.3);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="font-size: 26px;">💬</div>
+          <div>
+            <div style="font-size: 14px; font-weight: 800; color: var(--forest); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span>Official WhatsApp Sender: <strong>+91 89206 32874</strong></span>
+              <span id="waBadgeStatus" style="font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #e2e8f0; color: #475569; font-weight: 800;">Checking...</span>
+            </div>
+            <div style="font-size: 12px; color: var(--muted); margin-top: 2px;" id="waStatusSubtitle">
+              Automatically sends verified booking vouchers from your number (+91 89206 32874) to customer WhatsApp, and alerts you instantly.
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <a href="/whatsapp-link.html" target="_blank" style="text-decoration: none; padding: 9px 16px; background: #059669; color: white; font-weight: 800; font-size: 13px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);">
+            <span>📲 Connect / Link WhatsApp</span>
+          </a>
+        </div>
+      </div>
 
       <!-- NAVIGATION TABS -->
       <div class="admin-nav-tabs">
@@ -922,6 +946,30 @@
       logoutButton.classList.add('hidden');
       loginPanel.classList.remove('hidden');
     });
+
+    async function updateAdminWhatsAppStatus() {
+      try {
+        const res = await fetch('/api/whatsapp/status');
+        const data = await res.json();
+        const badge = document.getElementById('waBadgeStatus');
+        const banner = document.getElementById('waStatusBanner');
+        if (!badge) return;
+        if (data.status === 'connected') {
+          badge.textContent = '🟢 CONNECTED & ACTIVE';
+          badge.style.background = '#d1fae5';
+          badge.style.color = '#065f46';
+          if (banner) banner.style.borderColor = '#10b981';
+        } else {
+          badge.textContent = '🟡 NOT LINKED - CLICK TO CONNECT';
+          badge.style.background = '#fef3c7';
+          badge.style.color = '#92400e';
+          if (banner) banner.style.borderColor = '#f59e0b';
+        }
+      } catch (e) {}
+    }
+
+    updateAdminWhatsAppStatus();
+    setInterval(updateAdminWhatsAppStatus, 4000);
 
     if (state.password || localStorage.getItem('tripzenUserId')) {
       loadAdminData().catch(() => {

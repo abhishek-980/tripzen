@@ -5542,12 +5542,7 @@ async function startPackagePayment(packageId, options = {}) {
             whatsappMessage: waData.message || '',
           };
 
-          // Auto-launch WhatsApp confirmation window for seamless 1-tap delivery
-          try {
-            window.open(directSendUrl, '_blank');
-          } catch (e) {
-            console.log('[Tripzen] Popup notice:', e.message);
-          }
+          console.log('[Tripzen] Payment verification complete. WhatsApp dispatch status:', waData.status || 'dispatched');
 
           state.paymentStatus = `🎉 Payment verified! Booking confirmed for ${tripPackage.packageName}.`;
           await loadBookings();

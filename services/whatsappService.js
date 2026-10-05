@@ -65,6 +65,9 @@ async function initWhatsAppService(customPhone) {
         try {
           currentQrDataUrl = await QRCode.toDataURL(qr, { width: 320, margin: 2 });
           console.log('[WhatsApp Service] 📷 Fresh QR Code generated for scanning.');
+          if (connectionState !== 'connected') {
+            connectionState = 'pairing';
+          }
         } catch (e) {
           console.error('[WhatsApp Service] QR generation failed:', e.message);
         }
@@ -202,11 +205,16 @@ async function sendWhatsAppMessage(recipientPhone, messageText) {
 }
 
 function getServiceStatus() {
+  const formattedPairingCode = currentPairingCode && currentPairingCode.length === 8
+    ? `${currentPairingCode.slice(0, 4)} - ${currentPairingCode.slice(4)}`
+    : currentPairingCode;
+
   return {
     status: connectionState,
     officialNumber: targetPhoneNumber,
     linkedNumber: linkedPhoneNumber ? '+' + linkedPhoneNumber : null,
     pairingCode: currentPairingCode,
+    formattedPairingCode,
     qrCodeDataUrl: currentQrDataUrl,
     isRegistered: sock?.authState?.creds?.registered || false,
   };
