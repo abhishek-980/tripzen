@@ -1593,6 +1593,11 @@ function routeTo(path) {
   if (window.location.hash !== `#${target}`) {
     window.location.hash = target;
   }
+  if (target === '/chat') {
+    startFastChatPoll();
+  } else {
+    stopChatPoll();
+  }
   renderApp();
 }
 
@@ -1608,7 +1613,10 @@ function normalizedRoute() {
   }
 
   if (state.user && (route === '/' || route === '/auth')) {
-    return '/profile';
+    if (state.profile && state.profile.destination) {
+      return '/matches';
+    }
+    return (state.user.profileCompleteness || 0) >= 40 ? '/preferences' : '/profile';
   }
 
   if (
@@ -1878,20 +1886,9 @@ function dashboardSidebar() {
           <span class="sidebar-nav-icon">ℹ️</span>
           <span>About TripZen</span>
         </a>
-        ${isAdminUser() ? `
-          <a href="#/admin" class="sidebar-nav-link admin-nav-link ${current === '/admin' ? 'active' : ''}">
-            <span class="sidebar-nav-icon">👑</span>
-            <span>Admin Operations</span>
-          </a>
-        ` : ''}
       </nav>
 
       <div class="sidebar-footer">
-        ${isAdminUser() ? `
-          <a href="/admin.html" class="sidebar-logout-btn" target="_blank" style="color: #5f756d;">
-            <span>⚙️ Raw Data DB</span>
-          </a>
-        ` : ''}
         <button type="button" class="sidebar-logout-btn" id="logoutBtn">
           <span>🚪 Log Out</span>
         </button>
@@ -1965,8 +1962,8 @@ function profilePage() {
       <div class="page-header-stitch">
         <div class="page-header-row">
           <div>
-            <h1>Create & Customize Your Profile</h1>
-            <p>Add your picture, details, and travel vibe to find travelers who truly match your energy and pace.</p>
+            <h1>${state.user?.fullName ? 'Your Profile Details' : 'Create & Customize Your Profile'}</h1>
+            <p>${state.user?.fullName ? 'Manage your photo, personal bio, and travel vibe.' : 'Add your picture, details, and travel vibe to find travelers who truly match your energy and pace.'}</p>
           </div>
           ${
             state.profile
@@ -2603,7 +2600,7 @@ function chatPage() {
         })
         .join('')
     : `
-      <div style="margin: auto; text-align: center; color: var(--text-muted); font-size: 0.95rem;">
+      <div class="chat-empty-notice" style="margin: auto; text-align: center; color: var(--text-muted); font-size: 0.95rem;">
         <p>Say hello to ${escapeHtml(currentConversation ? currentConversation.partner?.fullName : 'your travel partner')}! 🏔️</p>
       </div>
     `;
@@ -4334,11 +4331,60 @@ async function loadPackageSelections(conversationId) {
   }
 }
 
+let chatPollTimer = null;
+
+function stopChatPoll() {
+  if (chatPollTimer) {
+    clearInterval(chatPollTimer);
+    chatPollTimer = null;
+  }
+}
+
+function startFastChatPoll() {
+  stopChatPoll();
+  if (state.route !== '/chat' || !state.activeConversationId || !state.user || !state.profile) {
+    return;
+  }
+
+  chatPollTimer = setInterval(async () => {
+    if (state.route !== '/chat' || !state.activeConversationId) {
+      stopChatPoll();
+      return;
+    }
+
+    try {
+      const activeConvId = state.activeConversationId;
+      const res = await api(`/api/messages/${activeConvId}`);
+      const latestMsgs = res.messages || [];
+
+      // Find any incoming messages not currently rendered
+      const existingIds = new Set(state.messages.map((m) => m.id));
+      const newIncoming = latestMsgs.filter((m) => !existingIds.has(m.id));
+
+      if (newIncoming.length > 0) {
+        newIncoming.forEach((msg) => {
+          state.messages.push(msg);
+          const isMine = state.profile && msg.senderProfileId === state.profile.id;
+          appendChatMessageDOM(msg, isMine);
+        });
+
+        // Mark as read in background without UI blocking
+        markConversationAsRead(activeConvId).catch(() => {});
+        const lastMsg = newIncoming[newIncoming.length - 1];
+        updateConversationSnippetInDOM(activeConvId, lastMsg.text, lastMsg.createdAt);
+      }
+    } catch (e) {
+      // Ignore background sync errors
+    }
+  }, 1000); // 1-second ultra-fast live chat updates!
+}
+
 function stopLiveSync() {
   if (liveSyncTimer) {
     clearInterval(liveSyncTimer);
     liveSyncTimer = null;
   }
+  stopChatPoll();
 }
 
 function startLiveSync() {
@@ -4348,11 +4394,20 @@ function startLiveSync() {
     return;
   }
 
+  if (state.route === '/chat') {
+    startFastChatPoll();
+  }
+
   liveSyncTimer = setInterval(async () => {
     if (pollInFlight) return;
     pollInFlight = true;
 
     try {
+      // While in chat room, DO NOT rerender entire page - keeps typing input smooth and focused
+      if (state.route === '/chat') {
+        return;
+      }
+
       const previousConversations = state.conversations;
       const previousMessages = state.messages;
       const previousGroups = JSON.stringify((state.tripGroups || []).map((group) => ({
@@ -4421,9 +4476,17 @@ async function handleAuthSubmit(event) {
     state.authStatus = 'Logged in successfully! Welcome back.';
     requestBrowserNotificationPermission();
 
-    // Directly route to profile page
-    state.route = '/profile';
-    window.location.hash = '/profile';
+    // Smart routing based on user state
+    if (data.hasPreferences || (data.profile && data.profile.destination)) {
+      state.route = '/matches';
+      window.location.hash = '/matches';
+    } else if (state.user && state.user.fullName && (state.user.profileCompleteness || 0) >= 40) {
+      state.route = '/preferences';
+      window.location.hash = '/preferences';
+    } else {
+      state.route = '/profile';
+      window.location.hash = '/profile';
+    }
     renderApp();
   } catch (error) {
     if (state.authMode === 'signup' && (error.message.includes('already exists') || error.message.includes('exist'))) {
@@ -4701,21 +4764,104 @@ async function handleOpenConversation(conversationId) {
 async function handleChatSubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
-  const payload = Object.fromEntries(new FormData(form).entries());
+  const textInput = form.querySelector('input[name="text"]');
+  const messageText = (textInput ? textInput.value : '').trim();
+  const conversationIdInput = form.querySelector('input[name="conversationId"]');
+  const conversationId = conversationIdInput ? conversationIdInput.value : (state.activeConversationId || '');
 
+  if (!messageText || !conversationId || !state.profile) {
+    return;
+  }
+
+  // 1. Instantly clear input and keep focus for snappy multi-message typing
+  if (textInput) {
+    textInput.value = '';
+    textInput.focus();
+  }
+  state.chatDraft = '';
+
+  // 2. Create optimistic message
+  const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+  const nowIso = new Date().toISOString();
+  const optimisticMsg = {
+    id: tempId,
+    conversationId: conversationId,
+    senderProfileId: state.profile.id,
+    text: messageText,
+    createdAt: nowIso,
+    senderName: state.user?.fullName || 'You',
+    pending: true,
+  };
+
+  // Add to local state
+  state.messages.push(optimisticMsg);
+
+  // 3. Immediately render the new message into DOM with zero flicker / zero delay
+  appendChatMessageDOM(optimisticMsg, true);
+
+  // 4. Update the conversation preview in the left column
+  updateConversationSnippetInDOM(conversationId, messageText, nowIso);
+
+  // 5. Send to server in background without blocking UI
   try {
-    await api('/api/messages', 'POST', {
-      conversationId: payload.conversationId,
+    const data = await api('/api/messages', 'POST', {
+      conversationId: conversationId,
       senderProfileId: state.profile.id,
-      text: payload.text,
+      text: messageText,
     });
-    state.chatStatus = 'Message sent.';
-    state.chatDraft = '';
-    await loadConversations();
-    renderApp();
+
+    if (data && data.message) {
+      optimisticMsg.id = data.message.id;
+      delete optimisticMsg.pending;
+      const el = document.getElementById(`msg-${tempId}`);
+      if (el) el.id = `msg-${data.message.id}`;
+    }
   } catch (error) {
-    state.chatStatus = error.message;
-    renderApp();
+    console.error('Failed to send message:', error);
+    state.chatStatus = 'Failed to deliver message. Tap to retry.';
+    const el = document.getElementById(`msg-${tempId}`);
+    if (el) {
+      el.style.opacity = '0.6';
+      el.setAttribute('title', 'Not delivered: ' + error.message);
+    }
+  }
+}
+
+function appendChatMessageDOM(msg, isMine) {
+  const container = document.getElementById('chatMessagesContainer');
+  if (!container) return;
+
+  // Remove empty notice if present
+  const emptyNotice = container.querySelector('.chat-empty-notice');
+  if (emptyNotice) emptyNotice.remove();
+
+  const msgRow = document.createElement('div');
+  msgRow.className = `message-row-wrap ${isMine ? 'outgoing' : 'incoming'} animate-fade-in`;
+  msgRow.id = `msg-${msg.id}`;
+  msgRow.innerHTML = `
+    <div class="message-bubble-stitch">
+      ${escapeHtml(msg.text)}
+    </div>
+    <span class="message-time-sub">${escapeHtml(formatMessageTime(msg.createdAt))}</span>
+  `;
+  container.appendChild(msgRow);
+  // Auto-scroll to bottom smoothly
+  container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+}
+
+function updateConversationSnippetInDOM(conversationId, snippet, timestamp) {
+  const convItem = document.querySelector(`.conversation-stitch-item[data-open-conversation="${conversationId}"]`);
+  if (!convItem) return;
+  const snippetEl = convItem.querySelector('.conversation-item-snippet');
+  if (snippetEl) snippetEl.textContent = snippet;
+  const timeEl = convItem.querySelector('.conversation-item-top .time');
+  if (timeEl && timestamp) timeEl.textContent = formatMessageTime(timestamp);
+
+  // Update in state
+  const conv = (state.conversations || []).find((c) => c.id === conversationId);
+  if (conv) {
+    conv.latestMessage = { text: snippet, createdAt: timestamp };
+    conv.updatedAt = timestamp;
   }
 }
 
@@ -6071,6 +6217,17 @@ function hydrateUI() {
       chatInput.addEventListener('input', () => {
         state.chatDraft = chatInput.value;
       });
+      chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          chatForm.requestSubmit();
+        }
+      });
+    }
+
+    const chatContainer = document.getElementById('chatMessagesContainer');
+    if (chatContainer) {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
     }
   }
 

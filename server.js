@@ -154,6 +154,39 @@ function saveStore(store) {
 
 let db = loadStore();
 
+app.get('/uploads/:filename', (req, res, next) => {
+  const filename = req.params.filename;
+  const filePath = path.join(UPLOADS_DIR, filename);
+
+  if (fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
+  }
+
+  // Fallback: check if any user has this avatar in store as base64 dataUrl
+  const user = (db.users || []).find((u) =>
+    (u.profileImage && u.profileImage.includes(filename)) ||
+    (u.id && filename.startsWith(u.id))
+  );
+
+  if (user && user.profileImageData) {
+    const match = user.profileImageData.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+    if (match) {
+      const mime = match[1];
+      const buffer = Buffer.from(match[2], 'base64');
+      try {
+        fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+        fs.writeFileSync(filePath, buffer);
+      } catch (e) {}
+      res.setHeader('Content-Type', mime);
+      return res.send(buffer);
+    }
+  }
+
+  // Fallback 2: Redirect to DiceBear SVG avatar so the image NEVER breaks or returns HTML
+  const fallbackSeed = user ? (user.fullName || 'Traveler') : filename;
+  return res.redirect(`https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(fallbackSeed)}`);
+});
+
 function migrateAndLinkBookings() {
   let changed = false;
   db.payments = db.payments || [];
@@ -256,14 +289,18 @@ function ensureAdminAndSeedData() {
       admin.password = 'abhi@8080';
       updated = true;
     }
+    if (!admin.bio) {
+      admin.bio = 'TripZen Founder & Mountain Enthusiast';
+      updated = true;
+    }
     if (updated) {
       saveStore(db);
     }
   }
 
-  const adminProfile = db.profiles.find((p) => p.userId === admin.id);
+  let adminProfile = db.profiles.find((p) => p.userId === admin.id);
   if (!adminProfile) {
-    db.profiles.push({
+    adminProfile = {
       id: 'prf_1775814622426_lafooo',
       userId: admin.id,
       fullName: admin.fullName,
@@ -272,13 +309,27 @@ function ensureAdminAndSeedData() {
       endDate: '2026-10-20',
       travelStyle: 'Solo',
       interests: admin.interests || ['trekking'],
-      bio: 'TripZen Admin & Mountain Enthusiast',
+      bio: admin.bio || 'TripZen Admin & Mountain Enthusiast',
       budgetRange: '7000-15000',
       genderPreference: 'Any',
       profileImage: admin.profileImage || '',
       createdAt: new Date().toISOString(),
-    });
+    };
+    db.profiles.push(adminProfile);
     saveStore(db);
+  } else {
+    let profUpdated = false;
+    if (!adminProfile.profileImage && admin.profileImage) {
+      adminProfile.profileImage = admin.profileImage;
+      profUpdated = true;
+    }
+    if (!adminProfile.bio && admin.bio) {
+      adminProfile.bio = admin.bio;
+      profUpdated = true;
+    }
+    if (profUpdated) {
+      saveStore(db);
+    }
   }
 
   if (db.users.length <= 1) {
@@ -505,6 +556,7 @@ function sanitizeUser(user) {
     age: user.age || '',
     gender: user.gender || '',
     city: user.city || '',
+    bio: user.bio || '',
     interests: normalizeInterests(user.interests),
     travelStyle: user.travelStyle || '',
     pastTrips: user.pastTrips || '',
@@ -1271,6 +1323,15 @@ app.post('/api/preferences', (req, res) => {
   const savedProfileImage = persistProfileImage(profileImage, user.id);
   if (savedProfileImage) {
     user.profileImage = savedProfileImage;
+    if (profileImage && profileImage.startsWith('data:')) {
+      user.profileImageData = profileImage;
+    }
+  }
+  if (user.profileImage) {
+    profile.profileImage = user.profileImage;
+  }
+  if (bio !== undefined && normalizeText(bio)) {
+    user.bio = normalizeText(bio);
   }
   user.profileCompleteness = calculateProfileCompleteness(user, profile);
 
@@ -1310,10 +1371,16 @@ app.post('/api/profile', (req, res) => {
   if (interests) user.interests = normalizeInterests(interests);
   if (normalizeText(pastTrips)) user.pastTrips = normalizeText(pastTrips);
   if (normalizeText(budgetRange)) user.budgetRange = normalizeText(budgetRange);
+  if (bio !== undefined) user.bio = normalizeText(bio);
 
   if (profileImage) {
     const savedUrl = persistProfileImage(profileImage, user.id);
-    if (savedUrl) user.profileImage = savedUrl;
+    if (savedUrl) {
+      user.profileImage = savedUrl;
+      if (profileImage.startsWith('data:')) {
+        user.profileImageData = profileImage;
+      }
+    }
   }
 
   const profile = latestProfilesPerUser().find((item) => item.userId === user.id);
@@ -1323,6 +1390,7 @@ app.post('/api/profile', (req, res) => {
     if (travelStyle) profile.travelStyle = normalizeText(travelStyle);
     if (pastTrips) profile.pastTrips = normalizeText(pastTrips);
     if (budgetRange) profile.budgetRange = normalizeText(budgetRange);
+    if (user.profileImage) profile.profileImage = user.profileImage;
     profile.updatedAt = new Date().toISOString();
   }
 
@@ -1363,6 +1431,13 @@ app.post('/api/upload-avatar', (req, res) => {
   }
 
   user.profileImage = savedUrl;
+  if (image.startsWith('data:')) {
+    user.profileImageData = image;
+  }
+  const profile = latestProfilesPerUser().find((item) => item.userId === user.id);
+  if (profile) {
+    profile.profileImage = savedUrl;
+  }
   saveStore(db);
 
   return res.json({
