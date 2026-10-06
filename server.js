@@ -331,11 +331,7 @@ function ensureAdminAndSeedData() {
       saveStore(db);
     }
   }
-
-  if (db.users.length <= 1) {
-    console.log('[Tripzen] Database has no travelers. Seeding initial demo travelers and squads...');
-    seedDemoData();
-  }
+  // Note: Demo user auto-seeding removed; only legitimate user data is maintained.
 }
 
 migrateAndLinkBookings();
