@@ -2015,7 +2015,7 @@ function destinationCards(selected) {
 
 function profilePage() {
   const user = state.user || {};
-  const currentAvatar = state.pendingProfileImage || user.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(user.fullName || 'Traveler')}`;
+  const currentAvatar = state.pendingProfileImage || user.profileImage || localStorage.getItem('tripzenUserAvatar') || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(user.fullName || 'Traveler')}`;
   const currentGender = user.gender || 'Any';
   const currentTravelStyle = user.travelStyle || state.profile?.travelStyle || 'Solo';
   const currentBudget = user.budgetRange || state.profile?.budgetRange || '7000-15000';
@@ -2104,15 +2104,20 @@ function profilePage() {
               <input name="city" placeholder="Bangalore / Delhi / Mumbai" class="stitch-input" value="${escapeHtml(user.city || '')}" />
             </label>
 
-            <div class="field-label">
-              <span>GENDER</span>
-              <div class="interactive-choice-grid">
-                <button type="button" class="choice-pill-btn ${currentGender === 'Female' ? 'active' : ''}" data-profile-gender-val="Female">👩 Female</button>
-                <button type="button" class="choice-pill-btn ${currentGender === 'Male' ? 'active' : ''}" data-profile-gender-val="Male">👨 Male</button>
-                <button type="button" class="choice-pill-btn ${currentGender === 'Other' || currentGender === 'Any' ? 'active' : ''}" data-profile-gender-val="Other">✨ Other</button>
-              </div>
-              <input type="hidden" name="gender" id="profileGenderInput" value="${escapeHtml(currentGender)}" />
+            <label class="field-label">
+              <span>MOBILE PHONE NUMBER</span>
+              <input name="phone" type="tel" placeholder="+91 98765 43210 (10 digits)" class="stitch-input" value="${escapeHtml(user.phone || '')}" />
+            </label>
+          </div>
+
+          <div class="field-label" style="margin-bottom: 16px;">
+            <span>GENDER</span>
+            <div class="interactive-choice-grid">
+              <button type="button" class="choice-pill-btn ${currentGender === 'Female' ? 'active' : ''}" data-profile-gender-val="Female">👩 Female</button>
+              <button type="button" class="choice-pill-btn ${currentGender === 'Male' ? 'active' : ''}" data-profile-gender-val="Male">👨 Male</button>
+              <button type="button" class="choice-pill-btn ${currentGender === 'Other' || currentGender === 'Any' ? 'active' : ''}" data-profile-gender-val="Other">✨ Other</button>
             </div>
+            <input type="hidden" name="gender" id="profileGenderInput" value="${escapeHtml(currentGender)}" />
           </div>
 
           <label class="field-label">
@@ -3968,6 +3973,9 @@ async function loadSession() {
     const data = await api(`/api/session/${userId}`);
     state.user = data.user || null;
     state.profile = data.profile || null;
+    if (state.user && state.user.profileImage) {
+      localStorage.setItem('tripzenUserAvatar', state.user.profileImage);
+    }
   } catch (error) {
     localStorage.removeItem('tripzenUserId');
     state.user = null;
@@ -4652,6 +4660,9 @@ async function handleAuthSubmit(event) {
 
     localStorage.setItem('tripzenUserId', data.user.id);
     localStorage.setItem('tripzenSavedIdentifier', rawIdentifier || data.user.email || data.user.phone || '');
+    if (data.user && data.user.profileImage) {
+      localStorage.setItem('tripzenUserAvatar', data.user.profileImage);
+    }
     state.user = data.user;
     state.profile = data.profile || null;
     state.authStatusType = 'success';
@@ -4692,6 +4703,7 @@ async function handleProfileSubmit(event) {
     state.pendingProfileImage ||
     (document.getElementById('profileImageHiddenInput') ? document.getElementById('profileImageHiddenInput').value : '') ||
     state.user?.profileImage ||
+    localStorage.getItem('tripzenUserAvatar') ||
     '';
 
   const activeInterests = state.selectedInterests && state.selectedInterests.length
@@ -4708,6 +4720,9 @@ async function handleProfileSubmit(event) {
 
     state.user = data.user || state.user;
     if (data.profile) state.profile = data.profile;
+    if (state.user && state.user.profileImage) {
+      localStorage.setItem('tripzenUserAvatar', state.user.profileImage);
+    }
     state.pendingProfileImage = '';
     state.profileStatusType = 'success';
     state.profileStatus = 'Profile saved successfully! Now choose your destination & dates.';
@@ -5679,6 +5694,41 @@ async function startPackagePayment(packageId, options = {}) {
   }
 }
 
+function compressImageFile(file, maxWidth = 380, maxHeight = 380, quality = 0.82) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedDataUrl);
+      };
+      img.onerror = () => resolve(typeof e.target.result === 'string' ? e.target.result : '');
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
+}
+
 function hydrateUI() {
   hydratePreferenceFormDefaults();
 
@@ -5703,49 +5753,48 @@ function hydrateUI() {
   if (avatarUploadCaption) avatarUploadCaption.addEventListener('click', triggerUpload);
 
   if (profileImageFileInput) {
-    profileImageFileInput.addEventListener('change', () => {
+    profileImageFileInput.addEventListener('change', async () => {
       const file = profileImageFileInput.files && profileImageFileInput.files[0];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const dataUrl = typeof reader.result === 'string' ? reader.result : '';
-        if (!dataUrl) return;
+      const dataUrl = await compressImageFile(file, 380, 380, 0.82);
+      if (!dataUrl) return;
 
-        state.pendingProfileImage = dataUrl;
-        if (profileImageHiddenInput) profileImageHiddenInput.value = dataUrl;
-        if (profileImagePreview) {
-          profileImagePreview.src = dataUrl;
-          profileImagePreview.style.display = 'block';
-        }
-        if (profileImageLargePreview) {
-          profileImageLargePreview.src = dataUrl;
-        }
-        if (cameraIconPlaceholder) {
-          cameraIconPlaceholder.style.display = 'none';
-        }
+      state.pendingProfileImage = dataUrl;
+      localStorage.setItem('tripzenUserAvatar', dataUrl);
+      if (profileImageHiddenInput) profileImageHiddenInput.value = dataUrl;
+      if (profileImagePreview) {
+        profileImagePreview.src = dataUrl;
+        profileImagePreview.style.display = 'block';
+      }
+      if (profileImageLargePreview) {
+        profileImageLargePreview.src = dataUrl;
+      }
+      if (cameraIconPlaceholder) {
+        cameraIconPlaceholder.style.display = 'none';
+      }
 
-        // Auto-persist immediately if user is active
-        if (state.user && state.user.id) {
-          try {
-            const uploadRes = await api('/api/upload-avatar', 'POST', {
-              userId: state.user.id,
-              image: dataUrl,
-            });
-            if (uploadRes && uploadRes.profileImage) {
-              state.user.profileImage = uploadRes.profileImage;
-              state.pendingProfileImage = uploadRes.profileImage;
-              if (profileImageHiddenInput) profileImageHiddenInput.value = uploadRes.profileImage;
-              // Refresh sidebar avatar
-              const sidebarAvatars = document.querySelectorAll('.sidebar-user-avatar');
-              sidebarAvatars.forEach((img) => { img.src = uploadRes.profileImage; });
-            }
-          } catch (err) {
-            console.error('Instant avatar upload failed, will save on form submit:', err);
+      // Auto-persist immediately if user is active
+      if (state.user && state.user.id) {
+        state.user.profileImage = dataUrl;
+        const sidebarAvatars = document.querySelectorAll('.sidebar-user-avatar');
+        sidebarAvatars.forEach((img) => { img.src = dataUrl; });
+
+        try {
+          const uploadRes = await api('/api/upload-avatar', 'POST', {
+            userId: state.user.id,
+            image: dataUrl,
+          });
+          if (uploadRes && uploadRes.profileImage) {
+            state.user.profileImage = uploadRes.profileImage;
+            state.pendingProfileImage = uploadRes.profileImage;
+            localStorage.setItem('tripzenUserAvatar', uploadRes.profileImage);
+            if (profileImageHiddenInput) profileImageHiddenInput.value = uploadRes.profileImage;
           }
+        } catch (err) {
+          console.error('Instant avatar upload failed, will save on form submit:', err);
         }
-      };
-      reader.readAsDataURL(file);
+      }
     });
   }
 
