@@ -1334,12 +1334,6 @@ const state = {
   route: window.location.hash.replace('#', '') || '/',
   user: null,
   profile: null,
-  authMethod: 'phone',
-  phoneAuthStep: 'enter_phone',
-  otpPhoneDraft: localStorage.getItem('tripzenSavedPhone') || '',
-  otpPreview: '',
-  isExistingOtpUser: false,
-  existingUserName: '',
   authMode: localStorage.getItem('tripzenSavedIdentifier') ? 'login' : 'signup',
   authEmailDraft: localStorage.getItem('tripzenSavedIdentifier') || '',
   authStatus: '',
@@ -3404,28 +3398,18 @@ function tripGroupCardsMarkup(groupsList = state.tripGroups) {
 }
 
 function authPage() {
-  const isPhoneAuth = state.authMethod !== 'password';
   const isSignup = state.authMode === 'signup';
   const isForgotPassword = state.authMode === 'forgot_password';
   const isLogin = !isSignup && !isForgotPassword;
 
-  let headerTitle = 'Fast Login & Signup';
-  let headerSubtitle = 'Verify your phone number with instant WhatsApp OTP';
-
-  if (!isPhoneAuth) {
-    if (isSignup) {
-      headerTitle = 'Create Account';
-      headerSubtitle = 'Join compatible travelers for your next journey';
-    } else if (isForgotPassword) {
-      headerTitle = 'Reset Password';
-      headerSubtitle = 'Enter your details to regenerate a new password';
-    } else {
-      headerTitle = 'Welcome Back';
-      headerSubtitle = 'Sign in to access your matches and trip chats';
-    }
-  } else if (state.phoneAuthStep === 'enter_otp') {
-    headerTitle = 'Enter Verification Code';
-    headerSubtitle = `Code sent to +91 ${escapeHtml(state.otpPhoneDraft || '')}`;
+  let headerTitle = 'Welcome Back';
+  let headerSubtitle = 'Sign in with your phone number or email to access your account';
+  if (isSignup) {
+    headerTitle = 'Create Account';
+    headerSubtitle = 'Join compatible travelers for your next journey';
+  } else if (isForgotPassword) {
+    headerTitle = 'Reset Password';
+    headerSubtitle = 'Enter your phone number or email to regenerate your password';
   }
 
   return `
@@ -3488,268 +3472,158 @@ function authPage() {
             <p>${headerSubtitle}</p>
           </div>
 
-          ${
-            isPhoneAuth
-              ? (
-                state.phoneAuthStep === 'enter_otp'
-                  ? `
-                    <form id="phoneVerifyOtpForm" class="form-field-group">
-                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <span style="font-size: 0.86rem; color: var(--muted);">Mobile: <strong>+91 ${escapeHtml(state.otpPhoneDraft)}</strong></span>
-                        <button type="button" class="auth-text-link" id="changePhoneBtn" style="font-size: 0.82rem;">Change Number</button>
+          <div class="auth-toggle-pill">
+            <button type="button" class="auth-toggle-btn ${isSignup ? 'active' : ''}" data-auth-mode="signup">Signup</button>
+            <button type="button" class="auth-toggle-btn ${isLogin ? 'active' : ''}" data-auth-mode="login">Login</button>
+          </div>
+
+          <form id="authForm" class="form-field-group">
+            ${
+              isSignup
+                ? `
+                  <label class="field-label">
+                    <span>FULL NAME</span>
+                    <input name="fullName" required placeholder="Elena Rostova" class="stitch-input" />
+                  </label>
+                  <label class="field-label">
+                    <span>EMAIL ADDRESS</span>
+                    <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="elena@example.com or username" class="stitch-input" />
+                  </label>
+                  <label class="field-label">
+                    <span>MOBILE / PHONE NUMBER</span>
+                    <input name="phone" type="tel" autocomplete="tel" placeholder="+91 98765 43210 (10-digit number)" class="stitch-input" />
+                  </label>
+                  <label class="field-label">
+                    <span>PASSWORD</span>
+                    <div class="password-input-wrap">
+                      <input name="password" type="password" required placeholder="••••••••" class="stitch-input password-input-field" />
+                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
+                    </div>
+                  </label>
+
+                  <div class="auth-age-gender-row">
+                    <label class="field-label">
+                      <span>AGE</span>
+                      <input name="age" placeholder="28" class="stitch-input" />
+                    </label>
+                    <div class="field-label">
+                      <span>GENDER</span>
+                      <div class="interactive-choice-grid" id="authGenderSelector">
+                        <button type="button" class="choice-pill-btn active" data-gender-val="Female">
+                          <span class="choice-icon">👩</span>
+                          <span>Female</span>
+                        </button>
+                        <button type="button" class="choice-pill-btn" data-gender-val="Male">
+                          <span class="choice-icon">👨</span>
+                          <span>Male</span>
+                        </button>
+                        <button type="button" class="choice-pill-btn" data-gender-val="Non-binary">
+                          <span class="choice-icon">✨</span>
+                          <span>Other</span>
+                        </button>
                       </div>
+                      <input type="hidden" name="gender" id="authGenderInput" value="Female" />
+                    </div>
+                  </div>
 
-                      ${
-                        state.otpPreview
-                          ? `
-                            <div class="otp-preview-chip animate-fade-in">
-                              <span>💬 WhatsApp Code: <strong style="font-size: 1.15rem; letter-spacing: 0.08em; color: #065f46;">${escapeHtml(state.otpPreview)}</strong></span>
-                              <button type="button" class="otp-quick-fill-btn" id="otpQuickFillBtn" data-otp="${escapeHtml(state.otpPreview)}">Auto-Fill ➔</button>
-                            </div>
-                          `
-                          : ''
-                      }
+                  <label class="field-label">
+                    <span>CURRENT CITY</span>
+                    <input name="city" placeholder="Mumbai / Delhi" class="stitch-input" />
+                  </label>
 
-                      <label class="field-label">
-                        <span>ENTER 6-DIGIT VERIFICATION CODE</span>
-                        <input
-                          name="otp"
-                          type="tel"
-                          inputmode="numeric"
-                          maxlength="6"
-                          pattern="[0-9]{6}"
-                          required
-                          placeholder="• • • • • •"
-                          class="otp-box-input"
-                          id="otpCodeInput"
-                          autocomplete="one-time-code"
-                          autofocus
-                        />
-                      </label>
-
-                      ${
-                        !state.isExistingOtpUser
-                          ? `
-                            <label class="field-label" style="margin-top: 10px;">
-                              <span>YOUR FULL NAME (FIRST TIME TRAVELER)</span>
-                              <input name="fullName" required placeholder="Abhishek Sharma" class="stitch-input" id="otpFullNameInput" />
-                            </label>
-                          `
-                          : `
-                            <p style="font-size: 0.84rem; color: #059669; margin: 4px 0 0;">
-                              ✓ Registered account found for <strong>${escapeHtml(state.existingUserName || 'Traveler')}</strong>
-                            </p>
-                          `
-                      }
-
-                      <button type="submit" class="primary-btn wide-btn" id="verifyOtpSubmitBtn" style="margin-top: 14px;">
-                        <span>Verify & Sign In ➔</span>
+                  <div class="field-label">
+                    <div class="choice-header-row">
+                      <span>PREFERRED TRAVEL STYLE</span>
+                      <span class="choice-sub-hint">Trail Vibe</span>
+                    </div>
+                    <div class="interactive-style-grid" id="authTravelStyleSelector">
+                      <button type="button" class="style-choice-card active" data-style-val="Solo">
+                        <span class="style-card-icon">🎒</span>
+                        <div class="style-card-text">
+                          <strong>Solo Trekker</strong>
+                          <small>Independent & flexible</small>
+                        </div>
+                        <div class="style-check-circle">✓</div>
                       </button>
 
-                      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px;">
-                        <button type="button" class="auth-text-link" id="resendOtpBtn">Resend WhatsApp OTP</button>
-                        <button type="button" class="auth-text-link" id="cancelOtpBtn">← Back</button>
-                      </div>
-                    </form>
-                  `
-                  : `
-                    <form id="phoneSendOtpForm" class="form-field-group">
-                      <label class="field-label">
-                        <span>MOBILE / WHATSAPP NUMBER</span>
-                        <div class="phone-input-wrap">
-                          <div class="phone-prefix-pill">
-                            <span>🇮🇳 +91</span>
-                          </div>
-                          <input
-                            name="phone"
-                            type="tel"
-                            inputmode="numeric"
-                            pattern="[0-9]{10}"
-                            maxlength="10"
-                            required
-                            placeholder="Enter 10-digit mobile number"
-                            value="${escapeHtml(state.otpPhoneDraft || '')}"
-                            id="phoneAuthInput"
-                            autofocus
-                          />
+                      <button type="button" class="style-choice-card" data-style-val="Group">
+                        <span class="style-card-icon">👥</span>
+                        <div class="style-card-text">
+                          <strong>Group Squad</strong>
+                          <small>Social & campfire chats</small>
                         </div>
-                      </label>
-
-                      <p style="font-size: 0.82rem; color: var(--muted); margin-top: -2px; display: flex; align-items: center; gap: 6px;">
-                        <span>📲</span> One-click WhatsApp OTP & auto-login. No password needed!
-                      </p>
-
-                      <button type="submit" class="primary-btn wide-btn" id="sendOtpSubmitBtn" style="margin-top: 12px;">
-                        <span>Get OTP via WhatsApp ➔</span>
+                        <div class="style-check-circle">✓</div>
                       </button>
 
-                      <div class="auth-method-switcher">
-                        <button type="button" class="auth-text-link" id="switchToPasswordAuthBtn">Or use Email / User ID & Password</button>
-                      </div>
-                    </form>
-                  `
-              )
-              : `
-                <div style="text-align: center; margin-bottom: 12px;">
-                  <button type="button" class="auth-text-link" id="switchToPhoneAuthBtn" style="font-size: 0.88rem; font-weight: 700; color: #059669;">
-                    📱 Switch to Instant Phone & WhatsApp OTP Login
-                  </button>
-                </div>
-
-                <div class="auth-toggle-pill">
-                  <button type="button" class="auth-toggle-btn ${isSignup ? 'active' : ''}" data-auth-mode="signup">Signup</button>
-                  <button type="button" class="auth-toggle-btn ${isLogin ? 'active' : ''}" data-auth-mode="login">Login</button>
-                </div>
-
-                <form id="authForm" class="form-field-group">
-                  ${
-                    isSignup
-                      ? `
-                        <label class="field-label">
-                          <span>FULL NAME</span>
-                          <input name="fullName" required placeholder="Elena Rostova" class="stitch-input" />
-                        </label>
-                        <label class="field-label">
-                          <span>EMAIL OR USERNAME</span>
-                          <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="elena@example.com or username" class="stitch-input" />
-                        </label>
-                        <label class="field-label">
-                          <span>MOBILE / PHONE NUMBER</span>
-                          <input name="phone" type="tel" autocomplete="tel" placeholder="+91 98765 43210 (10-digit number)" class="stitch-input" />
-                        </label>
-                        <label class="field-label">
-                          <span>PASSWORD</span>
-                          <div class="password-input-wrap">
-                            <input name="password" type="password" required placeholder="••••••••" class="stitch-input password-input-field" />
-                            <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
-                          </div>
-                        </label>
-
-                        <div class="auth-age-gender-row">
-                          <label class="field-label">
-                            <span>AGE</span>
-                            <input name="age" placeholder="28" class="stitch-input" />
-                          </label>
-                          <div class="field-label">
-                            <span>GENDER</span>
-                            <div class="interactive-choice-grid" id="authGenderSelector">
-                              <button type="button" class="choice-pill-btn active" data-gender-val="Female">
-                                <span class="choice-icon">👩</span>
-                                <span>Female</span>
-                              </button>
-                              <button type="button" class="choice-pill-btn" data-gender-val="Male">
-                                <span class="choice-icon">👨</span>
-                                <span>Male</span>
-                              </button>
-                              <button type="button" class="choice-pill-btn" data-gender-val="Non-binary">
-                                <span class="choice-icon">✨</span>
-                                <span>Other</span>
-                              </button>
-                            </div>
-                            <input type="hidden" name="gender" id="authGenderInput" value="Female" />
-                          </div>
+                      <button type="button" class="style-choice-card" data-style-val="Luxury">
+                        <span class="style-card-icon">✨</span>
+                        <div class="style-card-text">
+                          <strong>Comfort Trek</strong>
+                          <small>Curated & scenic stays</small>
                         </div>
+                        <div class="style-check-circle">✓</div>
+                      </button>
 
-                        <label class="field-label">
-                          <span>CURRENT CITY</span>
-                          <input name="city" placeholder="Mumbai / Delhi" class="stitch-input" />
-                        </label>
-
-                        <div class="field-label">
-                          <div class="choice-header-row">
-                            <span>PREFERRED TRAVEL STYLE</span>
-                            <span class="choice-sub-hint">Trail Vibe</span>
-                          </div>
-                          <div class="interactive-style-grid" id="authTravelStyleSelector">
-                            <button type="button" class="style-choice-card active" data-style-val="Solo">
-                              <span class="style-card-icon">🎒</span>
-                              <div class="style-card-text">
-                                <strong>Solo Trekker</strong>
-                                <small>Independent & flexible</small>
-                              </div>
-                              <div class="style-check-circle">✓</div>
-                            </button>
-
-                            <button type="button" class="style-choice-card" data-style-val="Group">
-                              <span class="style-card-icon">👥</span>
-                              <div class="style-card-text">
-                                <strong>Group Squad</strong>
-                                <small>Social & campfire chats</small>
-                              </div>
-                              <div class="style-check-circle">✓</div>
-                            </button>
-
-                            <button type="button" class="style-choice-card" data-style-val="Luxury">
-                              <span class="style-card-icon">✨</span>
-                              <div class="style-card-text">
-                                <strong>Comfort Trek</strong>
-                                <small>Curated & scenic stays</small>
-                              </div>
-                              <div class="style-check-circle">✓</div>
-                            </button>
-
-                            <button type="button" class="style-choice-card" data-style-val="Budget">
-                              <span class="style-card-icon">⛺</span>
-                              <div class="style-card-text">
-                                <strong>Backpacker</strong>
-                                <small>Budget & cost-sharing</small>
-                              </div>
-                              <div class="style-check-circle">✓</div>
-                            </button>
-                          </div>
-                          <input type="hidden" name="travelStyle" id="authTravelStyleInput" value="Solo" />
+                      <button type="button" class="style-choice-card" data-style-val="Budget">
+                        <span class="style-card-icon">⛺</span>
+                        <div class="style-card-text">
+                          <strong>Backpacker</strong>
+                          <small>Budget & cost-sharing</small>
                         </div>
-                      `
-                      : isForgotPassword
-                      ? `
-                        <div class="auth-notice-box" style="margin-bottom: 16px; padding: 12px 14px; background: rgba(35, 89, 70, 0.08); border-radius: 12px; border-left: 3px solid var(--accent); font-size: 0.86rem; color: var(--ink);">
-                          <span>🔑 Enter your registered Email, Username, 10-digit Phone, or User ID to set your new password.</span>
-                        </div>
-                        <label class="field-label">
-                          <span>REGISTERED USER ID / EMAIL / PHONE</span>
-                          <input name="identifier" type="text" autocomplete="username" autocapitalize="none" required placeholder="User ID, email, or 10-digit mobile" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
-                        </label>
-                        <label class="field-label">
-                          <span>NEW PASSWORD</span>
-                          <div class="password-input-wrap">
-                            <input name="newPassword" type="password" required minlength="4" placeholder="Enter new password (min 4 chars)" class="stitch-input password-input-field" />
-                            <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
-                          </div>
-                        </label>
-                        <label class="field-label">
-                          <span>CONFIRM NEW PASSWORD</span>
-                          <div class="password-input-wrap">
-                            <input name="confirmPassword" type="password" required minlength="4" placeholder="Re-enter new password" class="stitch-input password-input-field" />
-                            <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
-                          </div>
-                        </label>
-                      `
-                      : `
-                        <label class="field-label">
-                          <span>USER ID, EMAIL, USERNAME OR MOBILE</span>
-                          <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="User ID, email, or 10-digit mobile" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
-                        </label>
-                        <div class="field-label">
-                          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <span style="font-size: 0.78rem; font-weight: 700; color: var(--muted); letter-spacing: 0.04em;">PASSWORD</span>
-                            <button type="button" class="auth-text-link" id="forgotPasswordLink">Forgot Password?</button>
-                          </div>
-                          <div class="password-input-wrap">
-                            <input name="password" type="password" autocomplete="current-password" required placeholder="••••••••" class="stitch-input password-input-field" />
-                            <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
-                          </div>
-                        </div>
-                      `
-                  }
+                        <div class="style-check-circle">✓</div>
+                      </button>
+                    </div>
+                    <input type="hidden" name="travelStyle" id="authTravelStyleInput" value="Solo" />
+                  </div>
+                `
+                : isForgotPassword
+                ? `
+                  <div class="auth-notice-box" style="margin-bottom: 16px; padding: 12px 14px; background: rgba(35, 89, 70, 0.08); border-radius: 12px; border-left: 3px solid var(--accent); font-size: 0.86rem; color: var(--ink);">
+                    <span>🔑 Enter your registered Phone Number, Email, or User ID to set your new password.</span>
+                  </div>
+                  <label class="field-label">
+                    <span>PHONE NUMBER, EMAIL, OR USER ID</span>
+                    <input name="identifier" type="text" autocomplete="username" autocapitalize="none" required placeholder="Phone number, email, or User ID" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
+                  </label>
+                  <label class="field-label">
+                    <span>NEW PASSWORD</span>
+                    <div class="password-input-wrap">
+                      <input name="newPassword" type="password" required minlength="4" placeholder="Enter new password (min 4 chars)" class="stitch-input password-input-field" />
+                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
+                    </div>
+                  </label>
+                  <label class="field-label">
+                    <span>CONFIRM NEW PASSWORD</span>
+                    <div class="password-input-wrap">
+                      <input name="confirmPassword" type="password" required minlength="4" placeholder="Re-enter new password" class="stitch-input password-input-field" />
+                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
+                    </div>
+                  </label>
+                `
+                : `
+                  <label class="field-label">
+                    <span>PHONE NUMBER OR EMAIL</span>
+                    <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="10-digit phone, email, or User ID" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
+                  </label>
+                  <div class="field-label">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                      <span style="font-size: 0.78rem; font-weight: 700; color: var(--muted); letter-spacing: 0.04em;">PASSWORD</span>
+                      <button type="button" class="auth-text-link" id="forgotPasswordLink">Forgot Password?</button>
+                    </div>
+                    <div class="password-input-wrap">
+                      <input name="password" type="password" autocomplete="current-password" required placeholder="••••••••" class="stitch-input password-input-field" />
+                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
+                    </div>
+                  </div>
+                `
+            }
 
-                  <button type="submit" class="primary-btn wide-btn" style="margin-top: 14px;">
-                    ${isSignup ? 'Create Account ➔' : (isForgotPassword ? 'Regenerate Password & Sign In ➔' : 'Continue ➔')}
-                  </button>
+            <button type="submit" class="primary-btn wide-btn" style="margin-top: 14px;">
+              ${isSignup ? 'Create Account ➔' : (isForgotPassword ? 'Regenerate Password & Sign In ➔' : 'Continue ➔')}
+            </button>
 
-                  ${isForgotPassword ? `<button type="button" class="auth-back-link" id="backToLoginBtn">← Back to Login</button>` : ''}
-                </form>
-              `
-          }
+            ${isForgotPassword ? `<button type="button" class="auth-back-link" id="backToLoginBtn">← Back to Login</button>` : ''}
+          </form>
 
           ${statusMarkup(state.authStatus, state.authStatusType)}
         </div>
@@ -4682,112 +4556,6 @@ function startLiveSync() {
       pollInFlight = false;
     }
   }, CHAT_POLL_INTERVAL);
-}
-
-async function handleSendOtpSubmit(event) {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const formData = new FormData(form);
-  const rawPhone = String(formData.get('phone') || '').trim();
-  const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
-
-  if (cleanPhone.length !== 10) {
-    state.authStatusType = 'error';
-    state.authStatus = 'Please enter a valid 10-digit mobile number.';
-    renderApp();
-    return;
-  }
-
-  const submitBtn = document.getElementById('sendOtpSubmitBtn');
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span>⏳ Sending code via WhatsApp...</span>';
-  }
-
-  try {
-    const data = await api('/api/auth/send-otp', 'POST', { phone: cleanPhone });
-    state.otpPhoneDraft = cleanPhone;
-    localStorage.setItem('tripzenSavedPhone', cleanPhone);
-    state.otpPreview = data.otpPreview || '';
-    state.isExistingOtpUser = Boolean(data.isExistingUser);
-    state.existingUserName = data.existingUserName || '';
-    state.phoneAuthStep = 'enter_otp';
-    state.authStatusType = 'success';
-    state.authStatus = data.message || `Verification code sent to +91 ${cleanPhone}!`;
-    renderApp();
-    setTimeout(() => {
-      const input = document.getElementById('otpCodeInput');
-      if (input) input.focus();
-    }, 60);
-  } catch (err) {
-    state.authStatusType = 'error';
-    state.authStatus = err.message || 'Failed to send OTP. Please check your mobile number.';
-    renderApp();
-  }
-}
-
-async function handleVerifyOtpSubmit(event) {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const formData = new FormData(form);
-  const otp = String(formData.get('otp') || '').trim();
-  const fullName = String(formData.get('fullName') || '').trim();
-  const phone = state.otpPhoneDraft;
-
-  if (!otp || otp.length !== 6) {
-    state.authStatusType = 'error';
-    state.authStatus = 'Please enter the 6-digit verification code.';
-    renderApp();
-    return;
-  }
-
-  if (!state.isExistingOtpUser && !fullName) {
-    state.authStatusType = 'error';
-    state.authStatus = 'Please enter your full name to complete registration.';
-    renderApp();
-    return;
-  }
-
-  const submitBtn = document.getElementById('verifyOtpSubmitBtn');
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span>⏳ Verifying...</span>';
-  }
-
-  try {
-    const data = await api('/api/auth/verify-otp', 'POST', {
-      phone,
-      otp,
-      fullName,
-    });
-
-    localStorage.setItem('tripzenUserId', data.user.id);
-    localStorage.setItem('tripzenSavedPhone', phone);
-    localStorage.setItem('tripzenSavedIdentifier', phone);
-    state.user = data.user;
-    state.profile = data.profile || null;
-    state.phoneAuthStep = 'enter_phone';
-    state.otpPreview = '';
-    state.authStatusType = 'success';
-    state.authStatus = data.message || 'Verification successful! Welcome.';
-    requestBrowserNotificationPermission();
-
-    if (data.hasPreferences || (data.profile && data.profile.destination)) {
-      state.route = '/matches';
-      window.location.hash = '/matches';
-    } else if (state.user && state.user.fullName && (state.user.profileCompleteness || 0) >= 40) {
-      state.route = '/preferences';
-      window.location.hash = '/preferences';
-    } else {
-      state.route = '/profile';
-      window.location.hash = '/profile';
-    }
-    renderApp();
-  } catch (err) {
-    state.authStatusType = 'error';
-    state.authStatus = err.message || 'Verification failed. Please check the code.';
-    renderApp();
-  }
 }
 
 async function handleAuthSubmit(event) {
@@ -6092,89 +5860,7 @@ function hydrateUI() {
     });
   });
 
-  // Switch between Phone OTP and Password auth
-  const switchToPasswordAuthBtn = document.getElementById('switchToPasswordAuthBtn');
-  if (switchToPasswordAuthBtn) {
-    switchToPasswordAuthBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      state.authMethod = 'password';
-      state.authStatus = '';
-      state.authStatusType = '';
-      renderApp();
-    });
-  }
 
-  const switchToPhoneAuthBtn = document.getElementById('switchToPhoneAuthBtn');
-  if (switchToPhoneAuthBtn) {
-    switchToPhoneAuthBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      state.authMethod = 'phone';
-      state.phoneAuthStep = 'enter_phone';
-      state.authStatus = '';
-      state.authStatusType = '';
-      renderApp();
-    });
-  }
-
-  const changePhoneBtn = document.getElementById('changePhoneBtn');
-  if (changePhoneBtn) {
-    changePhoneBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      state.phoneAuthStep = 'enter_phone';
-      state.otpPreview = '';
-      state.authStatus = '';
-      state.authStatusType = '';
-      renderApp();
-    });
-  }
-
-  const cancelOtpBtn = document.getElementById('cancelOtpBtn');
-  if (cancelOtpBtn) {
-    cancelOtpBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      state.phoneAuthStep = 'enter_phone';
-      state.otpPreview = '';
-      state.authStatus = '';
-      state.authStatusType = '';
-      renderApp();
-    });
-  }
-
-  const resendOtpBtn = document.getElementById('resendOtpBtn');
-  if (resendOtpBtn) {
-    resendOtpBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      resendOtpBtn.disabled = true;
-      resendOtpBtn.textContent = '⏳ Resending...';
-      try {
-        const data = await api('/api/auth/send-otp', 'POST', { phone: state.otpPhoneDraft });
-        state.otpPreview = data.otpPreview || '';
-        state.authStatus = data.message || 'New OTP sent via WhatsApp!';
-        state.authStatusType = 'success';
-        renderApp();
-      } catch (err) {
-        state.authStatus = err.message || 'Failed to resend OTP.';
-        state.authStatusType = 'error';
-        renderApp();
-      }
-    });
-  }
-
-  const otpQuickFillBtn = document.getElementById('otpQuickFillBtn');
-  if (otpQuickFillBtn) {
-    otpQuickFillBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const otp = otpQuickFillBtn.getAttribute('data-otp');
-      const input = document.getElementById('otpCodeInput');
-      if (input && otp) {
-        input.value = otp;
-        const form = document.getElementById('phoneVerifyOtpForm');
-        if (form) {
-          form.requestSubmit();
-        }
-      }
-    });
-  }
 
   // Topbar & Hero Get Started / Sign In Button Handlers
   const topbarSignInBtn = document.getElementById('topbarSignInBtn');
@@ -6692,15 +6378,7 @@ function hydrateUI() {
     authForm.addEventListener('submit', handleAuthSubmit);
   }
 
-  const phoneSendOtpForm = document.getElementById('phoneSendOtpForm');
-  if (phoneSendOtpForm) {
-    phoneSendOtpForm.addEventListener('submit', handleSendOtpSubmit);
-  }
 
-  const phoneVerifyOtpForm = document.getElementById('phoneVerifyOtpForm');
-  if (phoneVerifyOtpForm) {
-    phoneVerifyOtpForm.addEventListener('submit', handleVerifyOtpSubmit);
-  }
 
   const profileCreationForm = document.getElementById('profileCreationForm');
   if (profileCreationForm) {
@@ -6846,11 +6524,9 @@ function hydrateUI() {
       state.adminBookings = [];
       state.groupTitle = '';
       state.groupEstimatedCost = '';
-      state.authMethod = 'phone';
-      state.phoneAuthStep = 'enter_phone';
-      state.otpPhoneDraft = localStorage.getItem('tripzenSavedPhone') || '';
-      state.otpPreview = '';
-      state.authStatus = 'You have been safely logged out. Enter your phone number to sign in with OTP.';
+      state.authMode = 'login';
+      state.authEmailDraft = localStorage.getItem('tripzenSavedIdentifier') || '';
+      state.authStatus = 'You have been safely logged out. Log in with your phone number or email.';
       state.authStatusType = 'info';
       state.preferenceStatus = '';
       state.matchStatus = '';
