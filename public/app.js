@@ -1820,7 +1820,7 @@ function topbar() {
             state.user
               ? `
                 <a href="#/profile" class="stitch-signin-link desktop-only" title="View / Edit Profile">👤 ${escapeHtml(state.user.fullName)}</a>
-                <button type="button" class="ghost-btn desktop-only" id="logoutBtn">Logout</button>
+                <button type="button" class="ghost-btn action-logout-btn" id="logoutBtn" style="padding: 6px 14px; font-size: 0.82rem; font-weight: 700; color: #dc2626; border-color: rgba(220, 38, 38, 0.35);">🚪 Log Out</button>
               `
               : `
                 <button type="button" class="stitch-signin-link" id="topbarSignInBtn">Sign In</button>
@@ -1878,7 +1878,7 @@ function topbar() {
                 <span style="font-size: 0.78rem; color: var(--muted); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(state.user.email || state.user.phone || 'Traveler')}</span>
               </div>
             </div>
-            <button type="button" class="ghost-btn" id="mobileLogoutBtn" style="padding: 7px 14px; font-size: 0.84rem; flex-shrink: 0;">Log Out</button>
+            <button type="button" class="ghost-btn action-logout-btn" id="mobileLogoutBtn" style="padding: 7px 14px; font-size: 0.84rem; flex-shrink: 0; color: #dc2626; border-color: rgba(220, 38, 38, 0.35); font-weight: 700;">🚪 Log Out</button>
           </div>
         ` : `
           <div class="mobile-nav-user-bar" style="display: flex; gap: 8px; flex-direction: column;">
@@ -1964,8 +1964,28 @@ function dashboardSidebar() {
 }
 
 function dashboardShell(contentMarkup) {
+  const avatarUrl = state.user?.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(state.user?.fullName || 'Traveler')}`;
+  const firstName = state.user?.fullName ? state.user.fullName.split(' ')[0] : 'Traveler';
+
   return `
     <div class="dashboard-container">
+      <!-- Dedicated Sticky Mobile Header with Logo, User Pill, and Log Out button -->
+      <header class="dashboard-mobile-topbar">
+        <a href="#/" class="mobile-topbar-brand">
+          <img src="./assets/tripzen-logo.png" alt="TripZen" class="mobile-topbar-logo" />
+          <span>TripZen</span>
+        </a>
+        <div class="mobile-topbar-actions">
+          <a href="#/profile" class="mobile-topbar-user-pill" title="View Profile">
+            <img src="${escapeHtml(avatarUrl)}" class="mobile-topbar-avatar" alt="Avatar" />
+            <span class="mobile-topbar-name">${escapeHtml(firstName)}</span>
+          </a>
+          <button type="button" class="mobile-topbar-logout-btn action-logout-btn" id="mobileHeaderLogoutBtn" title="Log Out of TripZen">
+            <span>🚪 Log Out</span>
+          </button>
+        </div>
+      </header>
+
       ${dashboardSidebar()}
       <main class="dashboard-main-content">
         ${state.notificationMessage ? `<div class="floating-notification">${escapeHtml(state.notificationMessage)}</div>` : ''}
@@ -2235,14 +2255,30 @@ function profilePage() {
           </div>
           <input type="hidden" name="budgetRange" id="profileBudgetInput" value="${escapeHtml(currentBudget)}" />
 
-          <div style="margin-top: 32px; display: flex; gap: 16px; align-items: center;">
-            <button type="submit" class="primary-btn" style="padding: 14px 28px; font-size: 1rem; flex: 1;">
+          <div style="margin-top: 32px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+            <button type="submit" class="primary-btn" style="padding: 14px 28px; font-size: 1rem; flex: 1; min-width: 220px;">
               <span>Save Profile & Plan Trip ➔</span>
             </button>
             <a href="#/preferences" class="ghost-btn" style="padding: 14px 20px;">Skip to Trip Dates</a>
           </div>
         </div>
       </form>
+
+      ${state.user ? `
+        <!-- Device Session Card with Direct Log Out -->
+        <div class="profile-session-logout-card animate-fade-in" style="margin-top: 24px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: var(--radius-xl); padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.15rem;">🔒</span>
+              <strong style="color: #991b1b; font-size: 0.95rem;">Active Device Session</strong>
+            </div>
+            <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: #7f1d1d;">Signed in as <strong>${escapeHtml(user.fullName || 'Traveler')}</strong> (${escapeHtml(user.email || user.phone || 'Active Session')})</p>
+          </div>
+          <button type="button" class="action-logout-btn" id="profilePageLogoutBtn" style="background: #dc2626; color: #ffffff; border: none; padding: 10px 22px; font-weight: 800; border-radius: var(--radius-full); cursor: pointer; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);">
+            <span>🚪 Log Out from Device</span>
+          </button>
+        </div>
+      ` : ''}
     </div>
   `;
 }
@@ -3171,10 +3207,10 @@ function costSharingPage() {
       <div class="page-header-stitch">
         <div class="page-header-row">
           <div>
-            <h1>Agency & Traveler Group Trips</h1>
+            <h1>Agency &amp; Traveler Group Trips</h1>
             <p>Tour agencies and trip organizers publish upcoming Himalayan group batches with fixed per-person pricing. Join an open squad or create your own agency batch.</p>
           </div>
-          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <div class="group-header-actions-wrap" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
             <button type="button" class="primary-btn" id="openCreateGroupModalBtn" style="padding: 10px 22px; font-weight: 800;">
               <span>+ Create Group Trip / Batch ➔</span>
             </button>
@@ -3191,7 +3227,7 @@ function costSharingPage() {
           <h2>🏔️ Fixed-Cost Himalayan Group Expeditions</h2>
           <p>Verified tour companies set the exact member quota and transparent price per person. When all seats are filled, the batch automatically locks and prepares for departure.</p>
         </div>
-        <div style="display: flex; gap: 12px; align-items: center;">
+        <div class="group-hero-action" style="display: flex; gap: 12px; align-items: center;">
           <button type="button" class="primary-btn" id="openCreateGroupModalHeroBtn" style="padding: 9px 20px; font-size: 0.88rem; background: var(--forest); border: none;">
             <span>🏢 Publish Agency Squad</span>
           </button>
@@ -3287,7 +3323,7 @@ function tripGroupCardsMarkup(groupsList = state.tripGroups) {
       let actionButtons = '';
       if (isCreator) {
         actionButtons = `
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <div class="group-action-buttons-wrap">
             ${group.conversationId ? `<button type="button" class="ghost-btn" style="padding: 8px 14px; font-weight: 700; color: var(--forest);" data-open-conversation="${escapeHtml(group.conversationId)}">💬 Group Chat</button>` : ''}
             <button type="button" class="btn-delete-group" data-delete-group="${escapeHtml(group.id)}" title="Delete this group trip batch">
               <span>🗑️ Delete Group</span>
@@ -3296,7 +3332,7 @@ function tripGroupCardsMarkup(groupsList = state.tripGroups) {
         `;
       } else if (isMember) {
         actionButtons = `
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <div class="group-action-buttons-wrap">
             <button type="button" class="ghost-btn" style="color: var(--forest); font-weight: 800; padding: 8px 14px;" data-open-conversation="${escapeHtml(group.conversationId || '')}">
               💬 Open Group Chat
             </button>
@@ -3307,7 +3343,7 @@ function tripGroupCardsMarkup(groupsList = state.tripGroups) {
         `;
       } else if (group.isFull) {
         actionButtons = `
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <div class="group-action-buttons-wrap">
             <button type="button" class="ghost-btn" disabled style="opacity: 0.7; font-weight: 700; color: #991b1b; background: #fef2f2; border-color: #fecaca;">
               🚫 Batch Full
             </button>
@@ -3318,7 +3354,7 @@ function tripGroupCardsMarkup(groupsList = state.tripGroups) {
         `;
       } else if (state.profile) {
         actionButtons = `
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <div class="group-action-buttons-wrap">
             <button type="button" class="btn-instant-join" data-join-group="${escapeHtml(group.id)}" title="Join this squad for INR ${group.pricePerPerson}">
               <span>⚡ Join Trip (₹${Number(group.pricePerPerson).toLocaleString('en-IN')}) ➔</span>
             </button>
@@ -3329,9 +3365,11 @@ function tripGroupCardsMarkup(groupsList = state.tripGroups) {
         `;
       } else {
         actionButtons = `
-          <a href="#/auth" class="primary-btn" style="padding: 8px 18px; font-size: 0.85rem; text-decoration: none;">
-            <span>Sign In to Join ➔</span>
-          </a>
+          <div class="group-action-buttons-wrap">
+            <a href="#/auth" class="primary-btn" style="padding: 8px 18px; font-size: 0.85rem; text-decoration: none; width: 100%; text-align: center; justify-content: center;">
+              <span>Sign In to Join ➔</span>
+            </a>
+          </div>
         `;
       }
 
@@ -3358,15 +3396,15 @@ function tripGroupCardsMarkup(groupsList = state.tripGroups) {
           </div>
 
           <!-- FIXED PRICE HIGHLIGHT -->
-          <div style="display: flex; justify-content: space-between; align-items: baseline; margin: 10px 0 6px 0; background: rgba(35, 89, 70, 0.04); padding: 10px 14px; border-radius: var(--radius-md);">
+          <div class="group-price-capacity-strip">
             <div class="group-fixed-price-box">
-              <span style="font-size: 0.72rem; color: var(--muted); text-transform: uppercase; font-weight: 700;">Fixed Price per Person</span>
+              <span class="group-price-label" style="font-size: 0.72rem; color: var(--muted); text-transform: uppercase; font-weight: 700;">Fixed Price per Person</span>
               <div class="group-fixed-price-val">
                 INR ${Number(group.pricePerPerson).toLocaleString('en-IN')} <span>/ person</span>
               </div>
             </div>
-            <div style="text-align: right;">
-              <span style="font-size: 0.72rem; color: var(--muted); text-transform: uppercase;">Total Batch Capacity</span>
+            <div class="group-capacity-box" style="text-align: right;">
+              <span class="group-capacity-label" style="font-size: 0.72rem; color: var(--muted); text-transform: uppercase;">Total Batch Capacity</span>
               <div class="group-batch-pool-sub" style="font-weight: 700; color: var(--ink);">
                 INR ${Number(group.estimatedTotalCost).toLocaleString('en-IN')} (${group.maxMembers} travelers)
               </div>
@@ -3387,19 +3425,19 @@ function tripGroupCardsMarkup(groupsList = state.tripGroups) {
           <!-- INCLUSIONS STRIP -->
           <div class="group-inclusions-strip">
             <span style="font-weight: 700; color: var(--forest); flex-shrink: 0;">Includes:</span>
-            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(group.inclusions || 'Stay in Swiss Tents + All Meals + Trek Guide + Forest Permits')}</span>
+            <span style="line-height: 1.4;">${escapeHtml(group.inclusions || 'Stay in Swiss Tents + All Meals + Trek Guide + Forest Permits')}</span>
           </div>
 
           <!-- MEMBERS & FOOTER ACTIONS -->
           <div class="group-members-strip-row">
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="group-members-avatar-summary" style="display: flex; align-items: center; gap: 8px;">
               <div class="group-avatar-stack">
                 ${(group.members || [])
                   .slice(0, 5)
                   .map((m) => `<img src="${escapeHtml(m.profileImage)}" class="group-avatar-stack-img" alt="${escapeHtml(m.fullName)}" title="${escapeHtml(m.fullName)}${m.isOrganizer ? ' (Organizer)' : ''}" />`)
                   .join('')}
               </div>
-              <span style="font-size: 0.76rem; color: var(--muted);">
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--muted);">
                 ${group.memberCount} Confirmed
               </span>
             </div>
@@ -5744,6 +5782,48 @@ function compressImageFile(file, maxWidth = 380, maxHeight = 380, quality = 0.82
   });
 }
 
+function handleLogout() {
+  localStorage.removeItem('tripzenUserId');
+  localStorage.removeItem('tripzenUserAvatar');
+  sessionStorage.removeItem('tripzenAdminUnlocked');
+  sessionStorage.removeItem('tripzenAdminPassword');
+  state.adminUnlocked = false;
+  state.user = null;
+  state.profile = null;
+  state.matches = [];
+  state.connectStatus = '';
+  state.chatStatus = '';
+  state.chatDraft = '';
+  state.notificationMessage = '';
+  state.unreadConversationCount = 0;
+  state.packageStatus = '';
+  state.packageBookingStatus = '';
+  state.paymentStatus = '';
+  state.packageSelections = [];
+  state.planningBudget = '';
+  state.planningMonth = '';
+  state.planningTravelerCount = '2';
+  state.packageFacilityFilter = 'All';
+  state.groupStatus = '';
+  state.groupStatusType = '';
+  state.tripGroups = [];
+  state.bookings = [];
+  state.adminBookings = [];
+  state.groupTitle = '';
+  state.groupEstimatedCost = '';
+  state.authMode = 'login';
+  state.authEmailDraft = localStorage.getItem('tripzenSavedIdentifier') || '';
+  state.authStatus = 'You have been safely logged out. Log in with your phone number or email.';
+  state.authStatusType = 'info';
+  state.preferenceStatus = '';
+  state.matchStatus = '';
+  state.conversations = [];
+  state.activeConversationId = '';
+  state.messages = [];
+  stopLiveSync();
+  routeTo('/auth');
+}
+
 function hydrateUI() {
   hydratePreferenceFormDefaults();
 
@@ -6549,58 +6629,16 @@ function hydrateUI() {
     }
   }
 
-  const logoutButton = document.getElementById('logoutBtn');
-  if (logoutButton) {
-    logoutButton.addEventListener('click', () => {
-      localStorage.removeItem('tripzenUserId');
-      localStorage.removeItem('tripzenUserAvatar');
-      sessionStorage.removeItem('tripzenAdminUnlocked');
-      sessionStorage.removeItem('tripzenAdminPassword');
-      state.adminUnlocked = false;
-      state.user = null;
-      state.profile = null;
-      state.matches = [];
-      state.connectStatus = '';
-      state.chatStatus = '';
-      state.chatDraft = '';
-      state.notificationMessage = '';
-      state.unreadConversationCount = 0;
-      state.packageStatus = '';
-      state.packageBookingStatus = '';
-      state.paymentStatus = '';
-      state.packageSelections = [];
-      state.planningBudget = '';
-      state.planningMonth = '';
-      state.planningTravelerCount = '2';
-      state.packageFacilityFilter = 'All';
-      state.groupStatus = '';
-      state.groupStatusType = '';
-      state.tripGroups = [];
-      state.bookings = [];
-      state.adminBookings = [];
-      state.groupTitle = '';
-      state.groupEstimatedCost = '';
-      state.authMode = 'login';
-      state.authEmailDraft = localStorage.getItem('tripzenSavedIdentifier') || '';
-      state.authStatus = 'You have been safely logged out. Log in with your phone number or email.';
-      state.authStatusType = 'info';
-      state.preferenceStatus = '';
-      state.matchStatus = '';
-      state.conversations = [];
-      state.activeConversationId = '';
-      state.messages = [];
-      stopLiveSync();
-      routeTo('/auth');
+  // Universal Logout Buttons (Desktop & Phone Web UI)
+  const allLogoutButtons = document.querySelectorAll(
+    '.action-logout-btn, #logoutBtn, #mobileLogoutBtn, #mobileHeaderLogoutBtn, #profilePageLogoutBtn'
+  );
+  allLogoutButtons.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      handleLogout();
     });
-  }
-
-  const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
-  if (mobileLogoutBtn) {
-    mobileLogoutBtn.addEventListener('click', () => {
-      const logoutBtn = document.getElementById('logoutBtn');
-      if (logoutBtn) logoutBtn.click();
-    });
-  }
+  });
 
   const mobileSignInBtn = document.getElementById('mobileSignInBtn');
   if (mobileSignInBtn) {

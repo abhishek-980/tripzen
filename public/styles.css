@@ -5015,3 +5015,358 @@ video {
   border-top: 1px dashed var(--line);
   font-size: 0.85rem;
 }
+
+/* ==========================================================================
+   MOBILE WEB PHONE ENHANCEMENTS: LOG OUT OPTIONS & GROUP SECTION
+   ========================================================================== */
+
+/* 1. Dedicated Mobile Sticky Topbar (Only visible on screens <= 768px) */
+.dashboard-mobile-topbar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .dashboard-mobile-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  }
+
+  .mobile-topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--forest);
+  }
+
+  .mobile-topbar-logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+
+  .mobile-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mobile-topbar-user-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    background: var(--surface-alt);
+    padding: 4px 8px 4px 4px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--surface-border);
+    max-width: 125px;
+  }
+
+  .mobile-topbar-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .mobile-topbar-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-topbar-logout-btn {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .mobile-topbar-logout-btn:active {
+    background: #fee2e2;
+    transform: scale(0.96);
+  }
+}
+
+/* 2. Profile Session Card & Universal Logout Button Styles */
+.profile-session-logout-card {
+  transition: all var(--transition-fast);
+}
+
+.profile-session-logout-card:hover {
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.12);
+}
+
+.action-logout-btn:active {
+  transform: scale(0.97);
+}
+
+/* 3. Group Section Responsive Adjustments */
+.group-header-actions-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.group-price-capacity-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 8px 0;
+  background: rgba(35, 89, 70, 0.04);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(35, 89, 70, 0.08);
+}
+
+.group-fixed-price-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.group-fixed-price-val {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--forest);
+  line-height: 1.2;
+}
+
+.group-fixed-price-val span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.group-capacity-box {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+}
+
+.group-batch-pool-sub {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.group-action-buttons-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Mobile Screens (Phone Web UI <= 768px) */
+@media (max-width: 768px) {
+  .page-header-stitch {
+    padding: 16px 0 12px 0 !important;
+  }
+
+  .group-header-actions-wrap {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .group-header-actions-wrap > button,
+  .group-header-actions-wrap > a {
+    flex: 1;
+    min-width: 140px;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .group-squad-hero {
+    padding: 16px 14px !important;
+    gap: 12px !important;
+  }
+
+  .group-squad-hero h2 {
+    font-size: 1.15rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .group-hero-action {
+    width: 100%;
+  }
+
+  .group-hero-action > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .group-filter-toolbar {
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .packages-filter-bar-stitch {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .filter-bar-search,
+  .filter-bar-select {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .group-filter-tabs-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .group-tabs-group {
+    width: 100%;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    display: flex !important;
+    padding: 3px !important;
+    scrollbar-width: none;
+  }
+
+  .group-tabs-group::-webkit-scrollbar {
+    display: none;
+  }
+
+  .group-tab-btn {
+    padding: 7px 14px !important;
+    font-size: 0.8rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .group-hide-full-toggle {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 8px 12px !important;
+    font-size: 0.82rem !important;
+    box-sizing: border-box;
+  }
+
+  .stitch-group-card {
+    padding: 16px 14px !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  .group-card-top {
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .group-card-top h3 {
+    font-size: 1.08rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .slots-status-pill {
+    align-self: flex-start !important;
+    font-size: 0.76rem !important;
+    padding: 4px 10px !important;
+  }
+
+  .group-price-capacity-strip {
+    padding: 10px 12px;
+    gap: 8px;
+    margin: 10px 0 8px 0;
+  }
+
+  .group-fixed-price-val {
+    font-size: 1.15rem;
+  }
+
+  .group-batch-pool-sub {
+    font-size: 0.8rem;
+  }
+
+  .group-inclusions-strip {
+    padding: 8px 10px !important;
+    font-size: 0.8rem !important;
+    margin: 10px 0 !important;
+  }
+
+  .group-members-strip-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-top: 12px !important;
+    padding-top: 10px !important;
+  }
+
+  .group-members-avatar-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .group-action-buttons-wrap {
+    width: 100% !important;
+    display: flex !important;
+    gap: 8px !important;
+  }
+
+  .group-action-buttons-wrap > .btn-instant-join {
+    flex: 1 1 auto !important;
+    justify-content: center !important;
+    padding: 11px 16px !important;
+    font-size: 0.9rem !important;
+    text-align: center !important;
+  }
+
+  .group-action-buttons-wrap > .ghost-btn,
+  .group-action-buttons-wrap > .btn-delete-group {
+    justify-content: center !important;
+    padding: 10px 14px !important;
+    font-size: 0.84rem !important;
+  }
+
+  /* Create Group Modal on Mobile */
+  .agency-modal-backdrop {
+    padding: 10px !important;
+    align-items: flex-end !important;
+  }
+
+  .agency-modal-card {
+    padding: 22px 16px 28px !important;
+    max-height: 88vh !important;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
+  }
+
+  .agency-modal-header h2 {
+    font-size: 1.18rem !important;
+  }
+}
