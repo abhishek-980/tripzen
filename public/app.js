@@ -3468,8 +3468,9 @@ function authPage() {
   return `
     <div class="auth-hero-wrapper animate-fade-in">
       <!-- Original Hero Video Background (Crisp & Unblurred) -->
-      <video class="auth-hero-bg-video" autoplay muted loop playsinline preload="metadata">
-        <source src="./assets/hero-bg.mp4" type="video/mp4" />
+      <video class="auth-hero-bg-video" autoplay muted loop playsinline>
+        <source src="./assets/hero-bg.mov" type="video/quicktime" />
+        <source src="./assets/hero-bg.mov" type="video/mp4" />
       </video>
       <div class="auth-hero-video-overlay"></div>
 
