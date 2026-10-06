@@ -2087,6 +2087,17 @@ function profilePage() {
             <span>Personal Information</span>
           </div>
 
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border);">
+            <label class="field-label" style="margin-bottom: 0;">
+              <span>REGISTERED EMAIL 🔒</span>
+              <input type="text" readonly class="stitch-input" style="opacity: 0.85; background: var(--surface); cursor: not-allowed; font-size: 0.88rem;" value="${escapeHtml(user.email || 'Not set')}" />
+            </label>
+            <label class="field-label" style="margin-bottom: 0;">
+              <span>ACCOUNT ID 🆔</span>
+              <input type="text" readonly class="stitch-input" style="opacity: 0.85; background: var(--surface); cursor: not-allowed; font-size: 0.88rem;" value="${escapeHtml(user.id || 'Not set')}" />
+            </label>
+          </div>
+
           <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
             <label class="field-label">
               <span>FULL NAME</span>
@@ -4746,6 +4757,7 @@ async function handlePreferencesSubmit(event) {
     state.pendingProfileImage ||
     (document.getElementById('profileImageHiddenInput') ? document.getElementById('profileImageHiddenInput').value : '') ||
     state.user?.profileImage ||
+    localStorage.getItem('tripzenUserAvatar') ||
     '';
 
   try {
@@ -4756,6 +4768,9 @@ async function handlePreferencesSubmit(event) {
     });
     state.user = data.user || state.user;
     state.profile = data.profile;
+    if (state.user && state.user.profileImage) {
+      localStorage.setItem('tripzenUserAvatar', state.user.profileImage);
+    }
     state.pendingProfileImage = '';
     state.preferenceStatusType = 'success';
     state.preferenceStatus = 'Profile & preferences saved! Loading your perfect matches.';
@@ -6538,6 +6553,7 @@ function hydrateUI() {
   if (logoutButton) {
     logoutButton.addEventListener('click', () => {
       localStorage.removeItem('tripzenUserId');
+      localStorage.removeItem('tripzenUserAvatar');
       sessionStorage.removeItem('tripzenAdminUnlocked');
       sessionStorage.removeItem('tripzenAdminPassword');
       state.adminUnlocked = false;

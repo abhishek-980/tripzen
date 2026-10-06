@@ -165,7 +165,9 @@
       ],
       "bio": "111111",
       "createdAt": "2026-04-13T05:01:53.564Z",
-      "updatedAt": "2026-04-13T05:01:53.564Z"
+      "updatedAt": "2026-04-13T05:01:53.564Z",
+      "profileImage": "https://api.dicebear.com/7.x/adventurer/svg?seed=kalika%20joshi",
+      "fullName": "kalika joshi"
     },
     {
       "id": "prf_1776105110880_94t37j",
@@ -179,7 +181,9 @@
       ],
       "bio": "alsi",
       "createdAt": "2026-04-13T18:31:50.880Z",
-      "updatedAt": "2026-04-13T18:31:50.880Z"
+      "updatedAt": "2026-04-13T18:31:50.880Z",
+      "profileImage": "https://api.dicebear.com/7.x/adventurer/svg?seed=kamla",
+      "fullName": "kamla"
     },
     {
       "id": "prf_1776183618135_9ylbpc",
@@ -193,7 +197,9 @@
       ],
       "bio": "love vibes",
       "createdAt": "2026-04-14T16:20:18.135Z",
-      "updatedAt": "2026-04-14T16:20:18.135Z"
+      "updatedAt": "2026-04-14T16:20:18.135Z",
+      "profileImage": "https://api.dicebear.com/7.x/adventurer/svg?seed=rudra",
+      "fullName": "rudra"
     },
     {
       "id": "prf_1776186910412_lbp28y",
@@ -207,7 +213,9 @@
       ],
       "bio": "love mountains",
       "createdAt": "2026-04-14T17:15:10.412Z",
-      "updatedAt": "2026-04-14T17:15:10.412Z"
+      "updatedAt": "2026-04-14T17:15:10.412Z",
+      "profileImage": "https://api.dicebear.com/7.x/adventurer/svg?seed=ashmita%20sharma",
+      "fullName": "ashmita sharma"
     },
     {
       "id": "prf_1776318892351_ahs8ug",
@@ -221,7 +229,9 @@
       ],
       "bio": "i love trekking",
       "createdAt": "2026-04-16T05:54:52.351Z",
-      "updatedAt": "2026-04-16T05:54:52.351Z"
+      "updatedAt": "2026-04-16T05:54:52.351Z",
+      "profileImage": "https://api.dicebear.com/7.x/adventurer/svg?seed=keshav",
+      "fullName": "keshav"
     },
     {
       "id": "prf_1776668248814_7e9x5o",
@@ -233,7 +243,9 @@
       "interests": [],
       "bio": "",
       "createdAt": "2026-04-20T06:57:28.814Z",
-      "updatedAt": "2026-04-20T06:57:28.814Z"
+      "updatedAt": "2026-04-20T06:57:28.814Z",
+      "profileImage": "https://api.dicebear.com/7.x/adventurer/svg?seed=om%20parihar",
+      "fullName": "om parihar"
     },
     {
       "id": "prf_1776056905026_6q7tca",
@@ -250,7 +262,9 @@
       "bio": "12121",
       "pastTrips": "",
       "createdAt": "2026-04-13T05:08:25.026Z",
-      "updatedAt": "2026-07-29T08:32:27.050Z"
+      "updatedAt": "2026-07-29T08:32:27.050Z",
+      "profileImage": "https://api.dicebear.com/7.x/adventurer/svg?seed=abhishek%20sharma",
+      "fullName": "abhishek sharma"
     },
     {
       "id": "prf_1775814682562_6jxka6",
@@ -272,7 +286,8 @@
       "pastTrips": "",
       "createdAt": "2026-04-10T09:51:22.563Z",
       "updatedAt": "2026-10-06T07:24:10.405Z",
-      "profileImage": "/uploads/usr_1775814622426_lafooo_1791113672717_80tri7.jpg"
+      "profileImage": "/uploads/usr_1775814622426_lafooo_1791113672717_80tri7.jpg",
+      "fullName": "abhishek sharma"
     },
     {
       "id": "prf_1791270051938_9wfih1",

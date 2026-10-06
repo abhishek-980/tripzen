@@ -337,6 +337,21 @@ function ensureAdminAndSeedData() {
 function ensureAllUsersHaveProfiles() {
   let updated = false;
   db.users.forEach((u) => {
+    // If user has an image on disk but no profileImageData, mirror it to permanent base64 in store
+    if (!u.profileImageData && u.profileImage && u.profileImage.startsWith('/uploads/')) {
+      const fileName = path.basename(u.profileImage);
+      const filePath = path.join(UPLOADS_DIR, fileName);
+      if (fs.existsSync(filePath)) {
+        try {
+          const buf = fs.readFileSync(filePath);
+          const ext = path.extname(fileName).toLowerCase();
+          const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
+          u.profileImageData = `data:${mime};base64,` + buf.toString('base64');
+          updated = true;
+        } catch (e) {}
+      }
+    }
+
     let p = db.profiles.find((prof) => prof.userId === u.id);
     if (!p) {
       p = {
@@ -349,7 +364,7 @@ function ensureAllUsersHaveProfiles() {
         travelStyle: u.travelStyle || 'Solo',
         budgetRange: u.budgetRange || '5000-9000',
         genderPreference: 'Any',
-        interests: u.interests || ['trekking'],
+        interests: u.interests && u.interests.length ? u.interests : ['trekking'],
         bio: u.bio || '',
         pastTrips: u.pastTrips || '',
         profileImage: u.profileImageData || u.profileImage || '',
@@ -358,6 +373,32 @@ function ensureAllUsersHaveProfiles() {
       };
       db.profiles.push(p);
       updated = true;
+    } else {
+      // Sync any missing fields from user into profile
+      if (!p.profileImage && (u.profileImageData || u.profileImage)) {
+        p.profileImage = u.profileImageData || u.profileImage;
+        updated = true;
+      }
+      if (!p.fullName && u.fullName) {
+        p.fullName = u.fullName;
+        updated = true;
+      }
+      if (!p.bio && u.bio) {
+        p.bio = u.bio;
+        updated = true;
+      }
+      if (!p.travelStyle && u.travelStyle) {
+        p.travelStyle = u.travelStyle;
+        updated = true;
+      }
+      if (!p.budgetRange && u.budgetRange) {
+        p.budgetRange = u.budgetRange;
+        updated = true;
+      }
+      if ((!p.interests || !p.interests.length) && u.interests && u.interests.length) {
+        p.interests = u.interests;
+        updated = true;
+      }
     }
   });
   if (updated) saveStore(db);
@@ -1387,7 +1428,27 @@ app.post('/api/auth/verify-otp', (req, res) => {
     console.log(`[AUTH] Existing user logged in via Phone+OTP: ${user.fullName} (${user.id}, ${phone})`);
   }
 
-  const profile = latestProfilesPerUser().find((item) => item.userId === user.id);
+  let profile = latestProfilesPerUser().find((item) => item.userId === user.id);
+  if (!profile) {
+    profile = {
+      id: uid('prf'),
+      userId: user.id,
+      fullName: user.fullName,
+      destination: 'Chopta Tungnath',
+      startDate: '2026-10-15',
+      endDate: '2026-10-20',
+      travelStyle: user.travelStyle || 'Solo',
+      budgetRange: user.budgetRange || '5000-9000',
+      genderPreference: 'Any',
+      interests: user.interests && user.interests.length ? user.interests : ['trekking', 'photography'],
+      bio: user.bio || '',
+      pastTrips: user.pastTrips || '',
+      profileImage: user.profileImageData || user.profileImage || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    db.profiles.push(profile);
+  }
   user.profileCompleteness = calculateProfileCompleteness(user, profile);
   saveStore(db);
 
@@ -1399,12 +1460,12 @@ app.post('/api/auth/verify-otp', (req, res) => {
     isNewUser,
     user: sanitizeUser(user),
     profile: sanitizeProfile(profile),
-    hasPreferences: Boolean(profile),
+    hasPreferences: Boolean(profile && profile.destination),
   });
 });
 
 app.post('/api/register', (req, res) => {
-  const { fullName, email, password, age, gender, interests, city, travelStyle, pastTrips, budgetRange, profileImage, phone } = req.body;
+  const { fullName, email, password, age, gender, interests, city, travelStyle, pastTrips, budgetRange, profileImage, phone, bio } = req.body;
 
   const rawName = normalizeText(fullName);
   const rawEmail = normalizeText(email);
@@ -1444,16 +1505,17 @@ app.post('/api/register', (req, res) => {
     fullName: rawName,
     email: normalizedEmail,
     password: rawPassword,
-    phone: rawPhone,
-    age: normalizeText(age),
-    gender: normalizeText(gender),
-    city: normalizeText(city),
+    phone: rawPhone || (phoneDigits.length >= 10 ? phoneDigits.slice(-10) : ''),
+    age: normalizeText(age) || '24',
+    gender: normalizeText(gender) || 'Female',
+    city: normalizeText(city) || '',
+    bio: normalizeText(bio) || '',
     interests: normalizeInterests(interests),
-    travelStyle: normalizeText(travelStyle),
-    pastTrips: normalizeText(pastTrips),
-    budgetRange: normalizeText(budgetRange),
+    travelStyle: normalizeText(travelStyle) || 'Solo',
+    pastTrips: normalizeText(pastTrips) || '',
+    budgetRange: normalizeText(budgetRange) || '7000-15000',
     verified: true,
-    profileCompleteness: 50,
+    profileCompleteness: 55,
     profileImageData: profileImage && profileImage.startsWith('data:') ? profileImage : '',
     profileImage:
       persistProfileImage(profileImage, normalizedEmail.replace(/[^a-z0-9]/gi, '_')) ||
@@ -1475,7 +1537,7 @@ app.post('/api/register', (req, res) => {
     travelStyle: user.travelStyle || 'Solo',
     budgetRange: user.budgetRange || '5000-9000',
     genderPreference: 'Any',
-    interests: user.interests || ['trekking'],
+    interests: user.interests && user.interests.length ? user.interests : ['trekking', 'photography'],
     bio: user.bio || '',
     pastTrips: user.pastTrips || '',
     profileImage: user.profileImageData || user.profileImage || '',
@@ -1682,6 +1744,7 @@ app.post('/api/preferences', (req, res) => {
   const profile = {
     id: previous ? previous.id : uid('prf'),
     userId,
+    fullName: user.fullName,
     destination: normalizeText(destination),
     startDate: normalizeText(startDate),
     endDate: normalizeText(endDate),
@@ -1689,8 +1752,9 @@ app.post('/api/preferences', (req, res) => {
     budgetRange: normalizeText(budgetRange) || normalizeText(user.budgetRange) || '5000-9000',
     genderPreference: normalizeText(genderPreference) || 'Any',
     interests: normalizeInterests(normalizeText(interests) ? interests : user.interests),
-    bio: normalizeText(bio),
-    pastTrips: normalizeText(user.pastTrips),
+    bio: normalizeText(bio) || user.bio || (previous ? previous.bio : '') || '',
+    pastTrips: normalizeText(user.pastTrips) || (previous ? previous.pastTrips : '') || '',
+    profileImage: user.profileImageData || user.profileImage || (previous ? previous.profileImage : '') || '',
     createdAt: previous ? previous.createdAt : timestamp,
     updatedAt: timestamp,
   };
@@ -1704,8 +1768,8 @@ app.post('/api/preferences', (req, res) => {
       user.profileImageData = profileImage;
     }
   }
-  if (user.profileImage) {
-    profile.profileImage = user.profileImage;
+  if (user.profileImageData || user.profileImage) {
+    profile.profileImage = user.profileImageData || user.profileImage;
   }
   if (bio !== undefined && normalizeText(bio)) {
     user.bio = normalizeText(bio);
@@ -1758,11 +1822,24 @@ app.post('/api/profile', (req, res) => {
       user.profileImage = user.profileImageData || savedUrl;
     } else if (profileImage.startsWith('/uploads/')) {
       user.profileImage = profileImage;
+      if (!user.profileImageData) {
+        const localFileName = path.basename(profileImage);
+        const localFilePath = path.join(UPLOADS_DIR, localFileName);
+        if (fs.existsSync(localFilePath)) {
+          try {
+            const buf = fs.readFileSync(localFilePath);
+            const ext = path.extname(localFileName).toLowerCase();
+            const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
+            user.profileImageData = `data:${mime};base64,` + buf.toString('base64');
+          } catch (e) {}
+        }
+      }
     }
   }
 
   let profile = latestProfilesPerUser().find((item) => item.userId === user.id);
   if (profile) {
+    if (normalizeText(fullName)) profile.fullName = user.fullName;
     if (bio !== undefined) profile.bio = normalizeText(bio);
     if (interests) profile.interests = normalizeInterests(interests);
     if (travelStyle) profile.travelStyle = normalizeText(travelStyle);
@@ -1825,11 +1902,31 @@ app.post('/api/upload-avatar', (req, res) => {
   const savedUrl = persistProfileImage(image, user.id);
   user.profileImage = user.profileImageData || savedUrl;
 
-  const profile = latestProfilesPerUser().find((item) => item.userId === user.id);
+  let profile = latestProfilesPerUser().find((item) => item.userId === user.id);
   if (profile) {
     profile.profileImage = user.profileImageData || savedUrl;
     profile.updatedAt = new Date().toISOString();
+  } else {
+    profile = {
+      id: uid('prf'),
+      userId: user.id,
+      fullName: user.fullName,
+      destination: 'Chopta Tungnath',
+      startDate: '2026-10-15',
+      endDate: '2026-10-20',
+      travelStyle: user.travelStyle || 'Solo',
+      budgetRange: user.budgetRange || '5000-9000',
+      genderPreference: 'Any',
+      interests: user.interests && user.interests.length ? user.interests : ['trekking', 'photography'],
+      bio: user.bio || '',
+      pastTrips: user.pastTrips || '',
+      profileImage: user.profileImageData || savedUrl,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    db.profiles.push(profile);
   }
+  user.profileCompleteness = calculateProfileCompleteness(user, profile);
   saveStore(db);
 
   return res.json({
