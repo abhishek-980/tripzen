@@ -84,14 +84,30 @@ app.use((req, res, next) => {
   }
   next();
 });
-app.use((req, res, next) => {
+// Enable caching for static assets (images, videos, css) so Cloudflare absorbs bandwidth for free
+app.use('/assets', express.static(path.join(__dirname, 'public', 'assets'), {
+  maxAge: '7d',
+  immutable: true,
+  etag: true,
+}));
+app.use('/uploads', express.static(UPLOADS_DIR, {
+  maxAge: '1d',
+  etag: true,
+}));
+
+// API endpoints & dynamic routes should not be cached
+app.use('/api', (req, res, next) => {
   res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.header('Pragma', 'no-cache');
   res.header('Expires', '0');
   next();
 });
-app.use(express.static(path.join(__dirname, 'public'), { etag: false, maxAge: 0 }));
-app.use('/uploads', express.static(UPLOADS_DIR));
+
+// General static files
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: '1h',
+  etag: true,
+}));
 
 function loadStore() {
   try {
