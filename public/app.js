@@ -2375,8 +2375,8 @@ function generateMatchCardsMarkup(filteredMatches) {
     return `
       <div style="grid-column: 1 / -1; background: var(--surface); padding: 48px 24px; border-radius: var(--radius-xl); text-align: center; border: 1px solid var(--surface-border);">
         <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 8px;">No matching travelers found</h3>
-        <p style="color: var(--text-muted); margin-bottom: 20px;">Try typing a different destination (e.g. Chopta, Kedarkantha, Hampta, Valley) or click "Load Demo Travelers".</p>
-        <button type="button" class="primary-btn" id="seedDemoBtn">Load Demo Travelers</button>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">No other travelers are heading to this destination yet. Adjust your search or edit your destination preferences.</p>
+        <a href="#/preferences" class="primary-btn link-btn" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">✏️ Adjust Preferences</a>
       </div>
     `;
   }
@@ -2440,8 +2440,7 @@ function matchesPage() {
             <p id="matchHeaderSubtext">Showing ${filteredMatches.length} compatible travelers heading to ${escapeHtml(currentDestination)}. Click "Connect & Chat" to start planning together.</p>
           </div>
           <div style="display: flex; gap: 12px;">
-            <a href="#/preferences" class="ghost-btn">✏️ Edit Preferences</a>
-            <button type="button" class="primary-btn" id="seedDemoBtn">Load Demo Travelers</button>
+            <a href="#/preferences" class="primary-btn link-btn" style="text-decoration: none;">✏️ Edit Preferences</a>
           </div>
         </div>
       </div>
@@ -3989,7 +3988,7 @@ async function loadMatches() {
     }
     state.matchStatus = state.matches.length
       ? ''
-      : 'No matches yet for this trip. Click "Load Demo Travelers" to populate instant buddies.';
+      : 'No matches yet for this trip. Update your preferences to explore compatible travelers.';
   } catch (error) {
     try {
       const fallback = await api('/api/matches');
@@ -5976,10 +5975,6 @@ function hydrateUI() {
       };
     });
 
-    const seedButton = document.getElementById('seedDemoBtn');
-    if (seedButton) {
-      seedButton.onclick = handleSeedDemo;
-    }
   }
 
   // Discover Travel Style Filter Pills
@@ -6239,10 +6234,6 @@ function hydrateUI() {
     });
   }
 
-  const seedButton = document.getElementById('seedDemoBtn');
-  if (seedButton) {
-    seedButton.addEventListener('click', handleSeedDemo);
-  }
 
   // Group Trip Modal Open & Close Triggers
   const openGroupModalBtn = document.getElementById('openCreateGroupModalBtn');

@@ -1732,7 +1732,9 @@ app.post('/api/upload-avatar', (req, res) => {
 
 
 app.get('/api/matches', (req, res) => {
-  const allProfiles = latestProfilesPerUser();
+  const allProfiles = latestProfilesPerUser().filter((candidate) => {
+    return Boolean(db.users.find((item) => item.id === candidate.userId));
+  });
   const mockScores = [96, 94, 92, 89, 87, 85, 83, 80];
 
   const matches = allProfiles.map((candidate, idx) => {
@@ -1793,7 +1795,10 @@ app.get('/api/matches/:userId', (req, res) => {
   const baseProfile = latestProfilesPerUser().find((profile) => profile.userId === userId);
   const baseUser = db.users.find((user) => user.id === userId);
 
-  const allCandidates = latestProfilesPerUser().filter((candidate) => candidate.userId !== userId);
+  const allCandidates = latestProfilesPerUser().filter((candidate) => {
+    if (candidate.userId === userId) return false;
+    return Boolean(db.users.find((item) => item.id === candidate.userId));
+  });
 
   let matches = [];
 
@@ -3909,10 +3914,9 @@ function seedDemoData() {
 }
 
 app.post('/api/seed-demo', (req, res) => {
-  const count = seedDemoData();
   return res.json({
     success: true,
-    message: `Loaded ${count} demo travelers and cost-sharing squads across all destinations.`,
+    message: 'Demo traveler seeding is disabled. Only legitimate users are maintained.',
   });
 });
 
