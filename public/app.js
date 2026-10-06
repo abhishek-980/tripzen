@@ -30,7 +30,7 @@ const DESTINATIONS = [
     name: 'Hampta Pass & Chandratal',
     title: 'Hampta Pass & Chandratal Crossover',
     state: 'Himachal Pradesh',
-    image: './assets/hampta-card.mov',
+    image: './assets/hampta-card.mp4',
     mediaType: 'video',
     rating: 4.9,
     description: 'Dramatic crossover trek from lush green Kullu pinewoods to the barren moonscapes of Spiti and sacred turquoise blue Chandratal Lake.',
@@ -84,7 +84,7 @@ const DESTINATIONS = [
     name: 'Kedarkantha',
     title: 'Kedarkantha Winter Snow Summit',
     state: 'Uttarakhand',
-    image: './assets/kedarkantha-card.mov',
+    image: './assets/kedarkantha-card.mp4',
     mediaType: 'video',
     rating: 4.9,
     description: 'The classic 12,500 ft winter summit trek featuring snow pine forests, Juda Ka Talab alpine camp, and a breathtaking 360° summit sunrise.',
@@ -338,7 +338,7 @@ const TRIP_PACKAGES = [
     "month": "September - October",
     "distance": "25 km Total Trek",
     "altitude": "14,100 ft (Hampta Pass Summit)",
-    "image": "./assets/hampta-card.mov",
+    "image": "./assets/hampta-card.mp4",
     "badge": "⭐ Top Rated Crossover",
     "pdf": "/itineraries/hampta-pass.html",
     "dates": "Sep - Oct Batches",
@@ -1183,7 +1183,7 @@ const TRIP_PACKAGES = [
     "month": "December - April",
     "distance": "20 km Total Trek",
     "altitude": "12,500 ft (Kedarkantha Summit)",
-    "image": "./assets/kedarkantha-card.mov",
+    "image": "./assets/kedarkantha-card.mp4",
     "badge": "❄️ Winter Snow Summit",
     "pdf": "/itineraries/kedarkantha.html",
     "dates": "Winter Batches (Dec-Apr)",
@@ -3468,9 +3468,8 @@ function authPage() {
   return `
     <div class="auth-hero-wrapper animate-fade-in">
       <!-- Original Hero Video Background (Crisp & Unblurred) -->
-      <video class="auth-hero-bg-video" autoplay muted loop playsinline>
-        <source src="./assets/hero-bg.mov" type="video/quicktime" />
-        <source src="./assets/hero-bg.mov" type="video/mp4" />
+      <video class="auth-hero-bg-video" autoplay muted loop playsinline preload="metadata">
+        <source src="./assets/hero-bg.mp4" type="video/mp4" />
       </video>
       <div class="auth-hero-video-overlay"></div>
 
