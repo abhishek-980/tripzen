@@ -280,6 +280,7 @@
 
   <script>
     let isRequestingCode = false;
+    let autoRequestedOnce = false;
 
     async function fetchStatus() {
       try {
@@ -312,8 +313,9 @@
           if (data.formattedPairingCode || data.pairingCode) {
             codeVal.textContent = data.formattedPairingCode || data.pairingCode;
             codeVal.style.color = '#34d399';
-          } else if (!isRequestingCode && data.status !== 'connected') {
-            // Auto-request code on first load
+          } else if (!autoRequestedOnce && !isRequestingCode && data.status !== 'connected') {
+            // Auto-request code on first load once only
+            autoRequestedOnce = true;
             requestCode();
           }
         }
@@ -326,13 +328,15 @@
       if (isRequestingCode) return;
       isRequestingCode = true;
       const codeVal = document.getElementById('pairingCodeVal');
-      if (codeVal.textContent === '--------') codeVal.textContent = 'Generating...';
+      const prev = codeVal.textContent;
+      if (!prev || prev === '--------') codeVal.textContent = 'Generating...';
 
       try {
+        const phoneToUse = document.getElementById('testPhoneInput')?.value?.trim() || '8920632874';
         const res = await fetch('/api/whatsapp/request-code', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber: '8920632874' })
+          body: JSON.stringify({ phoneNumber: phoneToUse })
         });
         const result = await res.json();
         if (result.success && result.pairingCode) {
@@ -347,7 +351,9 @@
       }
     }
 
-    document.getElementById('refreshCodeBtn').addEventListener('click', requestCode);
+    document.getElementById('refreshCodeBtn').addEventListener('click', () => {
+      requestCode();
+    });
 
     document.getElementById('copyCodeBtn').addEventListener('click', () => {
       const codeVal = document.getElementById('pairingCodeVal').textContent.replace(/\s|-/g, '');

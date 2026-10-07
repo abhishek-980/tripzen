@@ -1,6 +1,7 @@
 const {
   default: makeWASocket,
   useMultiFileAuthState,
+  makeCacheableSignalKeyStore,
   DisconnectReason,
   fetchLatestBaileysVersion,
   Browsers,
@@ -16,6 +17,7 @@ const SESSION_DIR = path.join(__dirname, '..', 'data', 'auth_info_baileys');
 let sock = null;
 let connectionState = 'disconnected'; // 'disconnected' | 'connecting' | 'pairing' | 'connected'
 let currentPairingCode = '';
+let pairingCodeTimestamp = 0;
 let currentQrDataUrl = '';
 let linkedPhoneNumber = '';
 let targetPhoneNumber = process.env.TRIPZEN_OFFICIAL_WHATSAPP || '+91 89206 32874';
@@ -42,18 +44,23 @@ async function initWhatsAppService(customPhone) {
   try {
     const { state, saveCreds } = await useMultiFileAuthState(SESSION_DIR);
     const { version } = await fetchLatestBaileysVersion();
+    const logger = pino({ level: 'silent' });
 
     connectionState = 'connecting';
 
     sock = makeWASocket({
       version,
-      auth: state,
-      logger: pino({ level: 'silent' }),
+      logger,
+      auth: {
+        creds: state.creds,
+        keys: makeCacheableSignalKeyStore(state.keys, logger),
+      },
       printQRInTerminal: false,
-      browser: Browsers.ubuntu('Chrome'),
+      browser: Browsers.macOS('Chrome'),
       connectTimeoutMs: 60000,
       keepAliveIntervalMs: 25000,
       syncFullHistory: false,
+      markOnlineOnConnect: true,
     });
 
     sock.ev.on('creds.update', saveCreds);
@@ -86,10 +93,11 @@ async function initWhatsAppService(customPhone) {
 
         console.log(`[WhatsApp Service] Connection closed (code: ${statusCode}). Reconnect: ${shouldReconnect}`);
         connectionState = 'disconnected';
-        currentPairingCode = '';
 
         if (statusCode === DisconnectReason.loggedOut || statusCode === 401 || statusCode === 403) {
           console.log('[WhatsApp Service] Device unlinked/logged out. Resetting auth...');
+          currentPairingCode = '';
+          currentQrDataUrl = '';
           try {
             fs.rmSync(SESSION_DIR, { recursive: true, force: true });
           } catch (e) {}
@@ -100,26 +108,27 @@ async function initWhatsAppService(customPhone) {
           reconnectTimeout = setTimeout(() => {
             isInitializing = false;
             initWhatsAppService();
-          }, 4000);
+          }, 3500);
         }
       }
     });
 
-    // If session is not registered, request a fresh pairing code
-    if (!sock.authState.creds.registered) {
+    // If socket is fresh and unregistered, auto-generate initial pairing code once smoothly
+    if (!sock.authState.creds.registered && !currentPairingCode) {
       connectionState = 'pairing';
       const cleanPhone = getCleanPhone(targetPhoneNumber);
 
       setTimeout(async () => {
         try {
-          if (sock && !sock.authState.creds.registered) {
+          if (sock && !sock.authState.creds.registered && !currentPairingCode) {
             console.log(`[WhatsApp Service] Requesting fresh Pairing Code for +${cleanPhone}...`);
             const code = await sock.requestPairingCode(cleanPhone);
             currentPairingCode = code;
+            pairingCodeTimestamp = Date.now();
             console.log(`[WhatsApp Service] 📲 Pairing Code generated for +${cleanPhone}: ${code}`);
           }
         } catch (err) {
-          console.warn('[WhatsApp Service] Pairing code request notice:', err.message);
+          console.warn('[WhatsApp Service] Pairing code request note:', err.message);
         }
       }, 3000);
     }
@@ -135,33 +144,54 @@ async function requestNewPairingCode(phoneNumber) {
   const phoneToUse = phoneNumber || targetPhoneNumber;
   const cleanPhone = getCleanPhone(phoneToUse);
 
-  // If previous socket is stale, reset it
-  if (!sock || !sock.authState.creds.registered) {
-    try {
-      if (sock) {
-        try { sock.end(); } catch (e) {}
-      }
-      fs.rmSync(SESSION_DIR, { recursive: true, force: true });
-    } catch (e) {}
+  if (connectionState === 'connected') {
+    return { success: false, error: 'Already connected as +' + linkedPhoneNumber };
+  }
+
+  // If a valid code was generated in the last 45 seconds, return it immediately without breaking socket
+  if (currentPairingCode && (Date.now() - pairingCodeTimestamp < 45000)) {
+    return {
+      success: true,
+      pairingCode: currentPairingCode,
+      phone: cleanPhone,
+      qrCodeDataUrl: currentQrDataUrl,
+    };
+  }
+
+  // Ensure socket is alive
+  if (!sock) {
     isInitializing = false;
     await initWhatsAppService(phoneToUse);
-    await delay(3500);
+    await delay(2500);
   }
 
   if (sock && !sock.authState.creds.registered) {
     try {
       const code = await sock.requestPairingCode(cleanPhone);
       currentPairingCode = code;
+      pairingCodeTimestamp = Date.now();
       connectionState = 'pairing';
-      return { success: true, pairingCode: code, phone: cleanPhone, qrCodeDataUrl: currentQrDataUrl };
+      console.log(`[WhatsApp Service] 📲 Fresh Pairing Code requested: ${code} for +${cleanPhone}`);
+      return {
+        success: true,
+        pairingCode: code,
+        phone: cleanPhone,
+        qrCodeDataUrl: currentQrDataUrl,
+      };
     } catch (err) {
-      console.error('[WhatsApp Service] Failed to request new pairing code:', err.message);
-      return { success: false, error: err.message };
+      console.error('[WhatsApp Service] Failed to request pairing code:', err.message);
+      return {
+        success: false,
+        error: err.message,
+        qrCodeDataUrl: currentQrDataUrl,
+      };
     }
-  } else if (connectionState === 'connected') {
-    return { success: false, error: 'Already connected as +' + linkedPhoneNumber };
   } else {
-    return { success: false, error: 'Initializing socket. Please click again in 2 seconds.' };
+    return {
+      success: false,
+      error: 'Socket is initializing or already connected. Please try in a few seconds.',
+      qrCodeDataUrl: currentQrDataUrl,
+    };
   }
 }
 
@@ -223,7 +253,8 @@ function getServiceStatus() {
 async function logoutWhatsApp() {
   try {
     if (sock) {
-      await sock.logout();
+      try { await sock.logout(); } catch (e) {}
+      try { sock.end(); } catch (e) {}
     }
   } catch (e) {}
   try {
@@ -232,6 +263,7 @@ async function logoutWhatsApp() {
   sock = null;
   connectionState = 'disconnected';
   currentPairingCode = '';
+  pairingCodeTimestamp = 0;
   currentQrDataUrl = '';
   linkedPhoneNumber = '';
   isInitializing = false;
