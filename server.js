@@ -103,10 +103,18 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-// General static files
+// General static files (HTML and core scripts are delivered without stale browser cache)
 app.use(express.static(path.join(__dirname, 'public'), {
-  maxAge: '1h',
   etag: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html') || filePath.endsWith('.js')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+    }
+  },
 }));
 
 function loadStore() {
@@ -4144,6 +4152,9 @@ app.post('/api/seed-demo', (req, res) => {
 });
 
 app.get(/.*/, (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
