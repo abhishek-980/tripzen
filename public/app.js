@@ -2107,15 +2107,14 @@ function profilePage() {
             <span>Personal Information</span>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border);">
-            <label class="field-label" style="margin-bottom: 0;">
+          <div style="margin-bottom: 14px; background: rgba(255, 255, 255, 0.03); padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <label class="field-label" style="margin-bottom: 0; flex: 1; min-width: 240px;">
               <span>REGISTERED EMAIL 🔒</span>
-              <input type="text" readonly class="stitch-input" style="opacity: 0.85; background: var(--surface); cursor: not-allowed; font-size: 0.88rem;" value="${escapeHtml(user.email || 'Not set')}" />
+              <input type="text" readonly class="stitch-input" style="opacity: 0.9; background: var(--surface); cursor: not-allowed; font-size: 0.88rem;" value="${escapeHtml(user.email || 'Not set')}" />
             </label>
-            <label class="field-label" style="margin-bottom: 0;">
-              <span>ACCOUNT ID 🆔</span>
-              <input type="text" readonly class="stitch-input" style="opacity: 0.85; background: var(--surface); cursor: not-allowed; font-size: 0.88rem;" value="${escapeHtml(user.id || 'Not set')}" />
-            </label>
+            <div style="display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; background: rgba(5, 150, 105, 0.12); border: 1px solid rgba(5, 150, 105, 0.3); color: #10b981; font-size: 0.8rem; font-weight: 600; align-self: flex-end; margin-bottom: 2px;">
+              <span>✓ Verified Traveler Account</span>
+            </div>
           </div>
 
           <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
