@@ -5066,54 +5066,172 @@ video {
     gap: 8px;
   }
 
-  .mobile-topbar-user-pill {
+  .user-menu-dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  .mobile-topbar-menu-trigger {
     display: flex;
     align-items: center;
-    gap: 6px;
-    text-decoration: none;
+    gap: 7px;
     background: var(--surface-alt);
-    padding: 4px 8px 4px 4px;
+    padding: 4px 10px 4px 4px;
     border-radius: var(--radius-full);
     border: 1px solid var(--surface-border);
-    max-width: 125px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-topbar-menu-trigger:hover,
+  .mobile-topbar-menu-trigger:active {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    transform: scale(0.98);
   }
 
   .mobile-topbar-avatar {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     object-fit: cover;
+    flex-shrink: 0;
   }
 
   .mobile-topbar-name {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
+  }
+
+  .three-lines-icon {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: var(--forest);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    margin-left: 2px;
+  }
+
+  .user-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 230px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.16), 0 2px 10px rgba(0, 0, 0, 0.06);
+    padding: 8px;
+    z-index: 10000;
+    display: none;
+    flex-direction: column;
+    animation: dropMenuFadeIn 0.16s ease-out forwards;
+    transform-origin: top right;
+  }
+
+  .user-dropdown-menu.open {
+    display: flex;
+  }
+
+  .user-dropdown-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: rgba(20, 56, 45, 0.05);
+    border-radius: 12px;
+  }
+
+  .user-dropdown-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid rgba(20, 56, 45, 0.2);
+    flex-shrink: 0;
+  }
+
+  .user-dropdown-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .user-dropdown-info strong {
+    font-size: 0.88rem;
     color: var(--ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .mobile-topbar-logout-btn {
-    background: #fef2f2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
-    padding: 6px 12px;
-    border-radius: var(--radius-full);
-    font-size: 0.78rem;
-    font-weight: 800;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    transition: all var(--transition-fast);
+  .user-dropdown-info span {
+    font-size: 0.72rem;
+    color: var(--muted);
     white-space: nowrap;
-    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .mobile-topbar-logout-btn:active {
-    background: #fee2e2;
-    transform: scale(0.96);
+  .user-dropdown-divider {
+    height: 1px;
+    background: var(--line);
+    margin: 6px 4px;
+  }
+
+  .user-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--ink);
+    font-size: 0.86rem;
+    font-weight: 700;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+  }
+
+  .user-dropdown-item:hover,
+  .user-dropdown-item:active {
+    background: #f1f5f9;
+  }
+
+  .user-dropdown-item.logout-item {
+    color: #dc2626;
+  }
+
+  .user-dropdown-item.logout-item:hover,
+  .user-dropdown-item.logout-item:active {
+    background: #fef2f2;
+  }
+
+  @keyframes dropMenuFadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
   }
 }
 

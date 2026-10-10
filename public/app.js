@@ -1796,6 +1796,7 @@ function workflowStepper() {
 
 function topbar() {
   const current = normalizedRoute();
+  const avatarUrl = state.user?.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(state.user?.fullName || 'Traveler')}`;
   return `
     <header class="topbar-stitch">
       <div class="topbar-inner">
@@ -1819,8 +1820,40 @@ function topbar() {
           ${
             state.user
               ? `
-                <a href="#/profile" class="stitch-signin-link desktop-only" title="View / Edit Profile">👤 ${escapeHtml(state.user.fullName)}</a>
-                <button type="button" class="ghost-btn action-logout-btn" id="logoutBtn" style="padding: 6px 14px; font-size: 0.82rem; font-weight: 700; color: #dc2626; border-color: rgba(220, 38, 38, 0.35);">🚪 Log Out</button>
+                <div class="user-menu-dropdown-wrapper desktop-only">
+                  <button type="button" class="mobile-topbar-menu-trigger" id="desktopUserMenuToggleBtn" aria-label="Open User Menu" style="padding: 5px 12px 5px 5px;">
+                    <img src="${escapeHtml(avatarUrl)}" class="mobile-topbar-avatar" alt="Avatar" style="width: 26px; height: 26px;" />
+                    <span class="mobile-topbar-name" style="max-width: 120px;">${escapeHtml(state.user.fullName || 'Traveler')}</span>
+                    <span class="three-lines-icon">☰</span>
+                  </button>
+                  <div class="user-dropdown-menu" id="desktopUserDropdownMenu">
+                    <div class="user-dropdown-header">
+                      <img src="${escapeHtml(avatarUrl)}" class="user-dropdown-avatar" alt="Avatar" />
+                      <div class="user-dropdown-info">
+                        <strong>${escapeHtml(state.user?.fullName || 'Traveler')}</strong>
+                        <span>${escapeHtml(state.user?.email || state.user?.phone || '')}</span>
+                      </div>
+                    </div>
+                    <div class="user-dropdown-divider"></div>
+                    <a href="#/profile" class="user-dropdown-item">
+                      <span class="item-icon">👤</span>
+                      <span class="item-label">Profile Details</span>
+                    </a>
+                    <a href="#/bookings" class="user-dropdown-item">
+                      <span class="item-icon">🎟️</span>
+                      <span class="item-label">My Bookings</span>
+                    </a>
+                    <a href="#/groups" class="user-dropdown-item">
+                      <span class="item-icon">👥</span>
+                      <span class="item-label">Cost Sharing</span>
+                    </a>
+                    <div class="user-dropdown-divider"></div>
+                    <button type="button" class="user-dropdown-item logout-item action-logout-btn" id="logoutBtn">
+                      <span class="item-icon">🚪</span>
+                      <span class="item-label">Log Out</span>
+                    </button>
+                  </div>
+                </div>
               `
               : `
                 <button type="button" class="stitch-signin-link" id="topbarSignInBtn">Sign In</button>
@@ -1976,13 +2009,40 @@ function dashboardShell(contentMarkup) {
           <span>TripZen</span>
         </a>
         <div class="mobile-topbar-actions">
-          <a href="#/profile" class="mobile-topbar-user-pill" title="View Profile">
-            <img src="${escapeHtml(avatarUrl)}" class="mobile-topbar-avatar" alt="Avatar" />
-            <span class="mobile-topbar-name">${escapeHtml(firstName)}</span>
-          </a>
-          <button type="button" class="mobile-topbar-logout-btn action-logout-btn" id="mobileHeaderLogoutBtn" title="Log Out of TripZen">
-            <span>🚪 Log Out</span>
-          </button>
+          <div class="user-menu-dropdown-wrapper">
+            <button type="button" class="mobile-topbar-menu-trigger" id="mobileUserMenuToggleBtn" aria-label="Open User Menu" title="Menu">
+              <img src="${escapeHtml(avatarUrl)}" class="mobile-topbar-avatar" alt="Avatar" />
+              <span class="mobile-topbar-name">${escapeHtml(firstName)}</span>
+              <span class="three-lines-icon">☰</span>
+            </button>
+            <div class="user-dropdown-menu" id="mobileUserDropdownMenu">
+              <div class="user-dropdown-header">
+                <img src="${escapeHtml(avatarUrl)}" class="user-dropdown-avatar" alt="Avatar" />
+                <div class="user-dropdown-info">
+                  <strong>${escapeHtml(state.user?.fullName || 'Traveler')}</strong>
+                  <span>${escapeHtml(state.user?.email || state.user?.phone || '')}</span>
+                </div>
+              </div>
+              <div class="user-dropdown-divider"></div>
+              <a href="#/profile" class="user-dropdown-item">
+                <span class="item-icon">👤</span>
+                <span class="item-label">Profile Details</span>
+              </a>
+              <a href="#/bookings" class="user-dropdown-item">
+                <span class="item-icon">🎟️</span>
+                <span class="item-label">My Bookings</span>
+              </a>
+              <a href="#/groups" class="user-dropdown-item">
+                <span class="item-icon">👥</span>
+                <span class="item-label">Cost Sharing</span>
+              </a>
+              <div class="user-dropdown-divider"></div>
+              <button type="button" class="user-dropdown-item logout-item action-logout-btn" id="mobileHeaderLogoutBtn">
+                <span class="item-icon">🚪</span>
+                <span class="item-label">Log Out</span>
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -6636,6 +6696,37 @@ function hydrateUI() {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       handleLogout();
+    });
+  });
+
+  // Profile & Logout Dropdown Menu Toggles (Three Lines ☰ in Top Right Corner)
+  const userMenuToggles = document.querySelectorAll('#mobileUserMenuToggleBtn, #desktopUserMenuToggleBtn');
+  userMenuToggles.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const wrapper = btn.closest('.user-menu-dropdown-wrapper');
+      const menu = wrapper ? wrapper.querySelector('.user-dropdown-menu') : null;
+      if (menu) {
+        const isOpen = menu.classList.contains('open');
+        document.querySelectorAll('.user-dropdown-menu.open').forEach((m) => m.classList.remove('open'));
+        if (!isOpen) {
+          menu.classList.add('open');
+        }
+      }
+    });
+  });
+
+  // Close dropdown menu when clicking anywhere else
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.user-menu-dropdown-wrapper')) {
+      document.querySelectorAll('.user-dropdown-menu.open').forEach((m) => m.classList.remove('open'));
+    }
+  });
+
+  // Close dropdown menu when clicking any dropdown item
+  document.querySelectorAll('.user-dropdown-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.user-dropdown-menu.open').forEach((m) => m.classList.remove('open'));
     });
   });
 
