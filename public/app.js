@@ -1796,45 +1796,31 @@ function workflowStepper() {
 
 function userDropdownMenuHtml(avatarUrl) {
   return `
-    <div class="user-dropdown-menu" id="userDropdownMenu">
+    <div class="user-dropdown-menu">
       <div class="user-dropdown-header">
         <img src="${escapeHtml(avatarUrl)}" class="user-dropdown-avatar" alt="Avatar" />
         <div class="user-dropdown-info">
           <strong>${escapeHtml(state.user?.fullName || 'Traveler')}</strong>
-          <span class="user-dropdown-status-badge">✓ Verified Traveler</span>
+          <span>${escapeHtml(state.user?.email || state.user?.phone || 'Verified Traveler')}</span>
         </div>
       </div>
       <div class="user-dropdown-divider"></div>
       <a href="#/profile" class="user-dropdown-item">
         <span class="item-icon">👤</span>
-        <span class="item-label">Profile &amp; Bio</span>
-      </a>
-      <a href="#/preferences" class="user-dropdown-item">
-        <span class="item-icon">🎛️</span>
-        <span class="item-label">Plan Destination &amp; Dates</span>
-      </a>
-      <a href="#/matches" class="user-dropdown-item">
-        <span class="item-icon">👥</span>
-        <span class="item-label">Traveler Matches</span>
+        <span class="item-label">Profile Details</span>
       </a>
       <a href="#/bookings" class="user-dropdown-item">
         <span class="item-icon">🎟️</span>
-        <span class="item-label">My Bookings &amp; Receipts</span>
+        <span class="item-label">My Bookings</span>
       </a>
       <a href="#/groups" class="user-dropdown-item">
-        <span class="item-icon">🎒</span>
-        <span class="item-label">Community Batches</span>
+        <span class="item-icon">👥</span>
+        <span class="item-label">Cost Sharing</span>
       </a>
-      ${isAdminUser() ? `
-        <a href="/admin.html" target="_blank" class="user-dropdown-item admin-item" style="color: var(--accent); font-weight: 700;">
-          <span class="item-icon">🗄️</span>
-          <span class="item-label">RAW Database</span>
-        </a>
-      ` : ''}
       <div class="user-dropdown-divider"></div>
       <button type="button" class="user-dropdown-item logout-item action-logout-btn">
         <span class="item-icon">🚪</span>
-        <span class="item-label">Sign Out</span>
+        <span class="item-label">Log Out</span>
       </button>
     </div>
   `;
@@ -1859,24 +1845,22 @@ function topbar() {
   const firstName = state.user?.fullName ? state.user.fullName.split(' ')[0] : 'Traveler';
 
   return `
-    <header class="topbar-stitch glassmorphic-navbar">
+    <header class="topbar-stitch">
       <div class="topbar-inner">
         <a href="#/" class="stitch-brand">
           <img src="./assets/tripzen-logo.png" alt="TripZen Logo" class="stitch-brand-logo-img" />
-          <div class="stitch-brand-text-wrap">
-            <span class="stitch-brand-name">TripZen</span>
-            <span class="stitch-brand-tagline">Himalayan Matchmaking</span>
-          </div>
+          <span>TripZen</span>
         </a>
 
         <nav class="stitch-nav-menu">
-          <a href="#/" class="stitch-nav-item ${current === '/' || current === '/auth' ? 'active' : ''}">🧭 Explore</a>
-          <a href="#/matches" class="stitch-nav-item ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}">👥 Find Buddies</a>
-          <a href="#/packages" class="stitch-nav-item ${current === '/packages' || current === '/join-book' ? 'active' : ''}">📦 Curated Treks</a>
-          <a href="#/groups" class="stitch-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">🎒 Group Batches ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}</a>
-          ${state.user ? `<a href="#/chat" class="stitch-nav-item ${current === '/chat' ? 'active' : ''}">💬 Inbox ${state.unreadConversationCount > 0 ? `<span class="nav-counter-pill pulse">${state.unreadConversationCount}</span>` : ''}</a>` : ''}
-          ${state.user ? `<a href="#/bookings" class="stitch-nav-item ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}">🎟️ My Bookings ${state.bookings.length > 0 ? `<span class="nav-counter-pill">${state.bookings.length}</span>` : ''}</a>` : ''}
-          ${isAdminUser() ? `<a href="/admin.html" target="_blank" class="stitch-nav-item admin-nav-pill">🗄️ RAW DB</a>` : ''}
+          <a href="#/profile" class="stitch-nav-item ${current === '/profile' ? 'active' : ''}">Profile</a>
+          <a href="#/preferences" class="stitch-nav-item ${current === '/preferences' ? 'active' : ''}">Plan Trip</a>
+          <a href="#/matches" class="stitch-nav-item ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}">Matches</a>
+          <a href="#/chat" class="stitch-nav-item ${current === '/chat' ? 'active' : ''}">Inbox ${state.unreadConversationCount > 0 ? `<span class="nav-counter-pill">${state.unreadConversationCount}</span>` : ''}</a>
+          <a href="#/join-book" class="stitch-nav-item ${current === '/join-book' || current === '/packages' ? 'active' : ''}">Packages</a>
+          <a href="#/groups" class="stitch-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">Cost Sharing ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}</a>
+          <a href="#/bookings" class="stitch-nav-item ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}">My Bookings ${state.bookings.length > 0 ? `<span class="nav-counter-pill">${state.bookings.length}</span>` : ''}</a>
+          ${isAdminUser() ? `<a href="/admin.html" target="_blank" class="stitch-nav-item admin-nav-pill">🗄️ RAW Data DB</a>` : ''}
         </nav>
 
         <div class="stitch-topbar-actions">
@@ -1885,7 +1869,7 @@ function topbar() {
               ? userMenuPillHtml(avatarUrl, state.user.fullName || firstName, 'topbar-user-menu', 'desktopUserMenuToggleBtn')
               : `
                 <button type="button" class="stitch-signin-link" id="topbarSignInBtn">Sign In</button>
-                <button type="button" class="primary-btn link-btn desktop-only" id="topbarGetStartedBtn">Start Planning Free ➔</button>
+                <button type="button" class="primary-btn link-btn desktop-only" id="topbarGetStartedBtn">Get Started</button>
               `
           }
           <button type="button" class="mobile-nav-toggle-btn" id="mobileNavToggleBtn" aria-label="Toggle Navigation">
@@ -1897,32 +1881,29 @@ function topbar() {
       <!-- Mobile Dropdown Navigation Drawer -->
       <div class="mobile-nav-drawer ${state.mobileNavOpen ? 'open' : ''}" id="mobileNavDrawer">
         <div class="mobile-nav-links">
-          <a href="#/" class="mobile-nav-item ${current === '/' || current === '/auth' ? 'active' : ''}">
-            <span class="mobile-nav-icon">🧭</span> <span>Explore &amp; Search</span>
+          <a href="#/profile" class="mobile-nav-item ${current === '/profile' ? 'active' : ''}">
+            <span class="mobile-nav-icon">👤</span> <span>Profile Setup</span>
+          </a>
+          <a href="#/preferences" class="mobile-nav-item ${current === '/preferences' ? 'active' : ''}">
+            <span class="mobile-nav-icon">🎛️</span> <span>Plan Trip</span>
           </a>
           <a href="#/matches" class="mobile-nav-item ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}">
-            <span class="mobile-nav-icon">👥</span> <span>Find Buddies</span>
-          </a>
-          <a href="#/packages" class="mobile-nav-item ${current === '/join-book' || current === '/packages' ? 'active' : ''}">
-            <span class="mobile-nav-icon">📦</span> <span>Curated Treks</span>
-          </a>
-          <a href="#/groups" class="mobile-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">
-            <span class="mobile-nav-icon">🎒</span> <span>Group Batches</span>
-            ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}
+            <span class="mobile-nav-icon">✨</span> <span>Discover Matches</span>
           </a>
           <a href="#/chat" class="mobile-nav-item ${current === '/chat' ? 'active' : ''}">
-            <span class="mobile-nav-icon">💬</span> <span>Inbox &amp; Messages</span>
-            ${state.unreadConversationCount > 0 ? `<span class="nav-counter-pill pulse">${state.unreadConversationCount}</span>` : ''}
+            <span class="mobile-nav-icon">✉️</span> <span>Messages &amp; Chat</span>
+            ${state.unreadConversationCount > 0 ? `<span class="nav-counter-pill">${state.unreadConversationCount}</span>` : ''}
+          </a>
+          <a href="#/join-book" class="mobile-nav-item ${current === '/join-book' || current === '/packages' ? 'active' : ''}">
+            <span class="mobile-nav-icon">📦</span> <span>Curated Packages</span>
+          </a>
+          <a href="#/groups" class="mobile-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">
+            <span class="mobile-nav-icon">👥</span> <span>Cost Sharing</span>
+            ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}
           </a>
           <a href="#/bookings" class="mobile-nav-item ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}">
             <span class="mobile-nav-icon">🎟️</span> <span>My Bookings</span>
             ${state.bookings.length > 0 ? `<span class="nav-counter-pill">${state.bookings.length}</span>` : ''}
-          </a>
-          <a href="#/profile" class="mobile-nav-item ${current === '/profile' ? 'active' : ''}">
-            <span class="mobile-nav-icon">👤</span> <span>Profile Details</span>
-          </a>
-          <a href="#/preferences" class="mobile-nav-item ${current === '/preferences' ? 'active' : ''}">
-            <span class="mobile-nav-icon">🎛️</span> <span>Plan Dates</span>
           </a>
           <a href="#/about" class="mobile-nav-item ${current === '/about' ? 'active' : ''}">
             <span class="mobile-nav-icon">ℹ️</span> <span>About TripZen</span>
@@ -1963,10 +1944,7 @@ function dashboardSidebar() {
       <div class="sidebar-header">
         <a href="#/" class="stitch-brand">
           <img src="./assets/tripzen-logo.png" alt="TripZen Logo" class="stitch-brand-logo-img" />
-          <div class="stitch-brand-text-wrap">
-            <span class="stitch-brand-name">TripZen</span>
-            <span class="stitch-brand-tagline">Himalayas</span>
-          </div>
+          <span>TripZen</span>
         </a>
         <a href="#/profile" class="sidebar-user-pill" title="View / Edit Profile">
           <img class="sidebar-user-avatar" src="${escapeHtml(avatarUrl)}" alt="Avatar" />
@@ -1978,63 +1956,41 @@ function dashboardSidebar() {
       </div>
 
       <nav class="sidebar-nav-list">
-        <!-- 1. Explore (Mobile Bottom Bar Tab 1) -->
-        <a href="#/" class="sidebar-nav-link mobile-only mobile-bottom-tab ${current === '/' || current === '/auth' ? 'active' : ''}" data-nav-id="explore" title="Explore & Search">
-          <span class="sidebar-nav-icon">🧭</span>
-          <span class="sidebar-nav-label">Explore</span>
-        </a>
-
-        <!-- 2. Discover Matches (Mobile Tab 2, Desktop Link 3) -->
-        <a href="#/matches" class="sidebar-nav-link mobile-bottom-tab ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}" data-nav-id="matches" title="Discover Matches">
-          <span class="sidebar-nav-icon">👥</span>
-          <span class="sidebar-nav-label">Matches</span>
-        </a>
-
-        <!-- 3. Curated Packages (Mobile Tab 3, Desktop Link 5) -->
-        <a href="#/packages" class="sidebar-nav-link mobile-bottom-tab ${current === '/join-book' || current === '/packages' ? 'active' : ''}" data-nav-id="packages" title="Curated Packages">
-          <span class="sidebar-nav-icon">📦</span>
-          <span class="sidebar-nav-label">Treks</span>
-        </a>
-
-        <!-- 4. Messages & Chat (Mobile Tab 4, Desktop Link 4) -->
-        <a href="#/chat" class="sidebar-nav-link mobile-bottom-tab ${current === '/chat' ? 'active' : ''}" data-nav-id="chat" title="Messages & Chat">
-          <span class="sidebar-nav-icon">💬</span>
-          <span class="sidebar-nav-label">Chat</span>
-          ${state.unreadConversationCount > 0 ? `<span class="sidebar-nav-badge">${state.unreadConversationCount}</span>` : ''}
-        </a>
-
-        <!-- 5. Profile Setup (Mobile Tab 5, Desktop Link 1) -->
-        <a href="#/profile" class="sidebar-nav-link mobile-bottom-tab ${current === '/profile' ? 'active' : ''}" data-nav-id="profile" title="Profile Setup">
+        <a href="#/profile" class="sidebar-nav-link ${current === '/profile' ? 'active' : ''}" title="Profile Setup">
           <span class="sidebar-nav-icon">👤</span>
           <span class="sidebar-nav-label">Profile</span>
         </a>
-
-        <!-- 6. Plan Trip & Dates (Desktop Sidebar) -->
-        <a href="#/preferences" class="sidebar-nav-link desktop-only ${current === '/preferences' ? 'active' : ''}" data-nav-id="preferences" title="Plan Trip">
+        <a href="#/preferences" class="sidebar-nav-link ${current === '/preferences' ? 'active' : ''}" title="Plan Trip">
           <span class="sidebar-nav-icon">🎛️</span>
-          <span class="sidebar-nav-label">Plan Trip</span>
+          <span class="sidebar-nav-label">Plan</span>
         </a>
-
-        <!-- 7. Cost Sharing Groups (Desktop Sidebar) -->
-        <a href="#/groups" class="sidebar-nav-link desktop-only ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}" data-nav-id="groups" title="Cost Sharing">
-          <span class="sidebar-nav-icon">🎒</span>
+        <a href="#/matches" class="sidebar-nav-link ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}" title="Discover Matches">
+          <span class="sidebar-nav-icon">🧭</span>
+          <span class="sidebar-nav-label">Matches</span>
+        </a>
+        <a href="#/chat" class="sidebar-nav-link ${current === '/chat' ? 'active' : ''}" title="Messages & Chat">
+          <span class="sidebar-nav-icon">✉️</span>
+          <span class="sidebar-nav-label">Chat</span>
+          ${state.unreadConversationCount > 0 ? `<span class="sidebar-nav-badge">${state.unreadConversationCount}</span>` : ''}
+        </a>
+        <a href="#/join-book" class="sidebar-nav-link ${current === '/join-book' || current === '/packages' ? 'active' : ''}" title="Curated Packages">
+          <span class="sidebar-nav-icon">📦</span>
+          <span class="sidebar-nav-label">Packages</span>
+        </a>
+        <a href="#/groups" class="sidebar-nav-link ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}" title="Cost Sharing">
+          <span class="sidebar-nav-icon">👥</span>
           <span class="sidebar-nav-label">Groups</span>
           ${state.tripGroups.length > 0 ? `<span class="sidebar-nav-badge" style="background: rgba(35,89,70,0.12); color: var(--forest);">${state.tripGroups.length}</span>` : ''}
         </a>
-
-        <!-- 8. Bookings (Desktop Sidebar) -->
-        <a href="#/bookings" class="sidebar-nav-link desktop-only ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}" data-nav-id="bookings" title="My Bookings">
+        <a href="#/bookings" class="sidebar-nav-link ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}" title="My Bookings">
           <span class="sidebar-nav-icon">🎟️</span>
           <span class="sidebar-nav-label">Bookings</span>
           ${state.bookings.length > 0 ? `<span class="sidebar-nav-badge" style="background: rgba(16,185,129,0.15); color: #047857; font-weight: 800;">${state.bookings.length}</span>` : ''}
         </a>
-
-        <!-- 9. About (Desktop Sidebar) -->
-        <a href="#/about" class="sidebar-nav-link desktop-only ${current === '/about' ? 'active' : ''}" data-nav-id="about" title="About TripZen">
+        <a href="#/about" class="sidebar-nav-link ${current === '/about' ? 'active' : ''} desktop-only" title="About TripZen">
           <span class="sidebar-nav-icon">ℹ️</span>
           <span class="sidebar-nav-label">About</span>
         </a>
-
         ${isAdminUser() ? `
           <a href="/admin.html" target="_blank" class="sidebar-nav-link admin-nav-link desktop-only" style="color: var(--accent); font-weight: 700;" title="RAW Data DB">
             <span class="sidebar-nav-icon">🗄️</span>
@@ -3603,86 +3559,9 @@ function authPage() {
             <span class="hero-pill-point">🏖️ Treks & Vacations</span>
           </div>
 
-          <!-- Airbnb-Style Interactive Hero Search Bar -->
-          <div class="hero-search-floating-card">
-            <div class="hero-search-tabs-row">
-              <span class="hero-search-tab-pill active">🏔️ Find Travel Companions</span>
-              <a href="#/packages" class="hero-search-tab-pill" style="text-decoration: none;">📦 Curated Treks</a>
-              <a href="#/groups" class="hero-search-tab-pill" style="text-decoration: none;">🎒 Group Batches</a>
-            </div>
-
-            <form id="heroTrekSearchForm" class="hero-search-inputs-grid">
-              <div class="hero-search-field-col">
-                <span class="hero-search-field-label">TREK / DESTINATION</span>
-                <select name="heroDestination" id="heroDestinationSelect" class="hero-search-select">
-                  <option value="Kedarkantha">Kedarkantha (Snow Summit)</option>
-                  <option value="Kedarnath Dham">Kedarnath Dham</option>
-                  <option value="Hampta Pass & Chandratal">Hampta Pass & Chandratal</option>
-                  <option value="Chopta Tungnath">Chopta & Chandrashila</option>
-                  <option value="Valley of Flowers">Valley of Flowers</option>
-                  <option value="Triund & Dharamshala">Triund Ridge</option>
-                  <option value="Kasol & Kheerganga">Kasol & Kheerganga</option>
-                  <option value="Jibhi & Tirthan Valley">Jibhi & Tirthan</option>
-                  <option value="Nag Tibba">Nag Tibba</option>
-                  <option value="Brahmatal">Brahmatal Lake</option>
-                </select>
-              </div>
-
-              <div class="hero-search-divider-col"></div>
-
-              <div class="hero-search-field-col">
-                <span class="hero-search-field-label">WHEN / BATCH</span>
-                <select name="heroDates" id="heroDatesSelect" class="hero-search-select">
-                  <option value="Upcoming Weekend">Upcoming Weekend</option>
-                  <option value="Next 2 Weeks">Next 2 Weeks</option>
-                  <option value="November 2026">November 2026</option>
-                  <option value="December 2026 (Snow Peak)">December 2026 (Snow Peak)</option>
-                  <option value="New Year 2027 Celebration">New Year 2027</option>
-                  <option value="January 2027">January 2027</option>
-                </select>
-              </div>
-
-              <div class="hero-search-divider-col"></div>
-
-              <div class="hero-search-field-col">
-                <span class="hero-search-field-label">TRAVEL VIBE</span>
-                <select name="heroVibe" id="heroVibeSelect" class="hero-search-select">
-                  <option value="Any">✨ Any Travel Vibe</option>
-                  <option value="Solo">🎒 Solo Backpacker</option>
-                  <option value="Group">👥 Group Squad</option>
-                  <option value="Luxury">✨ Comfort & Scenic</option>
-                </select>
-              </div>
-
-              <button type="submit" class="hero-search-submit-btn" id="heroSearchSubmitBtn">
-                <span class="search-btn-icon">🔍</span>
-                <span class="search-btn-text">Find Buddies</span>
-              </button>
-            </form>
-
-            <div class="hero-live-pulse-strip">
-              <div class="pulse-avatars-group">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Traveler" />
-                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" alt="Traveler" />
-                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80" alt="Traveler" />
-                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80" alt="Traveler" />
-                <span class="pulse-count-badge">+1.4k</span>
-              </div>
-              <div class="pulse-text-wrap">
-                <span class="pulse-dot-live"></span>
-                <span><strong>1,420+ trekkers active</strong> • Matching for winter &amp; spring batches</span>
-              </div>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 12px; align-items: center; margin-top: 4px;">
-            <button type="button" class="primary-btn" id="heroGetStartedBtn" style="padding: 10px 22px; font-size: 0.9rem;">
-              <span>Start Planning Free ➔</span>
-            </button>
-            <a href="#/packages" class="ghost-btn" style="padding: 10px 20px; font-size: 0.9rem; color: #ffffff; border-color: rgba(255, 255, 255, 0.4);">
-              <span>Explore 18+ Treks 🏔️</span>
-            </a>
-          </div>
+          <button type="button" class="primary-btn" id="heroGetStartedBtn" style="width: fit-content; padding: 12px 26px; font-size: 0.95rem; margin-top: 2px;">
+            <span>Start Planning Free ➔</span>
+          </button>
 
           <!-- Corner element that travelers love -->
           <div class="traveler-corner-love-card">
@@ -6237,50 +6116,6 @@ function hydrateUI() {
   const heroGetStartedBtn = document.getElementById('heroGetStartedBtn');
   if (heroGetStartedBtn) {
     heroGetStartedBtn.addEventListener('click', handleGetStartedAction);
-  }
-
-  // Airbnb-Style Hero Trek Search Form
-  const heroTrekSearchForm = document.getElementById('heroTrekSearchForm');
-  if (heroTrekSearchForm) {
-    heroTrekSearchForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const destSelect = document.getElementById('heroDestinationSelect');
-      const datesSelect = document.getElementById('heroDatesSelect');
-      const vibeSelect = document.getElementById('heroVibeSelect');
-
-      const chosenDest = destSelect?.value || 'Kedarkantha';
-      const chosenDates = datesSelect?.value || 'Upcoming Weekend';
-      const chosenVibe = vibeSelect?.value || 'Solo';
-
-      if (state.user) {
-        if (!state.profile) {
-          state.profile = { destination: chosenDest, travelStyle: chosenVibe, startDate: chosenDates };
-        } else {
-          state.profile.destination = chosenDest;
-          state.profile.travelStyle = chosenVibe;
-        }
-        routeTo('/matches');
-      } else {
-        state.authMode = 'signup';
-        state.signupFormData = {
-          destination: chosenDest,
-          travelStyle: chosenVibe,
-        };
-        state.authStatusType = 'info';
-        state.authStatus = `🏔️ Found 28+ travel partners heading to ${chosenDest} for ${chosenDates}! Create your free account below to match and chat.`;
-        renderApp();
-        setTimeout(() => {
-          const authCard = document.querySelector('.auth-card-stitch');
-          const nameInput = document.querySelector('input[name="fullName"]');
-          if (authCard) {
-            authCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            authCard.classList.add('highlight-glow');
-            setTimeout(() => authCard.classList.remove('highlight-glow'), 2500);
-          }
-          if (nameInput) nameInput.focus();
-        }, 80);
-      }
-    });
   }
 
   // Auth Custom Gender Pill Selector
