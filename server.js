@@ -1328,6 +1328,32 @@ app.post('/api/auth/send-otp', async (req, res) => {
     });
   }
 
+  const intent = req.body.intent || 'any'; // 'signup' | 'login' | 'any'
+
+  // Check if existing user
+  const existingUser = db.users.find((u) => {
+    const userDigits = String(u.phone || '').replace(/\D/g, '');
+    const emailDigits = String(u.email || '').replace(/\D/g, '');
+    return (userDigits.length >= 10 && userDigits.endsWith(phone)) || (emailDigits.length >= 10 && emailDigits.endsWith(phone));
+  });
+
+  if (intent === 'signup' && existingUser) {
+    return res.status(409).json({
+      success: false,
+      message: 'An account with this mobile number already exists. Please log in instead.',
+      isExistingUser: true,
+      existingUserName: existingUser.fullName,
+    });
+  }
+
+  if (intent === 'login' && !existingUser) {
+    return res.status(404).json({
+      success: false,
+      message: 'No account found with this mobile number. Please create an account first.',
+      isExistingUser: false,
+    });
+  }
+
   // Generate 6-digit OTP
   const otp = String(Math.floor(100000 + Math.random() * 900000));
   activeOtps.set(phone, {
@@ -1337,15 +1363,8 @@ app.post('/api/auth/send-otp', async (req, res) => {
     createdAt: Date.now(),
   });
 
-  // Check if existing user
-  const existingUser = db.users.find((u) => {
-    const userDigits = String(u.phone || '').replace(/\D/g, '');
-    const emailDigits = String(u.email || '').replace(/\D/g, '');
-    return (userDigits.length >= 10 && userDigits.endsWith(phone)) || (emailDigits.length >= 10 && emailDigits.endsWith(phone));
-  });
-
   const fullPhoneWithCountry = '91' + phone;
-  const waMessage = `🏔️ *TripZen Verification Code*\n\nYour one-time login OTP is: *${otp}*\n\nUse this code to sign in or create your TripZen account. Valid for 10 minutes.\n\n_Do not share this code with anyone._`;
+  const waMessage = `🏔️ *TripZen Verification Code*\n\nYour 6-digit verification code is: *${otp}*\n\nUse this code to verify your mobile number and create your TripZen account. Valid for 10 minutes.\n\n_Do not share this code with anyone._`;
 
   let waDelivered = false;
   try {
@@ -1361,11 +1380,11 @@ app.post('/api/auth/send-otp', async (req, res) => {
     success: true,
     message: waDelivered
       ? `Verification code sent to your WhatsApp (+91 ${phone})!`
-      : `Verification code generated for +91 ${phone}!`,
+      : `Verification code generated for +91 ${phone}.`,
     phone,
     isExistingUser: Boolean(existingUser),
     existingUserName: existingUser ? existingUser.fullName : '',
-    otpPreview: otp, // For instant 1-click filling
+    otpPreview: otp, // For testing or instant filling if WhatsApp bot is reconnecting
     waDelivered,
   });
 });
@@ -1375,15 +1394,20 @@ app.post('/api/auth/verify-otp', (req, res) => {
   const phone = clean10DigitPhone(req.body.phone);
   const otpEntered = String(req.body.otp || '').trim();
   const fullName = normalizeText(req.body.fullName);
+  const email = normalizeText(req.body.email);
+  const password = String(req.body.password || '').trim();
   const age = normalizeText(req.body.age);
   const gender = normalizeText(req.body.gender);
   const city = normalizeText(req.body.city);
   const travelStyle = normalizeText(req.body.travelStyle);
+  const bio = normalizeText(req.body.bio);
+  const interests = req.body.interests;
+  const profileImage = req.body.profileImage;
 
   if (!phone || !otpEntered) {
     return res.status(400).json({
       success: false,
-      message: 'Please provide both your mobile number and the OTP code.',
+      message: 'Please provide both your mobile number and the 6-digit OTP code.',
     });
   }
 
@@ -1397,13 +1421,13 @@ app.post('/api/auth/verify-otp', (req, res) => {
         activeOtps.delete(phone);
         return res.status(400).json({
           success: false,
-          message: 'This OTP has expired. Please tap "Resend Code" to get a new one.',
+          message: 'This OTP has expired. Please tap "Resend Code" to receive a new one.',
         });
       }
     }
     return res.status(400).json({
       success: false,
-      message: 'Incorrect verification code. Please check and try again.',
+      message: 'Incorrect verification code. Please check your WhatsApp and try again.',
     });
   }
 
@@ -1421,35 +1445,45 @@ app.post('/api/auth/verify-otp', (req, res) => {
   if (!user) {
     isNewUser = true;
     const userName = fullName || 'Traveler ' + phone.slice(-4);
+    const userEmail = email ? email.toLowerCase() : `${phone}@tripzen.local`;
+    const userPassword = password || uid('pwd');
+
     user = {
       id: uid('usr'),
       fullName: userName,
-      email: `${phone}@tripzen.local`,
+      email: userEmail,
       phone: phone,
-      password: uid('pwd'),
-      age: age || '26',
+      password: userPassword,
+      age: age || '24',
       gender: gender || 'Female',
       city: city || 'Delhi',
-      interests: [],
+      bio: bio || '',
+      interests: normalizeInterests(interests),
       travelStyle: travelStyle || 'Solo',
       pastTrips: '',
       budgetRange: '8000-15000',
       verified: true,
-      profileCompleteness: 35,
-      profileImage: avatarForUser({ fullName: userName, id: phone }),
+      profileCompleteness: 55,
+      profileImageData: profileImage && profileImage.startsWith('data:') ? profileImage : '',
+      profileImage:
+        persistProfileImage(profileImage, userEmail.replace(/[^a-z0-9]/gi, '_')) ||
+        avatarForUser({ fullName: userName, email: userEmail, id: phone }),
       createdAt: new Date().toISOString(),
     };
     db.users.push(user);
     saveStore(db);
-    console.log(`[AUTH] New user registered via Phone+OTP: ${user.fullName} (${user.id}, ${phone})`);
+    console.log(`[AUTH] New user registered & verified via WhatsApp OTP: ${user.fullName} (${user.id}, ${phone})`);
   } else {
-    // Existing user: ensure phone is recorded and account verified
+    // Existing user: ensure phone is recorded and account marked verified
     if (!user.phone) {
       user.phone = phone;
     }
+    if (password && !user.password) {
+      user.password = password;
+    }
     user.verified = true;
     saveStore(db);
-    console.log(`[AUTH] Existing user logged in via Phone+OTP: ${user.fullName} (${user.id}, ${phone})`);
+    console.log(`[AUTH] Existing user logged in via WhatsApp OTP: ${user.fullName} (${user.id}, ${phone})`);
   }
 
   let profile = latestProfilesPerUser().find((item) => item.userId === user.id);
@@ -1479,7 +1513,7 @@ app.post('/api/auth/verify-otp', (req, res) => {
   return res.json({
     success: true,
     message: isNewUser
-      ? 'Welcome to TripZen! Your account has been verified and created.'
+      ? 'Welcome to TripZen! Your mobile number is verified and your account is active.'
       : `Welcome back, ${user.fullName.split(' ')[0]}!`,
     isNewUser,
     user: sanitizeUser(user),
