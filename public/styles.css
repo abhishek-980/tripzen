@@ -6560,3 +6560,850 @@ video {
     font-size: 1.18rem !important;
   }
 }
+
+/* ==========================================================================
+   MODERN STEP-BY-STEP INTERACTIVE TRIP PLANNER
+   ========================================================================== */
+
+.planner-wrapper {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+/* Hero Banner */
+.planner-hero-header {
+  position: relative;
+  background: linear-gradient(135deg, #0d2920 0%, #164e3c 60%, #1a3f33 100%);
+  border-radius: 24px;
+  padding: 40px 44px;
+  color: #ffffff;
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 28px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(13, 41, 32, 0.22);
+}
+
+.planner-hero-header::after {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(232, 135, 58, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.planner-hero-content {
+  max-width: 760px;
+  position: relative;
+  z-index: 2;
+}
+
+.planner-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #a7f3d0;
+  margin-bottom: 14px;
+}
+
+.planner-hero-header h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.25;
+  margin-bottom: 12px;
+}
+
+.planner-hero-desc {
+  font-size: 1rem;
+  color: #cbd5e1;
+  line-height: 1.55;
+  margin-bottom: 20px;
+}
+
+.planner-hero-desc strong {
+  color: #fef08a;
+  font-weight: 700;
+}
+
+.planner-stats-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.planner-chip {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.planner-edit-profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.planner-edit-profile-btn:hover {
+  background: #ffffff;
+  color: #0d2920;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Live Selected Destination Showcase Banner */
+.planner-selected-banner {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 2px solid #059669;
+  padding: 22px 26px;
+  display: grid;
+  grid-template-columns: 200px 1fr auto;
+  gap: 24px;
+  align-items: center;
+  box-shadow: 0 10px 30px rgba(5, 150, 105, 0.12);
+  margin-bottom: 32px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.selected-banner-media {
+  position: relative;
+  width: 100%;
+  height: 130px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.selected-banner-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.planner-selected-banner:hover .selected-banner-media img {
+  transform: scale(1.06);
+}
+
+.selected-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.5) 100%);
+}
+
+.selected-banner-tag {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(5, 150, 105, 0.95);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  backdrop-filter: blur(4px);
+}
+
+.selected-banner-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.selected-banner-headline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.selected-banner-headline h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.selected-banner-rating {
+  background: #fef3c7;
+  color: #92400e;
+  font-weight: 800;
+  font-size: 0.8rem;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.selected-banner-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.banner-meta-pill {
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.banner-meta-pill.active-comp-pill {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  font-weight: 700;
+}
+
+.selected-banner-desc {
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.45;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.jump-to-dates-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 18px;
+  background: #059669;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.88rem;
+  border-radius: 12px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.jump-to-dates-btn:hover {
+  background: #047857;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.3);
+}
+
+/* Planner Step Box */
+.planner-step-box {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+  padding: 32px 36px;
+  margin-bottom: 28px;
+}
+
+.step-box-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.step-number-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: #ffffff;
+  font-family: 'Syne', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(5, 150, 105, 0.25);
+  flex-shrink: 0;
+}
+
+.step-title-group h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.step-title-group p {
+  font-size: 0.92rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Search & Category Filter Toolbar */
+.dest-toolbar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.dest-search-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.dest-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+  display: flex;
+}
+
+.dest-search-input {
+  width: 100%;
+  padding: 13px 16px 13px 44px;
+  border-radius: 14px;
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.dest-search-input:focus {
+  border-color: #059669;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+.dest-category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dest-cat-tab {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dest-cat-tab:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.dest-cat-tab.active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+}
+
+/* Destination Cards Grid */
+.planner-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.planner-dest-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+}
+
+.planner-dest-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+  border-color: #cbd5e1;
+}
+
+.planner-dest-card.selected {
+  border-color: #059669;
+  box-shadow: 0 10px 28px rgba(5, 150, 105, 0.2);
+  transform: translateY(-3px);
+}
+
+.dest-card-media-wrap {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  background: #0f172a;
+  overflow: hidden;
+}
+
+.dest-card-media-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.planner-dest-card:hover .dest-card-media-wrap img {
+  transform: scale(1.08);
+}
+
+.dest-media-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, transparent 40%, rgba(0, 0, 0, 0.6) 100%);
+}
+
+.dest-top-badges {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dest-state-badge {
+  background: rgba(15, 23, 42, 0.8);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  backdrop-filter: blur(4px);
+}
+
+.dest-rating-badge {
+  background: rgba(254, 243, 199, 0.95);
+  color: #92400e;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  backdrop-filter: blur(4px);
+}
+
+.dest-selected-check {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: #059669;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 20px;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.planner-dest-card.selected .dest-selected-check {
+  display: inline-flex;
+}
+
+.dest-card-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.dest-card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.dest-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dest-chip {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.dest-chip.comp-chip {
+  background: #ecfdf5;
+  color: #047857;
+  font-weight: 700;
+}
+
+.dest-empty-notice {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.dest-empty-notice span {
+  font-size: 2.2rem;
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* Step 2: Date Presets & Inputs */
+.date-presets-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.preset-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin-right: 4px;
+}
+
+.date-preset-btn {
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.date-preset-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.date-preset-btn.active {
+  background: #059669;
+  color: #ffffff;
+  border-color: #059669;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
+}
+
+.planner-dates-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.date-field-card {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 20px;
+  transition: all 0.2s ease;
+}
+
+.date-field-card:focus-within {
+  border-color: #059669;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+}
+
+.field-floating-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.field-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.auto-calc-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #059669;
+}
+
+.input-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.input-icon {
+  font-size: 1.15rem;
+}
+
+.planner-date-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+  outline: none;
+}
+
+.date-summary-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 12px 18px;
+  border-radius: 12px;
+  color: #065f46;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+/* Step 3: Travel Styles Grid */
+.planner-styles-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.style-card-stitch {
+  position: relative;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.style-card-stitch:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.style-card-stitch.active {
+  background: #ffffff;
+  border-color: #059669;
+  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.16);
+}
+
+.style-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.style-card-stitch.active .style-icon-wrap {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.style-info {
+  flex: 1;
+}
+
+.style-info h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.style-info p {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.style-check-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  color: transparent;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.style-card-stitch.active .style-check-circle {
+  background: #059669;
+  border-color: #059669;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+/* Bottom Action Bar */
+.planner-bottom-action-card {
+  background: linear-gradient(135deg, #0d2920 0%, #164e3c 100%);
+  border-radius: 20px;
+  padding: 24px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 16px 36px rgba(13, 41, 32, 0.2);
+  color: #ffffff;
+  margin-top: 12px;
+}
+
+.action-dest-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  color: #cbd5e1;
+  margin-bottom: 4px;
+}
+
+.action-dest-pill strong {
+  color: #fef08a;
+  font-size: 1.1rem;
+}
+
+.action-assurance {
+  font-size: 0.84rem;
+  color: #a7f3d0;
+  margin: 0;
+}
+
+.planner-submit-btn {
+  position: relative;
+  background: linear-gradient(135deg, #e8873a 0%, #f97316 100%);
+  color: #ffffff;
+  border: none;
+  padding: 16px 36px;
+  border-radius: 14px;
+  font-family: 'Syne', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(232, 135, 58, 0.35);
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+
+.planner-submit-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(232, 135, 58, 0.45);
+}
+
+.planner-submit-btn:active {
+  transform: translateY(0) scale(0.99);
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .planner-selected-banner {
+    grid-template-columns: 1fr;
+    padding: 18px;
+    gap: 16px;
+  }
+  .selected-banner-media {
+    height: 160px;
+  }
+  .planner-hero-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 28px 20px;
+  }
+  .planner-dates-grid {
+    grid-template-columns: 1fr;
+  }
+  .planner-styles-grid {
+    grid-template-columns: 1fr;
+  }
+  .planner-bottom-action-card {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    padding: 20px;
+  }
+  .planner-submit-btn {
+    width: 100%;
+  }
+}

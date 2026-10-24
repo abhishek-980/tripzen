@@ -3,6 +3,11 @@ const DESTINATIONS = [
     name: 'Chopta Tungnath',
     title: 'Chopta Tungnath & Chandrashila',
     state: 'Uttarakhand',
+    altitude: '13,100 ft',
+    duration: '3-4 Days',
+    difficulty: 'Easy to Moderate',
+    category: ['All', 'Uttarakhand', 'Weekend'],
+    companions: 8,
     image: './assets/chopta-tungnath-card.jpg',
     mediaType: 'image',
     rating: 4.9,
@@ -12,6 +17,11 @@ const DESTINATIONS = [
     name: 'Madmaheshwar Ji',
     title: 'Madmaheshwar Ji (Second Kedar)',
     state: 'Uttarakhand',
+    altitude: '11,470 ft',
+    duration: '5-6 Days',
+    difficulty: 'Moderate',
+    category: ['All', 'Uttarakhand'],
+    companions: 6,
     image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
     mediaType: 'image',
     rating: 4.9,
@@ -21,6 +31,11 @@ const DESTINATIONS = [
     name: 'Yulla Kanda',
     title: 'Yulla Kanda (Highest Krishna Temple)',
     state: 'Himachal Pradesh',
+    altitude: '12,800 ft',
+    duration: '4-5 Days',
+    difficulty: 'Moderate',
+    category: ['All', 'Himachal'],
+    companions: 5,
     image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80',
     mediaType: 'image',
     rating: 4.8,
@@ -30,6 +45,11 @@ const DESTINATIONS = [
     name: 'Hampta Pass & Chandratal',
     title: 'Hampta Pass & Chandratal Crossover',
     state: 'Himachal Pradesh',
+    altitude: '14,100 ft',
+    duration: '5-6 Days',
+    difficulty: 'Moderate to Challenging',
+    category: ['All', 'Himachal'],
+    companions: 12,
     image: './assets/hampta-card.jpg',
     mediaType: 'image',
     rating: 4.9,
@@ -39,6 +59,11 @@ const DESTINATIONS = [
     name: 'Valley of Flowers',
     title: 'Valley of Flowers & Hemkund Sahib',
     state: 'Uttarakhand',
+    altitude: '14,400 ft',
+    duration: '6 Days',
+    difficulty: 'Moderate',
+    category: ['All', 'Uttarakhand'],
+    companions: 10,
     image: './assets/valley-of-flowers-card.jpg',
     mediaType: 'image',
     rating: 4.9,
@@ -48,6 +73,11 @@ const DESTINATIONS = [
     name: 'Kareri Lake',
     title: 'Kareri Lake Glacial Trek',
     state: 'Himachal Pradesh',
+    altitude: '9,625 ft',
+    duration: '3 Days',
+    difficulty: 'Easy to Moderate',
+    category: ['All', 'Himachal', 'Weekend'],
+    companions: 7,
     image: 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=1200&q=80',
     mediaType: 'image',
     rating: 4.8,
@@ -57,6 +87,11 @@ const DESTINATIONS = [
     name: 'Jibhi & Tirthan Valley',
     title: 'Jibhi, Jalori Pass & Serolsar Lake',
     state: 'Himachal Pradesh',
+    altitude: '10,800 ft',
+    duration: '3-4 Days',
+    difficulty: 'Easy',
+    category: ['All', 'Himachal', 'Weekend'],
+    companions: 9,
     image: 'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=1200&q=80',
     mediaType: 'image',
     rating: 4.8,
@@ -66,6 +101,11 @@ const DESTINATIONS = [
     name: 'Rudranath & Kalpeshwar',
     title: 'Rudranath & Kalpeshwar Ji Sacred Trail',
     state: 'Uttarakhand',
+    altitude: '11,800 ft',
+    duration: '6 Days',
+    difficulty: 'Challenging',
+    category: ['All', 'Uttarakhand'],
+    companions: 5,
     image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=80',
     mediaType: 'image',
     rating: 4.9,
@@ -75,6 +115,11 @@ const DESTINATIONS = [
     name: 'Kedarnath Dham',
     title: 'Kedarnath Dham Himalayan Yatra',
     state: 'Uttarakhand',
+    altitude: '11,755 ft',
+    duration: '4-5 Days',
+    difficulty: 'Moderate',
+    category: ['All', 'Uttarakhand'],
+    companions: 14,
     image: 'https://images.unsplash.com/photo-1589182373726-e4f658ab50f0?auto=format&fit=crop&w=1200&q=80',
     mediaType: 'image',
     rating: 4.9,
@@ -84,6 +129,11 @@ const DESTINATIONS = [
     name: 'Kedarkantha',
     title: 'Kedarkantha Winter Snow Summit',
     state: 'Uttarakhand',
+    altitude: '12,500 ft',
+    duration: '5 Days',
+    difficulty: 'Easy to Moderate',
+    category: ['All', 'Uttarakhand', 'Weekend'],
+    companions: 15,
     image: './assets/kedarkantha-card.jpg',
     mediaType: 'image',
     rating: 4.9,
@@ -93,6 +143,11 @@ const DESTINATIONS = [
     name: 'Triund & Dharamshala',
     title: 'Triund Ridge & Snowline Cafe',
     state: 'Himachal Pradesh',
+    altitude: '9,350 ft',
+    duration: '2-3 Days',
+    difficulty: 'Easy',
+    category: ['All', 'Himachal', 'Weekend'],
+    companions: 11,
     image: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=80',
     mediaType: 'image',
     rating: 4.8,
@@ -102,6 +157,11 @@ const DESTINATIONS = [
     name: 'Nag Tibba',
     title: 'Nag Tibba Weekend Summit',
     state: 'Uttarakhand',
+    altitude: '9,915 ft',
+    duration: '2 Days',
+    difficulty: 'Easy',
+    category: ['All', 'Uttarakhand', 'Weekend'],
+    companions: 8,
     image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80',
     mediaType: 'image',
     rating: 4.7,
@@ -111,6 +171,11 @@ const DESTINATIONS = [
     name: 'Annapurna Base Camp (ABC)',
     title: 'Annapurna Base Camp (ABC) Sanctuary',
     state: 'Nepal',
+    altitude: '13,550 ft',
+    duration: '10-12 Days',
+    difficulty: 'Moderate to Challenging',
+    category: ['All', 'Nepal'],
+    companions: 6,
     image: 'https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?auto=format&fit=crop&w=1200&q=80',
     mediaType: 'image',
     rating: 4.9,
@@ -120,6 +185,11 @@ const DESTINATIONS = [
     name: 'Everest Base Camp (EBC)',
     title: 'Everest Base Camp (EBC) Expedition',
     state: 'Nepal',
+    altitude: '17,598 ft',
+    duration: '14 Days',
+    difficulty: 'Challenging',
+    category: ['All', 'Nepal'],
+    companions: 8,
     image: 'https://images.unsplash.com/photo-1516306580123-e6e52b1b7b5f?auto=format&fit=crop&w=1200&q=80',
     mediaType: 'image',
     rating: 5.0,
@@ -129,6 +199,11 @@ const DESTINATIONS = [
     name: 'Kasol & Parvati Valley',
     title: 'Kasol & Kheerganga Springs',
     state: 'Himachal Pradesh',
+    altitude: '9,711 ft',
+    duration: '3-4 Days',
+    difficulty: 'Easy to Moderate',
+    category: ['All', 'Himachal', 'Weekend'],
+    companions: 10,
     image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=80',
     mediaType: 'image',
     rating: 4.8,
@@ -2366,105 +2441,343 @@ function profilePage() {
   `;
 }
 
+function getDestinationByName(name) {
+  if (!name) return DESTINATIONS[0];
+  const destClean = String(name).toLowerCase().trim();
+  const found = DESTINATIONS.find((d) => {
+    const nameLow = (d.name || '').toLowerCase();
+    const titleLow = (d.title || '').toLowerCase();
+    return nameLow === destClean || nameLow.includes(destClean) || destClean.includes(nameLow) || titleLow.includes(destClean);
+  });
+  return found || DESTINATIONS[0];
+}
+
+function getDatePresetRange(presetKey) {
+  const now = new Date();
+  if (presetKey === 'this-weekend') {
+    const day = now.getDay();
+    const daysToFri = (5 - day + 7) % 7 || 7;
+    const fri = new Date(now.getTime() + daysToFri * 24 * 60 * 60 * 1000);
+    const sun = new Date(fri.getTime() + 2 * 24 * 60 * 60 * 1000);
+    return {
+      start: fri.toISOString().slice(0, 10),
+      end: sun.toISOString().slice(0, 10),
+    };
+  }
+  if (presetKey === 'next-weekend') {
+    const day = now.getDay();
+    const daysToNextFri = ((5 - day + 7) % 7 || 7) + 7;
+    const fri = new Date(now.getTime() + daysToNextFri * 24 * 60 * 60 * 1000);
+    const sun = new Date(fri.getTime() + 2 * 24 * 60 * 60 * 1000);
+    return {
+      start: fri.toISOString().slice(0, 10),
+      end: sun.toISOString().slice(0, 10),
+    };
+  }
+  if (presetKey === 'next-month') {
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const endNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 6);
+    return {
+      start: nextMonth.toISOString().slice(0, 10),
+      end: endNextMonth.toISOString().slice(0, 10),
+    };
+  }
+  return null;
+}
+
+function renderPlannerDestinationCards(selectedName) {
+  const normSelected = normalizeDestination(selectedName);
+
+  return DESTINATIONS.map((dest) => {
+    const isSelected = normSelected === normalizeDestination(dest.name);
+    const selectedClass = isSelected ? 'selected' : '';
+    const catList = (dest.category || ['All']).join(' ');
+    const searchCorpus = (dest.name + ' ' + (dest.title || '') + ' ' + (dest.state || '') + ' ' + (dest.altitude || '')).toLowerCase();
+
+    return `
+      <div
+        class="planner-dest-card ${selectedClass}"
+        data-select-destination="${escapeHtml(dest.name)}"
+        data-category="${escapeHtml(catList)}"
+        data-search-corpus="${escapeHtml(searchCorpus)}"
+        role="button"
+        tabindex="0"
+      >
+        <div class="dest-card-media-wrap">
+          <img src="${escapeHtml(dest.image)}" alt="${escapeHtml(dest.name)}" loading="lazy" />
+          <div class="dest-media-gradient"></div>
+          <div class="dest-top-badges">
+            <span class="dest-state-badge">📍 ${escapeHtml(dest.state)}</span>
+            <span class="dest-rating-badge">⭐ ${escapeHtml(dest.rating || 4.9)}</span>
+          </div>
+          <div class="dest-selected-check">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Selected</span>
+          </div>
+        </div>
+
+        <div class="dest-card-body">
+          <h3 class="dest-card-title">${escapeHtml(dest.title || dest.name)}</h3>
+          <div class="dest-card-chips">
+            <span class="dest-chip">🏔️ ${escapeHtml(dest.altitude || 'High Altitude')}</span>
+            <span class="dest-chip">⏱️ ${escapeHtml(dest.duration || '3-5 Days')}</span>
+            <span class="dest-chip comp-chip">👥 ${escapeHtml(dest.companions || 8)}+ active</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 function preferencesPage() {
-  const currentDestination = state.profile ? state.profile.destination : (DESTINATIONS[2] ? DESTINATIONS[2].name : DESTINATIONS[0].name);
+  const currentDestination = state.profile?.destination || (DESTINATIONS[0] ? DESTINATIONS[0].name : 'Chopta Tungnath');
   const currentTravelStyle = state.profile?.travelStyle || state.user?.travelStyle || 'Solo';
-  const travelStyles = ['Solo', 'Group', 'Luxury', 'Budget'];
+  const selectedDestObj = getDestinationByName(currentDestination);
+
+  // Default dates if not already present
+  const today = new Date();
+  const defaultStart = state.profile?.startDate || new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const defaultEnd = state.profile?.endDate || new Date(today.getTime() + 11 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   return `
-    <div class="curate-wrapper animate-fade-in">
-      <div class="page-header-stitch">
-        <div class="page-header-row">
-          <div>
-            <h1>Choose Your Destination & Travel Dates</h1>
-            <p>Select the trek or vacation you are planning and your date range. Then click "Show Matches" to discover compatible travel partners heading to the same destination.</p>
+    <div class="planner-wrapper animate-fade-in">
+      <!-- Modern Hero Header Banner -->
+      <div class="planner-hero-header">
+        <div class="planner-hero-content">
+          <div class="planner-badge">
+            <span class="pulse-dot"></span>
+            <span>Live Travel Matchmaker • Step-by-Step Trip Planner</span>
           </div>
-          <a href="#/profile" class="ghost-btn">👤 Edit Profile Details</a>
+          <h1>Plan Your Trip & Discover Companions</h1>
+          <p class="planner-hero-desc">
+            Choose where you want to go, set your dates, and select your travel vibe. TripZen instantly matches you with verified travelers heading to the <strong>exact same summit</strong> around your dates.
+          </p>
+          <div class="planner-stats-chips">
+            <span class="planner-chip">🏔️ 15 Curated Summits</span>
+            <span class="planner-chip">⚡ Same-Destination Matches</span>
+            <span class="planner-chip">👥 Verified Solo & Group Trekkers</span>
+            <span class="planner-chip">🤝 Shared Taxis & Guides</span>
+          </div>
+        </div>
+        <div class="planner-hero-aside">
+          <a href="#/profile" class="planner-edit-profile-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Edit Profile & Bio</span>
+          </a>
         </div>
       </div>
 
-      <form id="preferencesForm" class="curate-grid">
-        <!-- Left Trip Details Form Card -->
-        <div class="curate-form-card">
-          <!-- Section 1: When are you going? -->
-          <div class="card-section-title">
-            <span>📅</span>
-            <span>When are you going?</span>
+      <form id="preferencesForm" class="planner-main-form">
+        <!-- Live Selected Destination Showcase Banner -->
+        <div class="planner-selected-banner" id="plannerSelectedBanner">
+          <div class="selected-banner-media">
+            <img id="selectedBannerImg" src="${escapeHtml(selectedDestObj.image)}" alt="${escapeHtml(selectedDestObj.name)}" />
+            <div class="selected-banner-overlay"></div>
+            <span class="selected-banner-tag">📍 ACTIVE SELECTION</span>
+          </div>
+          <div class="selected-banner-info">
+            <div class="selected-banner-headline">
+              <h2 id="selectedBannerTitle">${escapeHtml(selectedDestObj.title || selectedDestObj.name)}</h2>
+              <span id="selectedBannerRating" class="selected-banner-rating">⭐ ${escapeHtml(selectedDestObj.rating || 4.9)}</span>
+            </div>
+            <div class="selected-banner-meta-row" id="selectedBannerMeta">
+              <span class="banner-meta-pill">🏔️ ${escapeHtml(selectedDestObj.altitude || 'High Altitude')}</span>
+              <span class="banner-meta-pill">⏱️ ${escapeHtml(selectedDestObj.duration || '3-5 Days')}</span>
+              <span class="banner-meta-pill">📍 ${escapeHtml(selectedDestObj.state || 'Himalayas')}</span>
+              <span class="banner-meta-pill active-comp-pill">👥 ${escapeHtml(selectedDestObj.companions || 8)}+ Companions Active</span>
+            </div>
+            <p class="selected-banner-desc" id="selectedBannerDesc">
+              ${escapeHtml(selectedDestObj.description)}
+            </p>
+          </div>
+          <div class="selected-banner-cta-col">
+            <a href="#step-dates-anchor" class="jump-to-dates-btn">
+              <span>Set Dates Below ➔</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Hidden Inputs for Form Submission -->
+        <input type="hidden" name="destination" id="planDestinationInput" value="${escapeHtml(currentDestination)}" />
+        <input type="hidden" name="travelStyle" id="planTravelStyleInput" value="${escapeHtml(currentTravelStyle)}" />
+
+        <!-- STEP 1: DESTINATION SELECTION -->
+        <section class="planner-step-box" id="step-destination-anchor">
+          <div class="step-box-header">
+            <div class="step-number-badge">1</div>
+            <div class="step-title-group">
+              <h2>Select Destination</h2>
+              <p>Browse 15 curated Himalayan treks or search by summit name and state</p>
+            </div>
           </div>
 
-          <div class="form-field-group">
-            <label class="field-label">
-              <span>START DATE</span>
-              <input name="startDate" type="date" required value="${escapeHtml(state.profile?.startDate || '')}" class="stitch-input" />
-            </label>
-            <label class="field-label">
-              <span>END DATE (OPTIONAL)</span>
-              <input name="endDate" type="date" value="${escapeHtml(state.profile?.endDate || '')}" class="stitch-input" />
-            </label>
+          <!-- Search & Category Filter Toolbar -->
+          <div class="dest-toolbar-row">
+            <div class="dest-search-wrap">
+              <span class="dest-search-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </span>
+              <input
+                type="text"
+                id="destSearchInput"
+                class="dest-search-input"
+                placeholder="Search summits (e.g. Chopta, Kedarkantha, Spiti, Kinnaur, Valley of Flowers)..."
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="dest-category-tabs">
+              <button type="button" class="dest-cat-tab active" data-dest-category="All">All Treks (15)</button>
+              <button type="button" class="dest-cat-tab" data-dest-category="Uttarakhand">🌲 Uttarakhand</button>
+              <button type="button" class="dest-cat-tab" data-dest-category="Himachal">🏔️ Himachal</button>
+              <button type="button" class="dest-cat-tab" data-dest-category="Nepal">🇳🇵 Nepal</button>
+              <button type="button" class="dest-cat-tab" data-dest-category="Weekend">🎒 Weekend Escapes</button>
+            </div>
           </div>
 
-          <hr class="form-divider-line" />
-
-          <!-- Section 2: Travel Style -->
-          <div class="card-section-title">
-            <span>🚶</span>
-            <span>Trip Travel Style</span>
+          <!-- Destination Cards Grid -->
+          <div class="planner-cards-grid" id="plannerDestCardsGrid">
+            ${renderPlannerDestinationCards(currentDestination)}
           </div>
 
-          <div class="pill-grid">
-            ${travelStyles
-              .map(
-                (style) => `
-              <button
-                type="button"
-                class="style-pill-btn ${currentTravelStyle.toLowerCase() === style.toLowerCase() ? 'active' : ''}"
-                data-select-style="${escapeHtml(style)}"
-              >
-                ${escapeHtml(style)}
-              </button>
-            `
-              )
-              .join('')}
+          <div id="noDestFoundMsg" class="dest-empty-notice" style="display: none;">
+            <span>🔍</span>
+            <p>No summits match your search query. Try typing another summit or reset filters.</p>
+          </div>
+        </section>
+
+        <!-- STEP 2: TRAVEL DATES -->
+        <section class="planner-step-box" id="step-dates-anchor">
+          <div class="step-box-header">
+            <div class="step-number-badge">2</div>
+            <div class="step-title-group">
+              <h2>Choose Travel Dates</h2>
+              <p>Select your departure dates or tap a quick weekend preset to align with other travelers</p>
+            </div>
           </div>
 
-          <input type="hidden" name="travelStyle" value="${escapeHtml(currentTravelStyle)}" />
-          <input type="hidden" name="destination" value="${escapeHtml(currentDestination)}" />
+          <!-- Quick Date Presets -->
+          <div class="date-presets-row">
+            <span class="preset-label">QUICK DATE PRESETS:</span>
+            <button type="button" class="date-preset-btn" data-date-preset="this-weekend">📅 This Weekend (Fri–Sun)</button>
+            <button type="button" class="date-preset-btn" data-date-preset="next-weekend">🎒 Next Weekend</button>
+            <button type="button" class="date-preset-btn" data-date-preset="next-month">❄️ Next Month</button>
+            <button type="button" class="date-preset-btn active" data-date-preset="custom">✨ Custom Window</button>
+          </div>
 
-          <button type="submit" class="primary-btn wide-btn" style="margin-top: 24px;">
-            <span>Show Matches 🚀</span>
+          <div class="planner-dates-grid">
+            <div class="date-field-card">
+              <label class="field-floating-label" for="planStartDate">
+                <span class="field-title">START DATE *</span>
+                <div class="input-with-icon">
+                  <span class="input-icon">📅</span>
+                  <input
+                    id="planStartDate"
+                    name="startDate"
+                    type="date"
+                    required
+                    value="${escapeHtml(state.profile?.startDate || defaultStart)}"
+                    class="planner-date-input"
+                  />
+                </div>
+              </label>
+            </div>
+
+            <div class="date-field-card">
+              <label class="field-floating-label" for="planEndDate">
+                <div class="label-row">
+                  <span class="field-title">END DATE (OPTIONAL)</span>
+                  <span class="auto-calc-tag">Auto-set to +4 days if left blank</span>
+                </div>
+                <div class="input-with-icon">
+                  <span class="input-icon">🏁</span>
+                  <input
+                    id="planEndDate"
+                    name="endDate"
+                    type="date"
+                    value="${escapeHtml(state.profile?.endDate || defaultEnd)}"
+                    class="planner-date-input"
+                  />
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="date-summary-banner" id="dateSummaryBanner">
+            <span class="summary-icon">🗓️</span>
+            <span id="dateSummaryText">Planned travel window set. Companion matching will prioritize travelers with overlapping dates.</span>
+          </div>
+        </section>
+
+        <!-- STEP 3: TRAVEL VIBE & STYLE -->
+        <section class="planner-step-box">
+          <div class="step-box-header">
+            <div class="step-number-badge">3</div>
+            <div class="step-title-group">
+              <h2>Select Travel Style</h2>
+              <p>Find companions who hike at your pace and share your travel vibe</p>
+            </div>
+          </div>
+
+          <div class="planner-styles-grid">
+            <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'solo' ? 'active' : ''}" data-select-planner-style="Solo">
+              <div class="style-icon-wrap">🥾</div>
+              <div class="style-info">
+                <h3>Solo Backpacking</h3>
+                <p>Hike independently, share local taxis from base, and meet friendly companions along the trail.</p>
+              </div>
+              <div class="style-check-circle">✓</div>
+            </div>
+
+            <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'group' ? 'active' : ''}" data-select-planner-style="Group">
+              <div class="style-icon-wrap">👥</div>
+              <div class="style-info">
+                <h3>Group Explorer</h3>
+                <p>Social hiking vibe. Great for splitting guides, sharing campsite tents, and campfire nights.</p>
+              </div>
+              <div class="style-check-circle">✓</div>
+            </div>
+
+            <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'budget' ? 'active' : ''}" data-select-planner-style="Budget">
+              <div class="style-icon-wrap">💰</div>
+              <div class="style-info">
+                <h3>Budget Conscious</h3>
+                <p>Shared homestays, public transit, and cost-effective mountain meals with fellow backpackers.</p>
+              </div>
+              <div class="style-check-circle">✓</div>
+            </div>
+
+            <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'luxury' ? 'active' : ''}" data-select-planner-style="Luxury">
+              <div class="style-icon-wrap">✨</div>
+              <div class="style-info">
+                <h3>Comfort & Stay</h3>
+                <p>Cozy private mountain cottages, hot showers, guided comfort, and relaxed scenic photography.</p>
+              </div>
+              <div class="style-check-circle">✓</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Final Submit Action Bar -->
+        <div class="planner-bottom-action-card">
+          <div class="action-text-col">
+            <div class="action-dest-pill">
+              <span>Target Summit:</span>
+              <strong id="actionDestName">${escapeHtml(currentDestination)}</strong>
+            </div>
+            <p class="action-assurance">
+              ✓ Matches guaranteed for <strong><span id="assuranceDestSpan">${escapeHtml(currentDestination)}</span></strong> with overlapping travel dates.
+            </p>
+          </div>
+
+          <button type="submit" class="planner-submit-btn" id="plannerSubmitBtn">
+            <span class="btn-shine"></span>
+            <span id="btnSubmitText">Show Matches For ${escapeHtml(currentDestination)} 🚀</span>
           </button>
-          ${statusMarkup(state.preferenceStatus, state.preferenceStatusType)}
         </div>
 
-        <!-- Right Destinations Grid -->
-        <div class="destinations-column">
-          <div class="destinations-header-bar">
-            <h2>Destinations</h2>
-            <span class="select-multiple-badge">SELECT DESTINATION</span>
-          </div>
-
-          <div class="destination-cards-grid">
-            ${destinationCards(currentDestination)}
-          </div>
-        </div>
+        ${statusMarkup(state.preferenceStatus, state.preferenceStatusType)}
       </form>
-
-      <!-- Minimal Footer -->
-      <footer class="curate-footer">
-        <div class="curate-footer-inner">
-          <a href="#/" class="stitch-brand" style="font-size: 1.1rem;">
-            <img src="./assets/tripzen-logo.png" alt="TripZen Logo" class="stitch-brand-logo-img" style="width: 28px; height: 28px; border-radius: 8px;" />
-            <span>TripZen</span>
-          </a>
-          <div class="footer-nav-links">
-            <a href="#/about">About Us</a>
-            <a href="#/about">Safety</a>
-            <a href="#/about">Terms</a>
-            <a href="#/about">Support</a>
-          </div>
-          <span class="footer-copyright">© 2026 TripZen. All rights reserved.</span>
-        </div>
-      </footer>
     </div>
   `;
 }
@@ -6390,7 +6703,37 @@ function hydrateUI() {
     });
   });
 
-  // Destination Card Selector
+  // Interactive Step-by-Step Planner Handlers
+  function filterPlannerDestCards() {
+    const searchInput = document.getElementById('destSearchInput');
+    const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    const activeTab = document.querySelector('.dest-cat-tab.active');
+    const cat = activeTab ? activeTab.getAttribute('data-dest-category') : 'All';
+
+    const cards = document.querySelectorAll('.planner-dest-card');
+    let visibleCount = 0;
+
+    cards.forEach((card) => {
+      const cardCat = card.getAttribute('data-category') || '';
+      const corpus = card.getAttribute('data-search-corpus') || '';
+
+      const matchesCat = cat === 'All' || cardCat.includes(cat);
+      const matchesQuery = !q || corpus.includes(q);
+
+      if (matchesCat && matchesQuery) {
+        card.style.display = 'flex';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    const emptyMsg = document.getElementById('noDestFoundMsg');
+    if (emptyMsg) {
+      emptyMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+  }
+
   document.querySelectorAll('[data-select-destination]').forEach((card) => {
     card.addEventListener('click', () => {
       const value = card.getAttribute('data-select-destination');
@@ -6398,25 +6741,107 @@ function hydrateUI() {
       if (form && form.destination) {
         form.destination.value = value;
       }
-      document.querySelectorAll('.destination-stitch-card').forEach((c) => {
+      document.querySelectorAll('[data-select-destination]').forEach((c) => {
         c.classList.remove('selected');
       });
       card.classList.add('selected');
+
+      const destObj = getDestinationByName(value);
+      if (destObj) {
+        const bannerImg = document.getElementById('selectedBannerImg');
+        const bannerTitle = document.getElementById('selectedBannerTitle');
+        const bannerRating = document.getElementById('selectedBannerRating');
+        const bannerMeta = document.getElementById('selectedBannerMeta');
+        const bannerDesc = document.getElementById('selectedBannerDesc');
+        const actionDestName = document.getElementById('actionDestName');
+        const assuranceDestSpan = document.getElementById('assuranceDestSpan');
+        const btnSubmitText = document.getElementById('btnSubmitText');
+
+        if (bannerImg) bannerImg.src = destObj.image;
+        if (bannerTitle) bannerTitle.textContent = destObj.title || destObj.name;
+        if (bannerRating) bannerRating.textContent = '⭐ ' + (destObj.rating || 4.9);
+        if (bannerMeta) {
+          bannerMeta.innerHTML = `
+            <span class="banner-meta-pill">🏔️ ${escapeHtml(destObj.altitude || 'High Altitude')}</span>
+            <span class="banner-meta-pill">⏱️ ${escapeHtml(destObj.duration || '3-5 Days')}</span>
+            <span class="banner-meta-pill">📍 ${escapeHtml(destObj.state || 'Himalayas')}</span>
+            <span class="banner-meta-pill active-comp-pill">👥 ${escapeHtml(destObj.companions || 8)}+ Companions Active</span>
+          `;
+        }
+        if (bannerDesc) bannerDesc.textContent = destObj.description;
+        if (actionDestName) actionDestName.textContent = destObj.name;
+        if (assuranceDestSpan) assuranceDestSpan.textContent = destObj.name;
+        if (btnSubmitText) btnSubmitText.textContent = 'Show Matches For ' + destObj.name + ' 🚀';
+      }
     });
   });
 
-  // Travel Style Pill Selector in Preferences
-  document.querySelectorAll('[data-select-style]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const style = button.getAttribute('data-select-style');
+  // Destination Search Input
+  const destSearchInput = document.getElementById('destSearchInput');
+  if (destSearchInput) {
+    destSearchInput.addEventListener('input', () => {
+      filterPlannerDestCards();
+    });
+  }
+
+  // Destination Category Tabs
+  document.querySelectorAll('.dest-cat-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.dest-cat-tab').forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      filterPlannerDestCards();
+    });
+  });
+
+  // Date Presets
+  document.querySelectorAll('[data-date-preset]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const presetKey = btn.getAttribute('data-date-preset');
+      document.querySelectorAll('[data-date-preset]').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const range = getDatePresetRange(presetKey);
+      if (range) {
+        const startInput = document.getElementById('planStartDate');
+        const endInput = document.getElementById('planEndDate');
+        if (startInput) startInput.value = range.start;
+        if (endInput) endInput.value = range.end;
+
+        const summaryText = document.getElementById('dateSummaryText');
+        if (summaryText) {
+          summaryText.textContent = `📅 Travel window set: ${range.start} to ${range.end}. Discovering companions with overlapping dates.`;
+        }
+      }
+    });
+  });
+
+  // Travel Style Selector in Planner
+  document.querySelectorAll('[data-select-planner-style]').forEach((card) => {
+    card.addEventListener('click', () => {
+      const style = card.getAttribute('data-select-planner-style');
       const form = document.getElementById('preferencesForm');
       if (form && form.travelStyle) {
         form.travelStyle.value = style;
       }
-      document.querySelectorAll('[data-select-style]').forEach((b) => b.classList.remove('active'));
-      button.classList.add('active');
+      document.querySelectorAll('[data-select-planner-style]').forEach((c) => c.classList.remove('active'));
+      card.classList.add('active');
     });
   });
+
+  // Start Date / End Date Change Listeners
+  const planStartInput = document.getElementById('planStartDate');
+  const planEndInput = document.getElementById('planEndDate');
+  const updateDateSummary = () => {
+    const s = planStartInput ? planStartInput.value : '';
+    const e = planEndInput ? planEndInput.value : '';
+    const summaryText = document.getElementById('dateSummaryText');
+    if (summaryText && s) {
+      summaryText.textContent = `📅 Travel window set: ${s} ${e ? 'to ' + e : '(flexible end date)'}. Matching companions heading there around these dates.`;
+    }
+  };
+  if (planStartInput) planStartInput.addEventListener('change', updateDateSummary);
+  if (planEndInput) planEndInput.addEventListener('change', updateDateSummary);
+
 
   function hydrateMatchEvents() {
     document.querySelectorAll('[data-connect-profile]').forEach((button) => {
