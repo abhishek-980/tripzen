@@ -2544,7 +2544,7 @@ function preferencesPage() {
       <!-- Full-Width Panoramic Kareri Lake Mountain Hero Header -->
       <div class="planner-hero-header">
         <div class="planner-hero-content">
-          <h1 class="planner-hero-title">Plan Your Trip <span class="planner-hero-title-accent">&amp; Discover Companions</span></h1>
+          <h1 class="planner-hero-title">Plan Your Trip &amp; Discover Companions</h1>
           <p class="planner-hero-desc">
             Set your travel dates, choose your summit, and instantly connect with verified trekkers heading to the <strong>exact same trail</strong>.
           </p>
