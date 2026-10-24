@@ -6571,10 +6571,10 @@ video {
   padding: 32px 20px 80px;
 }
 
-/* Hero Banner with Full Kedarkantha Image across 100% width, no dark sides */
+/* Hero Banner with Full Kareri Lake Image across 100% width, no dark sides */
 .planner-hero-header {
   position: relative;
-  background: linear-gradient(180deg, rgba(8, 18, 25, 0.42) 0%, rgba(8, 18, 25, 0.62) 100%), url('./assets/kedarkantha-card.jpg') center 42% / cover no-repeat;
+  background: linear-gradient(180deg, rgba(8, 20, 30, 0.32) 0%, rgba(8, 20, 30, 0.58) 100%), url('./assets/kareri-lake-card.jpg') center 36% / cover no-repeat;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 20px;
   padding: 34px 36px;

@@ -78,7 +78,7 @@ const DESTINATIONS = [
     difficulty: 'Easy to Moderate',
     category: ['All', 'Himachal', 'Weekend'],
     companions: 7,
-    image: 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=1200&q=80',
+    image: './assets/kareri-lake-card.jpg',
     mediaType: 'image',
     rating: 4.8,
     description: 'High-altitude freshwater glacial lake surrounded by the majestic Dhauladhar wall with gushing streams, pine forests, and lakeside alpine camping.',
@@ -2541,7 +2541,7 @@ function preferencesPage() {
 
   return `
     <div class="planner-wrapper animate-fade-in">
-      <!-- Full-Width Panoramic Kedarkantha Mountain Hero Header -->
+      <!-- Full-Width Panoramic Kareri Lake Mountain Hero Header -->
       <div class="planner-hero-header">
         <div class="planner-hero-content">
           <div class="planner-badge">
