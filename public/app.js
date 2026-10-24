@@ -1867,14 +1867,14 @@ function topbar() {
         </a>
 
         <nav class="stitch-nav-menu">
-          <a href="#/matches" class="stitch-nav-item ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}">Discover</a>
-          <a href="#/preferences" class="stitch-nav-item ${current === '/preferences' ? 'active' : ''}">Plan Trip</a>
-          <a href="#/groups" class="stitch-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">
-            Groups ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}
+          <a href="#/preferences" class="stitch-nav-item ${current === '/preferences' ? 'active' : ''}">Plan</a>
+          <a href="#/matches" class="stitch-nav-item ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}">Matches</a>
+          <a href="#/chat" class="stitch-nav-item ${current === '/chat' ? 'active' : ''}">
+            Chat ${state.unreadConversationCount > 0 ? `<span class="nav-counter-pill">${state.unreadConversationCount}</span>` : ''}
           </a>
           <a href="#/join-book" class="stitch-nav-item ${current === '/join-book' || current === '/packages' ? 'active' : ''}">Packages</a>
-          <a href="#/chat" class="stitch-nav-item ${current === '/chat' ? 'active' : ''}">
-            Inbox ${state.unreadConversationCount > 0 ? `<span class="nav-counter-pill">${state.unreadConversationCount}</span>` : ''}
+          <a href="#/groups" class="stitch-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">
+            Groups ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}
           </a>
           <a href="#/bookings" class="stitch-nav-item ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}">
             Bookings ${state.bookings.length > 0 ? `<span class="nav-counter-pill">${state.bookings.length}</span>` : ''}
@@ -1905,24 +1905,21 @@ function topbar() {
       <!-- Mobile Dropdown Navigation Drawer -->
       <div class="mobile-nav-drawer ${state.mobileNavOpen ? 'open' : ''}" id="mobileNavDrawer">
         <div class="mobile-nav-links">
-          <a href="#/profile" class="mobile-nav-item ${current === '/profile' ? 'active' : ''}">
-            <span class="mobile-nav-icon">👤</span> <span>Profile Setup</span>
-          </a>
           <a href="#/preferences" class="mobile-nav-item ${current === '/preferences' ? 'active' : ''}">
             <span class="mobile-nav-icon">🎛️</span> <span>Plan Trip</span>
           </a>
           <a href="#/matches" class="mobile-nav-item ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}">
-            <span class="mobile-nav-icon">✨</span> <span>Discover Matches</span>
+            <span class="mobile-nav-icon">🧭</span> <span>Matches</span>
           </a>
           <a href="#/chat" class="mobile-nav-item ${current === '/chat' ? 'active' : ''}">
-            <span class="mobile-nav-icon">✉️</span> <span>Messages &amp; Chat</span>
+            <span class="mobile-nav-icon">✉️</span> <span>Chat &amp; Messages</span>
             ${state.unreadConversationCount > 0 ? `<span class="nav-counter-pill">${state.unreadConversationCount}</span>` : ''}
           </a>
           <a href="#/join-book" class="mobile-nav-item ${current === '/join-book' || current === '/packages' ? 'active' : ''}">
             <span class="mobile-nav-icon">📦</span> <span>Curated Packages</span>
           </a>
           <a href="#/groups" class="mobile-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">
-            <span class="mobile-nav-icon">👥</span> <span>Cost Sharing</span>
+            <span class="mobile-nav-icon">👥</span> <span>Groups &amp; Cost Sharing</span>
             ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}
           </a>
           <a href="#/bookings" class="mobile-nav-item ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}">
@@ -1980,31 +1977,27 @@ function dashboardSidebar() {
       </div>
 
       <nav class="sidebar-nav-list">
+        <a href="#/preferences" class="sidebar-nav-link ${current === '/preferences' ? 'active' : ''}" title="Plan Trip">
+          <span class="sidebar-nav-icon">🎛️</span>
+          <span class="sidebar-nav-label">Plan</span>
+        </a>
         <a href="#/matches" class="sidebar-nav-link ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}" title="Discover Matches">
           <span class="sidebar-nav-icon">🧭</span>
           <span class="sidebar-nav-label">Matches</span>
         </a>
-        <a href="#/preferences" class="sidebar-nav-link ${current === '/preferences' ? 'active' : ''}" title="Plan Trip">
-          <span class="sidebar-nav-icon">🎛️</span>
-          <span class="sidebar-nav-label">Plan</span>
+        <a href="#/chat" class="sidebar-nav-link ${current === '/chat' ? 'active' : ''}" title="Messages & Chat">
+          <span class="sidebar-nav-icon">✉️</span>
+          <span class="sidebar-nav-label">Chat</span>
+          ${state.unreadConversationCount > 0 ? `<span class="sidebar-nav-badge">${state.unreadConversationCount}</span>` : ''}
+        </a>
+        <a href="#/join-book" class="sidebar-nav-link ${current === '/join-book' || current === '/packages' ? 'active' : ''}" title="Curated Packages">
+          <span class="sidebar-nav-icon">📦</span>
+          <span class="sidebar-nav-label">Packages</span>
         </a>
         <a href="#/groups" class="sidebar-nav-link ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}" title="Cost Sharing Groups">
           <span class="sidebar-nav-icon">👥</span>
           <span class="sidebar-nav-label">Groups</span>
           ${state.tripGroups.length > 0 ? `<span class="sidebar-nav-badge">${state.tripGroups.length}</span>` : ''}
-        </a>
-        <a href="#/chat" class="sidebar-nav-link ${current === '/chat' ? 'active' : ''}" title="Messages & Chat">
-          <span class="sidebar-nav-icon">✉️</span>
-          <span class="sidebar-nav-label">Inbox</span>
-          ${state.unreadConversationCount > 0 ? `<span class="sidebar-nav-badge">${state.unreadConversationCount}</span>` : ''}
-        </a>
-        <a href="#/profile" class="sidebar-nav-link ${current === '/profile' ? 'active' : ''}" title="Profile Setup">
-          <span class="sidebar-nav-icon">👤</span>
-          <span class="sidebar-nav-label">Profile</span>
-        </a>
-        <a href="#/join-book" class="sidebar-nav-link desktop-only ${current === '/join-book' || current === '/packages' ? 'active' : ''}" title="Curated Packages">
-          <span class="sidebar-nav-icon">📦</span>
-          <span class="sidebar-nav-label">Packages</span>
         </a>
         <a href="#/bookings" class="sidebar-nav-link desktop-only ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}" title="My Bookings">
           <span class="sidebar-nav-icon">🎟️</span>
