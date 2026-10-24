@@ -6574,23 +6574,27 @@ video {
 /* Hero Banner with Full Kareri Lake Image across 100% width, no dark sides */
 .planner-hero-header {
   position: relative;
-  background: linear-gradient(180deg, rgba(8, 20, 30, 0.32) 0%, rgba(8, 20, 30, 0.58) 100%), url('./assets/kareri-lake-card.jpg') center 36% / cover no-repeat;
+  background: linear-gradient(180deg, rgba(8, 20, 30, 0.35) 0%, rgba(8, 20, 30, 0.62) 100%), url('./assets/kareri-lake-card.jpg') center 36% / cover no-repeat;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 20px;
-  padding: 34px 36px;
+  padding: 28px 32px;
   color: #ffffff;
   margin-bottom: 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 28px;
+  gap: 24px;
   overflow: hidden;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3);
-  min-height: 200px;
+  min-height: 180px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .planner-hero-content {
-  max-width: 900px;
+  flex: 1;
+  min-width: 0;
+  max-width: 780px;
   position: relative;
   z-index: 2;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
@@ -6616,14 +6620,15 @@ video {
 .planner-hero-header h1,
 .planner-hero-title {
   font-family: 'Syne', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: clamp(1.85rem, 2.5vw, 2.35rem);
+  font-size: clamp(1.4rem, 2.2vw, 1.95rem);
   font-weight: 800;
   color: #ffffff;
-  line-height: 1.2;
-  letter-spacing: -0.025em;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
   margin: 0 0 10px;
-  white-space: nowrap;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .planner-hero-desc {
@@ -7601,15 +7606,14 @@ video {
 
 @media (max-width: 768px) {
   .planner-hero-title {
-    white-space: normal;
-    font-size: 1.85rem;
+    font-size: 1.45rem;
     line-height: 1.25;
   }
 }
 
 @media (max-width: 640px) {
   .planner-hero-title {
-    font-size: 1.55rem;
+    font-size: 1.3rem;
     line-height: 1.22;
   }
   .compact-dates {
