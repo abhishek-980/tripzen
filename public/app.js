@@ -2546,14 +2546,17 @@ function preferencesPage() {
       <!-- Full-Width Panoramic Kareri Lake Mountain Hero Header -->
       <div class="planner-hero-header">
         <div class="planner-hero-content">
-          <h1 class="planner-hero-title">Plan Your Trip &amp; Discover Companions</h1>
+          <h1 class="planner-hero-title">
+            <span class="title-full">Plan Your Trip &amp; Discover Companions</span>
+            <span class="title-compact">Plan Your Trip</span>
+          </h1>
           <p class="planner-hero-desc">
-            Set your travel dates, choose your summit, and instantly connect with verified trekkers heading to the <strong>exact same trail</strong>.
+            Set your dates, pick your trail, and connect with verified trekkers heading to the exact same summit.
           </p>
           <div class="planner-stats-chips">
             <span class="planner-chip">🏔️ 15 Curated Summits</span>
             <span class="planner-chip">⚡ Same-Destination Matches</span>
-            <span class="planner-chip">🤝 Shared Taxis & Camps</span>
+            <span class="planner-chip">🤝 Shared Taxis &amp; Camps</span>
           </div>
         </div>
 
@@ -2581,17 +2584,32 @@ function preferencesPage() {
           <section class="planner-step-box step-box-compact step-box-dates" id="step-dates-anchor">
             <div class="step-box-header">
               <div class="step-title-group">
-                <h2>When are you travelling?</h2>
-                <p>Pick departure dates or choose a quick preset</p>
+                <h2>
+                  <span class="step-title-full">When are you travelling?</span>
+                  <span class="step-title-short">🗓️ Travel Dates</span>
+                </h2>
+                <p class="step-subtitle">Pick departure dates or choose a quick preset</p>
               </div>
             </div>
 
             <!-- Quick Date Presets -->
             <div class="date-presets-row compact-presets">
-              <button type="button" class="date-preset-btn" data-date-preset="this-weekend">📅 This Weekend</button>
-              <button type="button" class="date-preset-btn" data-date-preset="next-weekend">🎒 Next Weekend</button>
-              <button type="button" class="date-preset-btn" data-date-preset="next-month">❄️ Next Month</button>
-              <button type="button" class="date-preset-btn active" data-date-preset="custom">✨ Custom</button>
+              <button type="button" class="date-preset-btn" data-date-preset="this-weekend">
+                <span class="preset-label-full">📅 This Weekend</span>
+                <span class="preset-label-short">This Wknd</span>
+              </button>
+              <button type="button" class="date-preset-btn" data-date-preset="next-weekend">
+                <span class="preset-label-full">🎒 Next Weekend</span>
+                <span class="preset-label-short">Next Wknd</span>
+              </button>
+              <button type="button" class="date-preset-btn" data-date-preset="next-month">
+                <span class="preset-label-full">❄️ Next Month</span>
+                <span class="preset-label-short">Next Mth</span>
+              </button>
+              <button type="button" class="date-preset-btn active" data-date-preset="custom">
+                <span class="preset-label-full">✨ Custom</span>
+                <span class="preset-label-short">Custom</span>
+              </button>
             </div>
 
             <div class="planner-dates-grid compact-dates">
@@ -2616,7 +2634,7 @@ function preferencesPage() {
                 <label class="field-floating-label" for="planEndDate">
                   <div class="label-row">
                     <span class="field-title">END DATE</span>
-                    <span class="auto-calc-tag">+4 days default</span>
+                    <span class="auto-calc-tag">+4 days</span>
                   </div>
                   <div class="input-with-icon">
                     <span class="input-icon">🏁</span>
@@ -2642,8 +2660,11 @@ function preferencesPage() {
           <section class="planner-step-box step-box-compact step-box-vibe" id="step-preferences-anchor">
             <div class="step-box-header">
               <div class="step-title-group">
-                <h2>Travel Vibe & Style</h2>
-                <p>Find companions who hike at your pace and vibe</p>
+                <h2>
+                  <span class="step-title-full">Travel Vibe &amp; Style</span>
+                  <span class="step-title-short">✨ Travel Vibe</span>
+                </h2>
+                <p class="step-subtitle">Find companions who hike at your pace and vibe</p>
               </div>
             </div>
 
@@ -2651,8 +2672,11 @@ function preferencesPage() {
               <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'solo' ? 'active' : ''}" data-select-planner-style="Solo">
                 <div class="style-icon-wrap">🥾</div>
                 <div class="style-info">
-                  <h3>Solo Backpacking</h3>
-                  <p>Hike independently, share local taxis, meet companions.</p>
+                  <h3>
+                    <span class="vibe-title-full">Solo Backpacking</span>
+                    <span class="vibe-title-short">Solo</span>
+                  </h3>
+                  <p class="vibe-desc">Hike independently, share local taxis &amp; camps.</p>
                 </div>
                 <div class="style-check-circle">✓</div>
               </div>
@@ -2660,8 +2684,11 @@ function preferencesPage() {
               <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'group' ? 'active' : ''}" data-select-planner-style="Group">
                 <div class="style-icon-wrap">👥</div>
                 <div class="style-info">
-                  <h3>Group Explorer</h3>
-                  <p>Social vibe, split guides, campfire nights.</p>
+                  <h3>
+                    <span class="vibe-title-full">Group Explorer</span>
+                    <span class="vibe-title-short">Group</span>
+                  </h3>
+                  <p class="vibe-desc">Social vibe, split guides &amp; campfire nights.</p>
                 </div>
                 <div class="style-check-circle">✓</div>
               </div>
@@ -2669,8 +2696,11 @@ function preferencesPage() {
               <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'budget' ? 'active' : ''}" data-select-planner-style="Budget">
                 <div class="style-icon-wrap">💰</div>
                 <div class="style-info">
-                  <h3>Budget Conscious</h3>
-                  <p>Shared homestays, public transit, cost-effective meals.</p>
+                  <h3>
+                    <span class="vibe-title-full">Budget Conscious</span>
+                    <span class="vibe-title-short">Budget</span>
+                  </h3>
+                  <p class="vibe-desc">Shared homestays, public transit, cost-effective meals.</p>
                 </div>
                 <div class="style-check-circle">✓</div>
               </div>
@@ -2678,8 +2708,11 @@ function preferencesPage() {
               <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'luxury' ? 'active' : ''}" data-select-planner-style="Luxury">
                 <div class="style-icon-wrap">✨</div>
                 <div class="style-info">
-                  <h3>Comfort & Stay</h3>
-                  <p>Cozy cottages, guided comfort, relaxed photography.</p>
+                  <h3>
+                    <span class="vibe-title-full">Comfort &amp; Stay</span>
+                    <span class="vibe-title-short">Luxury</span>
+                  </h3>
+                  <p class="vibe-desc">Cozy cottages, guided comfort, relaxed photography.</p>
                 </div>
                 <div class="style-check-circle">✓</div>
               </div>
@@ -2747,11 +2780,11 @@ function preferencesPage() {
               <button type="button" class="dest-cat-tab" data-dest-category="Uttarakhand">🌲 Uttarakhand</button>
               <button type="button" class="dest-cat-tab" data-dest-category="Himachal">🏔️ Himachal</button>
               <button type="button" class="dest-cat-tab" data-dest-category="Nepal">🇳🇵 Nepal</button>
-              <button type="button" class="dest-cat-tab" data-dest-category="Weekend">🎒 Weekend Escapes</button>
+              <button type="button" class="dest-cat-tab" data-dest-category="Weekend">🎒 Weekend Escape</button>
             </div>
           </div>
 
-          <!-- Destination Cards Grid -->
+          <!-- Destination Cards Grid (2 per row on mobile) -->
           <div class="planner-cards-grid" id="plannerDestCardsGrid">
             ${renderPlannerDestinationCards(currentDestination)}
           </div>
@@ -2761,6 +2794,18 @@ function preferencesPage() {
             <p>No summits match your search query. Try typing another summit or reset filters.</p>
           </div>
         </section>
+
+        <!-- Bottom Action Bar to Find Companions / Matches -->
+        <div class="planner-bottom-action-card" id="plannerBottomActionCard">
+          <div class="action-dest-pill">
+            <span>Selected Summit:</span>
+            <strong id="actionDestName">${escapeHtml(selectedDestObj.title || selectedDestObj.name)}</strong>
+          </div>
+          <button type="submit" form="preferencesForm" class="planner-submit-btn" id="plannerBottomSubmitBtn">
+            <span class="btn-shine"></span>
+            <span id="btnSubmitText">Find Matches (${escapeHtml(selectedDestObj.name)}) 🚀</span>
+          </button>
+        </div>
 
         ${statusMarkup(state.preferenceStatus, state.preferenceStatusType)}
       </form>
