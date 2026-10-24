@@ -2541,16 +2541,19 @@ function preferencesPage() {
 
   return `
     <div class="planner-wrapper animate-fade-in">
-      <!-- Modern Refined Hero Header Banner -->
+      <!-- Modern Aesthetic Mountain Hero Header -->
       <div class="planner-hero-header">
+        <div class="planner-hero-backdrop-img" style="background-image: url('./assets/mountain-hero-banner.jpg');"></div>
+        <div class="planner-hero-gradient-overlay"></div>
+
         <div class="planner-hero-content">
           <div class="planner-badge">
             <span class="pulse-dot"></span>
             <span>Himalayan Trek Planner • Companion Matching</span>
           </div>
-          <h1>Plan Your Trip & Discover Companions</h1>
+          <h1 class="planner-hero-title">Plan Your Trip & Discover Companions</h1>
           <p class="planner-hero-desc">
-            Set your dates first, choose a summit, and connect with verified trekkers heading to the <strong>exact same trail</strong>.
+            Set your travel dates, choose your summit, and instantly connect with verified trekkers heading to the <strong>exact same trail</strong>.
           </p>
           <div class="planner-stats-chips">
             <span class="planner-chip">🏔️ 15 Curated Summits</span>
@@ -2558,21 +2561,27 @@ function preferencesPage() {
             <span class="planner-chip">🤝 Shared Taxis & Camps</span>
           </div>
         </div>
+
         <div class="planner-hero-aside">
-          <div class="planner-hero-quick-card">
-            <div class="quick-card-user">
-              <div class="quick-card-avatar">
+          <div class="planner-hero-mountain-card">
+            <div class="hero-mountain-preview">
+              <img src="./assets/mountain-hero-banner.jpg" alt="Aesthetic Himalayan Peak" class="hero-mountain-thumb" />
+              <div class="hero-mountain-glow"></div>
+              <span class="hero-mountain-tag">🏔️ Curated Summits</span>
+            </div>
+            <div class="hero-user-snippet">
+              <div class="hero-snippet-avatar">
                 ${state.user?.profileImage ? `<img src="${escapeHtml(state.user.profileImage)}" alt="Avatar" />` : `<span>${escapeHtml((state.user?.fullName || 'T')[0].toUpperCase())}</span>`}
               </div>
-              <div class="quick-card-meta">
-                <span class="quick-card-name">${escapeHtml(state.user?.fullName || 'Active Trekker')}</span>
-                <span class="quick-card-status">● Ready to Match</span>
+              <div class="hero-snippet-info">
+                <span class="hero-snippet-name">${escapeHtml(state.user?.fullName || 'Active Trekker')}</span>
+                <span class="hero-snippet-status">● Ready to Match</span>
               </div>
+              <a href="#/profile" class="hero-snippet-edit" title="Edit Profile">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>Edit</span>
+              </a>
             </div>
-            <a href="#/profile" class="planner-edit-profile-btn">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <span>Edit Profile</span>
-            </a>
           </div>
         </div>
       </div>
@@ -2582,74 +2591,128 @@ function preferencesPage() {
         <input type="hidden" name="destination" id="planDestinationInput" value="${escapeHtml(currentDestination)}" />
         <input type="hidden" name="travelStyle" id="planTravelStyleInput" value="${escapeHtml(currentTravelStyle)}" />
 
-        <!-- STEP 1: TRAVEL DATES FIRST -->
-        <section class="planner-step-box" id="step-dates-anchor">
-          <div class="step-box-header">
-            <div class="step-icon-badge">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        <!-- TOP 2-COLUMN SPLIT: STEP 1 (LEFT) & STEP 3 (RIGHT) -->
+        <div class="planner-top-steps-grid">
+          <!-- STEP 1: TRAVEL DATES ON LEFT (COMPACT) -->
+          <section class="planner-step-box step-box-compact step-box-dates" id="step-dates-anchor">
+            <div class="step-box-header">
+              <div class="step-icon-badge">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              </div>
+              <div class="step-title-group">
+                <span class="step-kicker">STEP ONE • TRAVEL WINDOW</span>
+                <h2>When are you travelling?</h2>
+                <p>Pick departure dates or choose a quick preset</p>
+              </div>
             </div>
-            <div class="step-title-group">
-              <span class="step-kicker">STEP ONE • TRAVEL WINDOW</span>
-              <h2>When are you travelling?</h2>
-              <p>Select your departure dates or tap a quick weekend preset to align with other travelers</p>
+
+            <!-- Quick Date Presets -->
+            <div class="date-presets-row compact-presets">
+              <button type="button" class="date-preset-btn" data-date-preset="this-weekend">📅 This Weekend</button>
+              <button type="button" class="date-preset-btn" data-date-preset="next-weekend">🎒 Next Weekend</button>
+              <button type="button" class="date-preset-btn" data-date-preset="next-month">❄️ Next Month</button>
+              <button type="button" class="date-preset-btn active" data-date-preset="custom">✨ Custom</button>
             </div>
-          </div>
 
-          <!-- Quick Date Presets -->
-          <div class="date-presets-row">
-            <span class="preset-label">QUICK DATE PRESETS:</span>
-            <button type="button" class="date-preset-btn" data-date-preset="this-weekend">📅 This Weekend (Fri–Sun)</button>
-            <button type="button" class="date-preset-btn" data-date-preset="next-weekend">🎒 Next Weekend</button>
-            <button type="button" class="date-preset-btn" data-date-preset="next-month">❄️ Next Month</button>
-            <button type="button" class="date-preset-btn active" data-date-preset="custom">✨ Custom Window</button>
-          </div>
+            <div class="planner-dates-grid compact-dates">
+              <div class="date-field-card">
+                <label class="field-floating-label" for="planStartDate">
+                  <span class="field-title">START DATE *</span>
+                  <div class="input-with-icon">
+                    <span class="input-icon">📅</span>
+                    <input
+                      id="planStartDate"
+                      name="startDate"
+                      type="date"
+                      required
+                      value="${escapeHtml(state.profile?.startDate || defaultStart)}"
+                      class="planner-date-input"
+                    />
+                  </div>
+                </label>
+              </div>
 
-          <div class="planner-dates-grid">
-            <div class="date-field-card">
-              <label class="field-floating-label" for="planStartDate">
-                <span class="field-title">START DATE *</span>
-                <div class="input-with-icon">
-                  <span class="input-icon">📅</span>
-                  <input
-                    id="planStartDate"
-                    name="startDate"
-                    type="date"
-                    required
-                    value="${escapeHtml(state.profile?.startDate || defaultStart)}"
-                    class="planner-date-input"
-                  />
+              <div class="date-field-card">
+                <label class="field-floating-label" for="planEndDate">
+                  <div class="label-row">
+                    <span class="field-title">END DATE</span>
+                    <span class="auto-calc-tag">+4 days default</span>
+                  </div>
+                  <div class="input-with-icon">
+                    <span class="input-icon">🏁</span>
+                    <input
+                      id="planEndDate"
+                      name="endDate"
+                      type="date"
+                      value="${escapeHtml(state.profile?.endDate || defaultEnd)}"
+                      class="planner-date-input"
+                    />
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="date-summary-banner compact-summary" id="dateSummaryBanner">
+              <span class="summary-icon">🗓️</span>
+              <span id="dateSummaryText">Dates set. Companion matching will prioritize overlapping dates.</span>
+            </div>
+          </section>
+
+          <!-- STEP 3: TRAVEL VIBE & PREFERENCES ON RIGHT -->
+          <section class="planner-step-box step-box-compact step-box-vibe" id="step-preferences-anchor">
+            <div class="step-box-header">
+              <div class="step-icon-badge">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+              </div>
+              <div class="step-title-group">
+                <span class="step-kicker">STEP THREE • TRAVEL VIBE & PACE</span>
+                <h2>Your Travel Vibe & Style</h2>
+                <p>Find companions who hike at your pace and vibe</p>
+              </div>
+            </div>
+
+            <div class="planner-styles-grid compact-styles">
+              <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'solo' ? 'active' : ''}" data-select-planner-style="Solo">
+                <div class="style-icon-wrap">🥾</div>
+                <div class="style-info">
+                  <h3>Solo Backpacking</h3>
+                  <p>Hike independently, share local taxis, meet companions.</p>
                 </div>
-              </label>
-            </div>
+                <div class="style-check-circle">✓</div>
+              </div>
 
-            <div class="date-field-card">
-              <label class="field-floating-label" for="planEndDate">
-                <div class="label-row">
-                  <span class="field-title">END DATE (OPTIONAL)</span>
-                  <span class="auto-calc-tag">Auto-set to +4 days if left blank</span>
+              <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'group' ? 'active' : ''}" data-select-planner-style="Group">
+                <div class="style-icon-wrap">👥</div>
+                <div class="style-info">
+                  <h3>Group Explorer</h3>
+                  <p>Social vibe, split guides, campfire nights.</p>
                 </div>
-                <div class="input-with-icon">
-                  <span class="input-icon">🏁</span>
-                  <input
-                    id="planEndDate"
-                    name="endDate"
-                    type="date"
-                    value="${escapeHtml(state.profile?.endDate || defaultEnd)}"
-                    class="planner-date-input"
-                  />
+                <div class="style-check-circle">✓</div>
+              </div>
+
+              <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'budget' ? 'active' : ''}" data-select-planner-style="Budget">
+                <div class="style-icon-wrap">💰</div>
+                <div class="style-info">
+                  <h3>Budget Conscious</h3>
+                  <p>Shared homestays, public transit, cost-effective meals.</p>
                 </div>
-              </label>
+                <div class="style-check-circle">✓</div>
+              </div>
+
+              <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'luxury' ? 'active' : ''}" data-select-planner-style="Luxury">
+                <div class="style-icon-wrap">✨</div>
+                <div class="style-info">
+                  <h3>Comfort & Stay</h3>
+                  <p>Cozy cottages, guided comfort, relaxed photography.</p>
+                </div>
+                <div class="style-check-circle">✓</div>
+              </div>
             </div>
-          </div>
+          </section>
+        </div>
 
-          <div class="date-summary-banner" id="dateSummaryBanner">
-            <span class="summary-icon">🗓️</span>
-            <span id="dateSummaryText">Planned travel window set. Companion matching will prioritize travelers with overlapping dates.</span>
-          </div>
-        </section>
-
-        <!-- STEP 2: DESTINATION SELECTION SECOND -->
-        <section class="planner-step-box" id="step-destination-anchor">
+        <!-- BELOW TOP GRID: STEP 2 DESTINATION & SUMMIT (FULL WIDTH) -->
+        <section class="planner-step-box step-box-destination" id="step-destination-anchor">
           <div class="step-box-header">
             <div class="step-icon-badge">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 2 22 22 22"></polygon></svg>
@@ -2684,8 +2747,8 @@ function preferencesPage() {
               </p>
             </div>
             <div class="selected-banner-cta-col">
-              <a href="#step-preferences-anchor" class="jump-to-dates-btn">
-                <span>Travel Vibe ➔</span>
+              <a href="#plannerSubmitBtn" class="jump-to-dates-btn">
+                <span>Confirm & Match Below ➔</span>
               </a>
             </div>
           </div>
@@ -2722,58 +2785,6 @@ function preferencesPage() {
           <div id="noDestFoundMsg" class="dest-empty-notice" style="display: none;">
             <span>🔍</span>
             <p>No summits match your search query. Try typing another summit or reset filters.</p>
-          </div>
-        </section>
-
-        <!-- STEP 3: TRAVEL VIBE & STYLE -->
-        <section class="planner-step-box" id="step-preferences-anchor">
-          <div class="step-box-header">
-            <div class="step-icon-badge">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
-            </div>
-            <div class="step-title-group">
-              <span class="step-kicker">STEP THREE • TRAVEL STYLE & PACE</span>
-              <h2>Your Travel Vibe & Preferences</h2>
-              <p>Find companions who hike at your pace and share your mountain vibe</p>
-            </div>
-          </div>
-
-          <div class="planner-styles-grid">
-            <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'solo' ? 'active' : ''}" data-select-planner-style="Solo">
-              <div class="style-icon-wrap">🥾</div>
-              <div class="style-info">
-                <h3>Solo Backpacking</h3>
-                <p>Hike independently, share local taxis from base, and meet friendly companions along the trail.</p>
-              </div>
-              <div class="style-check-circle">✓</div>
-            </div>
-
-            <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'group' ? 'active' : ''}" data-select-planner-style="Group">
-              <div class="style-icon-wrap">👥</div>
-              <div class="style-info">
-                <h3>Group Explorer</h3>
-                <p>Social hiking vibe. Great for splitting guides, sharing campsite tents, and campfire nights.</p>
-              </div>
-              <div class="style-check-circle">✓</div>
-            </div>
-
-            <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'budget' ? 'active' : ''}" data-select-planner-style="Budget">
-              <div class="style-icon-wrap">💰</div>
-              <div class="style-info">
-                <h3>Budget Conscious</h3>
-                <p>Shared homestays, public transit, and cost-effective mountain meals with fellow backpackers.</p>
-              </div>
-              <div class="style-check-circle">✓</div>
-            </div>
-
-            <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'luxury' ? 'active' : ''}" data-select-planner-style="Luxury">
-              <div class="style-icon-wrap">✨</div>
-              <div class="style-info">
-                <h3>Comfort & Stay</h3>
-                <p>Cozy private mountain cottages, hot showers, guided comfort, and relaxed scenic photography.</p>
-              </div>
-              <div class="style-check-circle">✓</div>
-            </div>
           </div>
         </section>
 
