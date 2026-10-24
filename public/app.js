@@ -3672,81 +3672,18 @@ function authPage() {
 
                   <div class="auth-two-col-row">
                     <label class="field-label">
-                      <span>AGE</span>
-                      <input name="age" type="number" min="16" max="90" placeholder="26" class="stitch-input" />
-                    </label>
-
-                    <label class="field-label">
                       <span>CURRENT CITY</span>
                       <input name="city" placeholder="Mumbai / Delhi / Bengaluru" class="stitch-input" />
                     </label>
+
+                    <label class="field-label">
+                      <span>AGE</span>
+                      <input name="age" type="number" min="16" max="90" placeholder="26" class="stitch-input" />
+                    </label>
                   </div>
 
-                  <!-- Gender Segmented Toggle -->
-                  <div class="field-label" style="margin-top: 2px;">
-                    <span>GENDER</span>
-                    <div class="interactive-choice-grid" id="authGenderSelector">
-                      <button type="button" class="choice-pill-btn active" data-gender-val="Female">
-                        <span class="choice-icon">👩</span>
-                        <span>Female</span>
-                      </button>
-                      <button type="button" class="choice-pill-btn" data-gender-val="Male">
-                        <span class="choice-icon">👨</span>
-                        <span>Male</span>
-                      </button>
-                      <button type="button" class="choice-pill-btn" data-gender-val="Non-binary">
-                        <span class="choice-icon">✨</span>
-                        <span>Other</span>
-                      </button>
-                    </div>
-                    <input type="hidden" name="gender" id="authGenderInput" value="Female" />
-                  </div>
-
-                  <!-- Preferred Travel Style Compact Chips -->
-                  <div class="field-label" style="margin-top: 2px;">
-                    <div class="choice-header-row">
-                      <span>PREFERRED TRAVEL STYLE</span>
-                      <span class="choice-sub-hint">Trail Vibe</span>
-                    </div>
-                    <div class="compact-style-grid" id="authTravelStyleSelector">
-                      <button type="button" class="style-choice-card active" data-style-val="Solo">
-                        <span class="style-card-icon">🎒</span>
-                        <div class="style-card-text">
-                          <strong>Solo Trekker</strong>
-                          <small>Independent & flexible</small>
-                        </div>
-                        <div class="style-check-circle">✓</div>
-                      </button>
-
-                      <button type="button" class="style-choice-card" data-style-val="Group">
-                        <span class="style-card-icon">👥</span>
-                        <div class="style-card-text">
-                          <strong>Group Squad</strong>
-                          <small>Social & campfire chats</small>
-                        </div>
-                        <div class="style-check-circle">✓</div>
-                      </button>
-
-                      <button type="button" class="style-choice-card" data-style-val="Luxury">
-                        <span class="style-card-icon">✨</span>
-                        <div class="style-card-text">
-                          <strong>Comfort Trek</strong>
-                          <small>Curated & scenic stays</small>
-                        </div>
-                        <div class="style-check-circle">✓</div>
-                      </button>
-
-                      <button type="button" class="style-choice-card" data-style-val="Budget">
-                        <span class="style-card-icon">⛺</span>
-                        <div class="style-card-text">
-                          <strong>Backpacker</strong>
-                          <small>Budget & cost sharing</small>
-                        </div>
-                        <div class="style-check-circle">✓</div>
-                      </button>
-                    </div>
-                    <input type="hidden" name="travelStyle" id="authTravelStyleInput" value="Solo" />
-                  </div>
+                  <input type="hidden" name="gender" id="authGenderInput" value="Female" />
+                  <input type="hidden" name="travelStyle" id="authTravelStyleInput" value="Solo" />
                 `
                 : isForgotPassword
                 ? `

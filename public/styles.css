@@ -2358,85 +2358,85 @@ video {
   width: 100%;
   max-width: 510px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.95);
-  padding: 32px 30px 24px;
-  box-shadow: 0 28px 72px rgba(10, 28, 22, 0.36), 0 2px 10px rgba(0, 0, 0, 0.06);
-  animation: scaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  padding: 34px 30px 26px;
+  box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.22), 0 0 1px rgba(15, 23, 42, 0.08);
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
 
 .auth-card-glow-orb {
-  position: absolute;
-  top: -60px;
-  right: -60px;
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(232, 135, 58, 0.16) 0%, rgba(232, 135, 58, 0) 70%);
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .auth-header-center {
   position: relative;
   z-index: 1;
   text-align: center;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .auth-brand-link {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: var(--ink);
-  font-weight: 800;
-  font-family: var(--font-heading);
-  transition: transform 0.2s ease;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
 }
 
 .auth-brand-link:hover {
-  transform: scale(1.02);
+  opacity: 0.9;
+}
+
+.auth-brand-link span {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: #0f172a;
+  letter-spacing: -0.02em;
 }
 
 .auth-header-center h2 {
-  font-size: 1.55rem;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 1.6rem;
   font-weight: 800;
-  color: var(--ink);
-  margin-top: 8px;
-  letter-spacing: -0.015em;
-  line-height: 1.2;
+  color: #0f172a;
+  margin-top: 10px;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
 }
 
 .auth-header-center p {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 0.88rem;
-  color: var(--muted);
-  margin-top: 4px;
-  line-height: 1.4;
+  color: #64748b;
+  margin-top: 5px;
+  line-height: 1.45;
 }
 
+/* Modern Segmented Tab Switcher */
 .auth-toggle-pill {
   position: relative;
   z-index: 1;
   display: flex;
-  background: rgba(35, 89, 70, 0.08);
+  background: #f1f5f9;
   padding: 4px;
-  border-radius: var(--radius-full);
-  margin-bottom: 16px;
-  border: 1px solid rgba(35, 89, 70, 0.1);
+  border-radius: 9999px;
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
 }
 
 .auth-toggle-btn {
   flex: 1;
-  padding: 9px 16px;
-  border-radius: var(--radius-full);
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--muted);
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -2445,213 +2445,150 @@ video {
 }
 
 .auth-toggle-btn:hover {
-  color: var(--ink);
+  color: #0f172a;
 }
 
 .auth-toggle-btn.active {
   background: #ffffff;
-  color: var(--ink);
-  box-shadow: 0 2px 10px rgba(17, 39, 32, 0.12);
-  font-weight: 800;
+  color: #0f172a;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  font-weight: 700;
 }
 
-/* 2-Column Responsive Form Layout */
+/* Professional 2-Column Responsive Form Layout */
 .auth-two-col-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 12px 14px;
+  margin-bottom: 12px;
 }
 
-.phone-input-group {
+.auth-card-stitch .field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.auth-card-stitch .field-label > span {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.auth-card-stitch .stitch-input {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 0.92rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.auth-card-stitch .stitch-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.auth-card-stitch .stitch-input:focus {
+  outline: none;
+  border-color: #0f766e;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.auth-card-stitch .phone-input-group {
   display: flex;
   align-items: stretch;
   width: 100%;
-  border-radius: var(--radius-md);
-  background: #ffffff;
-  border: 1.5px solid var(--line);
-  transition: all var(--transition-fast);
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  transition: all 0.2s ease;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-.phone-input-group:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(35, 89, 70, 0.14);
+.auth-card-stitch .phone-input-group:focus-within {
+  border-color: #0f766e;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
 }
 
-.phone-prefix-addon {
+.auth-card-stitch .phone-prefix-addon {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 0 12px;
-  background: rgba(35, 89, 70, 0.06);
-  border-right: 1.5px solid var(--line);
-  font-size: 0.84rem;
+  gap: 5px;
+  padding: 0 13px;
+  background: #f1f5f9;
+  border-right: 1.5px solid #e2e8f0;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 0.85rem;
   font-weight: 700;
-  color: var(--ink);
+  color: #334155;
   white-space: nowrap;
   user-select: none;
 }
 
-.phone-input-group .phone-input-field {
+.auth-card-stitch .phone-input-group .phone-input-field {
   border: none !important;
   box-shadow: none !important;
   border-radius: 0 !important;
   background: transparent !important;
   flex: 1;
   min-width: 0;
-  padding: 10px 12px;
+  padding: 11px 14px;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 0.92rem;
+  color: #0f172a;
 }
 
 /* Password Toggle SVG Styling */
-.password-toggle-svg {
-  display: block;
-  stroke-width: 2.2;
-  transition: transform 0.2s ease, stroke 0.2s ease;
-}
-
-.password-toggle-btn:hover .password-toggle-svg {
-  transform: scale(1.12);
-  stroke: var(--primary);
-}
-
-/* Segmented Gender Pills */
-.interactive-choice-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-
-.choice-pill-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 6px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius-md);
-  font-size: 0.84rem;
-  font-weight: 700;
-  color: var(--muted);
-  transition: all var(--transition-fast);
-  cursor: pointer;
-}
-
-.choice-pill-btn:hover {
-  background: rgba(35, 89, 70, 0.06);
-  border-color: rgba(55, 86, 74, 0.3);
-  color: var(--ink);
-  transform: translateY(-1px);
-}
-
-.choice-pill-btn.active {
-  background: var(--primary-light);
-  border-color: var(--accent);
-  color: var(--accent-strong);
-  box-shadow: 0 2px 8px rgba(232, 135, 58, 0.18);
-}
-
-.choice-icon {
-  font-size: 1rem;
-}
-
-/* Compact Travel Style 2x2 Chips */
-.choice-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.choice-sub-hint {
-  font-size: 0.72rem;
-  color: var(--accent-strong);
-  font-weight: 700;
-}
-
-.compact-style-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.compact-style-grid .style-choice-card {
+.auth-card-stitch .password-input-wrap {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  background: #ffffff;
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius-md);
-  text-align: left;
-  transition: all var(--transition-fast);
-  cursor: pointer;
+  width: 100%;
 }
 
-.compact-style-grid .style-choice-card:hover {
-  border-color: rgba(232, 135, 58, 0.5);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
+.auth-card-stitch .password-input-wrap .password-input-field {
+  padding-right: 44px;
 }
 
-.compact-style-grid .style-choice-card.active {
-  border-color: var(--accent);
-  background: #fffcf8;
-  box-shadow: 0 3px 12px rgba(232, 135, 58, 0.18);
-}
-
-.compact-style-grid .style-card-icon {
-  font-size: 1.25rem;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.compact-style-grid .style-card-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  flex-grow: 1;
-  min-width: 0;
-}
-
-.compact-style-grid .style-card-text strong {
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: var(--ink);
-  line-height: 1.2;
-}
-
-.compact-style-grid .style-choice-card.active .style-card-text strong {
-  color: var(--accent-strong);
-}
-
-.compact-style-grid .style-card-text small {
-  font-size: 0.7rem;
-  color: var(--muted);
-  line-height: 1.2;
-}
-
-.compact-style-grid .style-check-circle {
+.auth-card-stitch .password-toggle-btn {
   position: absolute;
-  top: 7px;
-  right: 7px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #ffffff;
-  display: none;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.6rem;
-  font-weight: 900;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  color: #94a3b8;
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
-.compact-style-grid .style-choice-card.active .style-check-circle {
-  display: flex;
+.auth-card-stitch .password-toggle-btn:hover {
+  color: #0f766e;
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.password-toggle-svg {
+  display: block;
+  stroke-width: 2.2;
 }
 
 /* Submit CTA Button & Security Footer */
@@ -2660,18 +2597,30 @@ video {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-weight: 800;
-  font-size: 0.96rem;
-  letter-spacing: 0.02em;
+  width: 100%;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
   padding: 13px 20px;
-  border-radius: var(--radius-md);
-  box-shadow: 0 4px 16px rgba(35, 89, 70, 0.28);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #11382b 0%, #164e3b 100%);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(17, 56, 43, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-top: 14px;
 }
 
 .auth-submit-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(35, 89, 70, 0.36);
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #0d2c22 0%, #124031 100%);
+  box-shadow: 0 6px 20px rgba(17, 56, 43, 0.35);
+}
+
+.auth-submit-btn:active {
+  transform: translateY(0);
 }
 
 .auth-card-security-footer {
@@ -2681,16 +2630,18 @@ video {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  margin-top: 14px;
+  margin-top: 16px;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
   font-size: 0.74rem;
   font-weight: 600;
-  color: var(--muted);
+  color: #64748b;
   text-align: center;
 }
 
 .security-lock-icon {
   font-size: 0.8rem;
 }
+
 
 /* ==========================================================================
    MATCH PROFILE DETAIL VIEW
@@ -3642,17 +3593,7 @@ video {
     grid-template-columns: 1fr !important;
     gap: 10px !important;
   }
-  .compact-style-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 6px !important;
-  }
-  .compact-style-grid .style-choice-card {
-    padding: 8px 10px !important;
-  }
-  .choice-pill-btn {
-    padding: 8px 4px !important;
-    font-size: 0.8rem !important;
-  }
+
 
   /* Modals on Mobile */
   .checkout-modal-card {
