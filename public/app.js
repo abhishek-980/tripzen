@@ -2541,11 +2541,8 @@ function preferencesPage() {
 
   return `
     <div class="planner-wrapper animate-fade-in">
-      <!-- Modern Aesthetic Mountain Hero Header -->
+      <!-- Full-Width Panoramic Kedarkantha Mountain Hero Header -->
       <div class="planner-hero-header">
-        <div class="planner-hero-backdrop-img" style="background-image: url('./assets/mountain-hero-banner.jpg');"></div>
-        <div class="planner-hero-gradient-overlay"></div>
-
         <div class="planner-hero-content">
           <div class="planner-badge">
             <span class="pulse-dot"></span>
@@ -2563,26 +2560,15 @@ function preferencesPage() {
         </div>
 
         <div class="planner-hero-aside">
-          <div class="planner-hero-mountain-card">
-            <div class="hero-mountain-preview">
-              <img src="./assets/mountain-hero-banner.jpg" alt="Aesthetic Himalayan Peak" class="hero-mountain-thumb" />
-              <div class="hero-mountain-glow"></div>
-              <span class="hero-mountain-tag">🏔️ Curated Summits</span>
+          <a href="#/profile" class="planner-hero-profile-pill">
+            <div class="hero-pill-avatar">
+              ${state.user?.profileImage ? `<img src="${escapeHtml(state.user.profileImage)}" alt="Avatar" />` : `<span>${escapeHtml((state.user?.fullName || 'T')[0].toUpperCase())}</span>`}
             </div>
-            <div class="hero-user-snippet">
-              <div class="hero-snippet-avatar">
-                ${state.user?.profileImage ? `<img src="${escapeHtml(state.user.profileImage)}" alt="Avatar" />` : `<span>${escapeHtml((state.user?.fullName || 'T')[0].toUpperCase())}</span>`}
-              </div>
-              <div class="hero-snippet-info">
-                <span class="hero-snippet-name">${escapeHtml(state.user?.fullName || 'Active Trekker')}</span>
-                <span class="hero-snippet-status">● Ready to Match</span>
-              </div>
-              <a href="#/profile" class="hero-snippet-edit" title="Edit Profile">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <span>Edit</span>
-              </a>
+            <div class="hero-pill-meta">
+              <span class="hero-pill-name">${escapeHtml(state.user?.fullName || 'Active Trekker')}</span>
+              <span class="hero-pill-action">Edit Profile & Bio ➔</span>
             </div>
-          </div>
+          </a>
         </div>
       </div>
 
@@ -2786,24 +2772,6 @@ function preferencesPage() {
             <p>No summits match your search query. Try typing another summit or reset filters.</p>
           </div>
         </section>
-
-        <!-- Final Submit Action Bar -->
-        <div class="planner-bottom-action-card">
-          <div class="action-text-col">
-            <div class="action-dest-pill">
-              <span>Target Summit:</span>
-              <strong id="actionDestName">${escapeHtml(currentDestination)}</strong>
-            </div>
-            <p class="action-assurance">
-              ✓ Guaranteed matches for <strong><span id="assuranceDestSpan">${escapeHtml(currentDestination)}</span></strong> around your travel dates.
-            </p>
-          </div>
-
-          <button type="submit" class="planner-submit-btn" id="plannerSubmitBtn">
-            <span class="btn-shine"></span>
-            <span id="btnSubmitText">Show Matches (${escapeHtml(currentDestination)}) ➔</span>
-          </button>
-        </div>
 
         ${statusMarkup(state.preferenceStatus, state.preferenceStatusType)}
       </form>
