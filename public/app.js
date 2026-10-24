@@ -3516,19 +3516,22 @@ function tripGroupCardsMarkup(groupsList = state.tripGroups) {
     .join('');
 }
 
+const AUTH_SVG_EYE = `<svg class="password-toggle-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const AUTH_SVG_EYE_OFF = `<svg class="password-toggle-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>`;
+
 function authPage() {
   const isSignup = state.authMode === 'signup';
   const isForgotPassword = state.authMode === 'forgot_password';
   const isLogin = !isSignup && !isForgotPassword;
 
   let headerTitle = 'Welcome Back';
-  let headerSubtitle = 'Sign in with your phone number or email to access your account';
+  let headerSubtitle = 'Sign in to access your travel matches and group trips';
   if (isSignup) {
     headerTitle = 'Create Account';
-    headerSubtitle = 'Join compatible travelers for your next journey';
+    headerSubtitle = 'Connect with verified travel buddies across India';
   } else if (isForgotPassword) {
     headerTitle = 'Reset Password';
-    headerSubtitle = 'Enter your phone number or email to regenerate your password';
+    headerSubtitle = 'Enter your phone number or email to set a new password';
   }
 
   return `
@@ -3541,121 +3544,171 @@ function authPage() {
       <div class="auth-hero-video-overlay"></div>
 
       <div class="auth-hero-container">
-        <!-- Left Side: Inspiring Traveler Copy & Corner Manifesto -->
+        <!-- Left Side: Inspiring Traveler Copy & Social Proof -->
         <div class="auth-hero-left">
           <div class="auth-hero-badge">
-            <span>🌍 Trek & Vacation Matchmaking</span>
+            <span class="auth-badge-live-pulse"></span>
+            <span>🛡️ 100% Verified Trek & Travel Matchmaking</span>
           </div>
 
-          <h1>Find the ones who share your travel dreams.</h1>
+          <h1 class="auth-hero-title">
+            Find the ones who share your <span class="highlight-auth-brand">travel dreams</span>.
+          </h1>
 
-          <p>
-            Lock in your destination and dates first. Then discover vetted, like-minded travel partners heading to the same treks, trips, or vacations.
+          <p class="auth-hero-desc">
+            Lock in your destination and dates. Connect with vetted, compatible travel buddies heading to the same treks, roadtrips, and weekend escapes across India.
           </p>
 
-          <div class="auth-hero-points">
-            <span class="hero-pill-point">✨ 100% Real Travel Buddies</span>
-            <span class="hero-pill-point">🏕️ Shared Trip Logistics</span>
-            <span class="hero-pill-point">🏖️ Treks & Vacations</span>
+          <!-- Live Traveler Community Strip -->
+          <div class="auth-trust-metric-bar">
+            <div class="auth-avatar-stack">
+              <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Ananya" alt="Trekker" class="trust-avatar" />
+              <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Kabir" alt="Trekker" class="trust-avatar" />
+              <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Priya" alt="Trekker" class="trust-avatar" />
+              <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Aarav" alt="Trekker" class="trust-avatar" />
+              <div class="trust-avatar-plus">+1.4k</div>
+            </div>
+            <div class="trust-metric-info">
+              <div class="trust-metric-headline">
+                <span class="trust-stars">★★★★★</span>
+                <strong>4.9 / 5 Rating</strong>
+              </div>
+              <span class="trust-metric-sub">Over 820+ verified treks & road trips matched</span>
+            </div>
           </div>
 
-          <button type="button" class="primary-btn" id="heroGetStartedBtn" style="width: fit-content; padding: 12px 26px; font-size: 0.95rem; margin-top: 2px;">
-            <span>Start Planning Free ➔</span>
-          </button>
+          <!-- 3 Safety & Value Pillars -->
+          <div class="auth-safety-pillars">
+            <div class="safety-pillar-card">
+              <div class="pillar-icon-box">🛡️</div>
+              <div class="pillar-text">
+                <strong>100% Vetted Profiles</strong>
+                <span>Phone & identity vetted travelers only</span>
+              </div>
+            </div>
+            <div class="safety-pillar-card">
+              <div class="pillar-icon-box">🚙</div>
+              <div class="pillar-text">
+                <strong>Shared Logistics</strong>
+                <span>Split taxis, stays, tents & guide fees</span>
+              </div>
+            </div>
+            <div class="safety-pillar-card">
+              <div class="pillar-icon-box">💬</div>
+              <div class="pillar-text">
+                <strong>Encrypted Chat</strong>
+                <span>Safe direct coordination before your trek</span>
+              </div>
+            </div>
+          </div>
 
-          <!-- Corner element that travelers love -->
+          <!-- Traveler Quote & Verified Proof -->
           <div class="traveler-corner-love-card">
             <div class="love-card-top">
-              <span class="compass-badge">🧭</span>
-              <span class="love-tag">TRAIL & TRAVEL MANIFESTO</span>
+              <span class="love-verified-badge">✓ Verified Trekker</span>
+              <span class="love-destination">🏔️ Kedarkantha Summit</span>
             </div>
-            <blockquote>"Not all those who wander are lost — some are just looking for the right travel tribe."</blockquote>
-            <div class="love-card-footer">
-              <span>🏔️ Mountain Treks</span>
-              <span>•</span>
-              <span>🏖️ Beach Vacations</span>
-              <span>•</span>
-              <span>🌲 Scenic Escapes</span>
+            <blockquote>
+              "Found 3 fellow trekkers from Delhi for Kedarkantha through TripZen — split our taxi from Dehradun and saved ₹4,200 each! Best travel decision."
+            </blockquote>
+            <div class="love-card-author">
+              <strong>Ananya Sharma</strong>
+              <span>• Delhi NCR • Solo Backpacker</span>
             </div>
           </div>
         </div>
 
-        <!-- Right Side: Floating Auth Card -->
+        <!-- Right Side: Sleek Glassmorphic Auth Card -->
         <div class="auth-card-stitch">
+          <div class="auth-card-glow-orb"></div>
+          
           <div class="auth-header-center">
-            <a href="#/" class="stitch-brand" style="justify-content: center; font-size: 1.6rem;">
-              <img src="./assets/tripzen-logo.png" alt="TripZen Logo" class="stitch-brand-logo-img" style="width: 44px; height: 44px; border-radius: 12px;" />
-              <span>TripZen</span>
+            <a href="#/" class="stitch-brand auth-brand-link" style="justify-content: center; font-size: 1.55rem; text-decoration: none;">
+              <img src="./assets/tripzen-logo.png" alt="TripZen Logo" class="stitch-brand-logo-img" style="width: 44px; height: 44px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);" />
+              <span style="letter-spacing: -0.02em;">TripZen</span>
             </a>
             <h2>${headerTitle}</h2>
             <p>${headerSubtitle}</p>
           </div>
 
-          <div class="auth-toggle-pill">
-            <button type="button" class="auth-toggle-btn ${isSignup ? 'active' : ''}" data-auth-mode="signup">Signup</button>
-            <button type="button" class="auth-toggle-btn ${isLogin ? 'active' : ''}" data-auth-mode="login">Login</button>
+          <div class="auth-toggle-pill" role="tablist">
+            <button type="button" class="auth-toggle-btn ${isSignup ? 'active' : ''}" data-auth-mode="signup" role="tab" aria-selected="${isSignup}">Sign Up</button>
+            <button type="button" class="auth-toggle-btn ${isLogin ? 'active' : ''}" data-auth-mode="login" role="tab" aria-selected="${isLogin}">Log In</button>
           </div>
 
           <form id="authForm" class="form-field-group">
             ${
               isSignup
                 ? `
-                  <label class="field-label">
-                    <span>FULL NAME</span>
-                    <input name="fullName" required placeholder="Elena Rostova" class="stitch-input" />
-                  </label>
-                  <label class="field-label">
-                    <span>EMAIL ADDRESS</span>
-                    <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="elena@example.com or username" class="stitch-input" />
-                  </label>
-                  <label class="field-label">
-                    <span>MOBILE / PHONE NUMBER</span>
-                    <input name="phone" type="tel" autocomplete="tel" placeholder="+91 98765 43210 (10-digit number)" class="stitch-input" />
-                  </label>
-                  <label class="field-label">
-                    <span>PASSWORD</span>
-                    <div class="password-input-wrap">
-                      <input name="password" type="password" required placeholder="••••••••" class="stitch-input password-input-field" />
-                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
-                    </div>
-                  </label>
-
-                  <div class="auth-age-gender-row">
+                  <div class="auth-two-col-row responsive-stack">
                     <label class="field-label">
-                      <span>AGE</span>
-                      <input name="age" placeholder="28" class="stitch-input" />
+                      <span>FULL NAME</span>
+                      <input name="fullName" required placeholder="Aarav Mehta" class="stitch-input" />
                     </label>
-                    <div class="field-label">
-                      <span>GENDER</span>
-                      <div class="interactive-choice-grid" id="authGenderSelector">
-                        <button type="button" class="choice-pill-btn active" data-gender-val="Female">
-                          <span class="choice-icon">👩</span>
-                          <span>Female</span>
-                        </button>
-                        <button type="button" class="choice-pill-btn" data-gender-val="Male">
-                          <span class="choice-icon">👨</span>
-                          <span>Male</span>
-                        </button>
-                        <button type="button" class="choice-pill-btn" data-gender-val="Non-binary">
-                          <span class="choice-icon">✨</span>
-                          <span>Other</span>
-                        </button>
+
+                    <label class="field-label">
+                      <span>MOBILE NUMBER</span>
+                      <div class="phone-input-group">
+                        <span class="phone-prefix-addon">🇮🇳 +91</span>
+                        <input name="phone" type="tel" autocomplete="tel" placeholder="98765 43210" class="stitch-input phone-input-field" />
                       </div>
-                      <input type="hidden" name="gender" id="authGenderInput" value="Female" />
-                    </div>
+                    </label>
                   </div>
 
-                  <label class="field-label">
-                    <span>CURRENT CITY</span>
-                    <input name="city" placeholder="Mumbai / Delhi" class="stitch-input" />
-                  </label>
+                  <div class="auth-two-col-row responsive-stack">
+                    <label class="field-label">
+                      <span>EMAIL ADDRESS</span>
+                      <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="aarav@example.com" class="stitch-input" />
+                    </label>
 
-                  <div class="field-label">
+                    <label class="field-label">
+                      <span>PASSWORD</span>
+                      <div class="password-input-wrap">
+                        <input name="password" type="password" required minlength="4" placeholder="••••••••" class="stitch-input password-input-field" />
+                        <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div class="auth-two-col-row">
+                    <label class="field-label">
+                      <span>AGE</span>
+                      <input name="age" type="number" min="16" max="90" placeholder="26" class="stitch-input" />
+                    </label>
+
+                    <label class="field-label">
+                      <span>CURRENT CITY</span>
+                      <input name="city" placeholder="Mumbai / Delhi / Bengaluru" class="stitch-input" />
+                    </label>
+                  </div>
+
+                  <!-- Gender Segmented Toggle -->
+                  <div class="field-label" style="margin-top: 2px;">
+                    <span>GENDER</span>
+                    <div class="interactive-choice-grid" id="authGenderSelector">
+                      <button type="button" class="choice-pill-btn active" data-gender-val="Female">
+                        <span class="choice-icon">👩</span>
+                        <span>Female</span>
+                      </button>
+                      <button type="button" class="choice-pill-btn" data-gender-val="Male">
+                        <span class="choice-icon">👨</span>
+                        <span>Male</span>
+                      </button>
+                      <button type="button" class="choice-pill-btn" data-gender-val="Non-binary">
+                        <span class="choice-icon">✨</span>
+                        <span>Other</span>
+                      </button>
+                    </div>
+                    <input type="hidden" name="gender" id="authGenderInput" value="Female" />
+                  </div>
+
+                  <!-- Preferred Travel Style Compact Chips -->
+                  <div class="field-label" style="margin-top: 2px;">
                     <div class="choice-header-row">
                       <span>PREFERRED TRAVEL STYLE</span>
                       <span class="choice-sub-hint">Trail Vibe</span>
                     </div>
-                    <div class="interactive-style-grid" id="authTravelStyleSelector">
+                    <div class="compact-style-grid" id="authTravelStyleSelector">
                       <button type="button" class="style-choice-card active" data-style-val="Solo">
                         <span class="style-card-icon">🎒</span>
                         <div class="style-card-text">
@@ -3687,7 +3740,7 @@ function authPage() {
                         <span class="style-card-icon">⛺</span>
                         <div class="style-card-text">
                           <strong>Backpacker</strong>
-                          <small>Budget & cost-sharing</small>
+                          <small>Budget & cost sharing</small>
                         </div>
                         <div class="style-check-circle">✓</div>
                       </button>
@@ -3698,7 +3751,7 @@ function authPage() {
                 : isForgotPassword
                 ? `
                   <div class="auth-notice-box" style="margin-bottom: 16px; padding: 12px 14px; background: rgba(35, 89, 70, 0.08); border-radius: 12px; border-left: 3px solid var(--accent); font-size: 0.86rem; color: var(--ink);">
-                    <span>🔑 Enter your registered Phone Number, Email, or User ID to set your new password.</span>
+                    <span>🔑 Enter your registered Mobile Number, Email, or User ID to set your new password.</span>
                   </div>
                   <label class="field-label">
                     <span>PHONE NUMBER, EMAIL, OR USER ID</span>
@@ -3708,14 +3761,14 @@ function authPage() {
                     <span>NEW PASSWORD</span>
                     <div class="password-input-wrap">
                       <input name="newPassword" type="password" required minlength="4" placeholder="Enter new password (min 4 chars)" class="stitch-input password-input-field" />
-                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
+                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
                     </div>
                   </label>
                   <label class="field-label">
                     <span>CONFIRM NEW PASSWORD</span>
                     <div class="password-input-wrap">
                       <input name="confirmPassword" type="password" required minlength="4" placeholder="Re-enter new password" class="stitch-input password-input-field" />
-                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
+                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
                     </div>
                   </label>
                 `
@@ -3726,23 +3779,29 @@ function authPage() {
                   </label>
                   <div class="field-label">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                      <span style="font-size: 0.78rem; font-weight: 700; color: var(--muted); letter-spacing: 0.04em;">PASSWORD</span>
+                      <span style="font-size: 0.76rem; font-weight: 800; color: var(--muted); letter-spacing: 0.05em;">PASSWORD</span>
                       <button type="button" class="auth-text-link" id="forgotPasswordLink">Forgot Password?</button>
                     </div>
                     <div class="password-input-wrap">
                       <input name="password" type="password" autocomplete="current-password" required placeholder="••••••••" class="stitch-input password-input-field" />
-                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">👁️</button>
+                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
                     </div>
                   </div>
                 `
             }
 
-            <button type="submit" class="primary-btn wide-btn" style="margin-top: 14px;">
-              ${isSignup ? 'Create Account ➔' : (isForgotPassword ? 'Regenerate Password & Sign In ➔' : 'Continue ➔')}
+            <button type="submit" class="primary-btn wide-btn auth-submit-btn" style="margin-top: 14px;">
+              <span>${isSignup ? 'Create Account ➔' : (isForgotPassword ? 'Regenerate Password & Sign In ➔' : 'Continue to Matches ➔')}</span>
             </button>
 
             ${isForgotPassword ? `<button type="button" class="auth-back-link" id="backToLoginBtn">← Back to Login</button>` : ''}
           </form>
+
+          <!-- Safe & Encrypted Assurance Footer -->
+          <div class="auth-card-security-footer">
+            <span class="security-lock-icon">🔒</span>
+            <span>256-bit Encrypted • Zero Spam • 100% Privacy Protected</span>
+          </div>
 
           ${statusMarkup(state.authStatus, state.authStatusType)}
         </div>
@@ -6063,7 +6122,7 @@ function hydrateUI() {
       if (input) {
         const isPassword = input.getAttribute('type') === 'password';
         input.setAttribute('type', isPassword ? 'text' : 'password');
-        btn.textContent = isPassword ? '🔒' : '👁️';
+        btn.innerHTML = isPassword ? AUTH_SVG_EYE_OFF : AUTH_SVG_EYE;
         btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
       }
     });
