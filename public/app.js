@@ -2544,11 +2544,7 @@ function preferencesPage() {
       <!-- Full-Width Panoramic Kareri Lake Mountain Hero Header -->
       <div class="planner-hero-header">
         <div class="planner-hero-content">
-          <div class="planner-badge">
-            <span class="pulse-dot"></span>
-            <span>Himalayan Trek Planner • Companion Matching</span>
-          </div>
-          <h1 class="planner-hero-title">Plan Your Trip & Discover Companions</h1>
+          <h1 class="planner-hero-title">Plan Your Trip <span class="planner-hero-title-accent">&amp; Discover Companions</span></h1>
           <p class="planner-hero-desc">
             Set your travel dates, choose your summit, and instantly connect with verified trekkers heading to the <strong>exact same trail</strong>.
           </p>
