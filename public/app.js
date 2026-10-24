@@ -2578,9 +2578,6 @@ function preferencesPage() {
           <!-- TRAVEL DATES ON LEFT (COMPACT) -->
           <section class="planner-step-box step-box-compact step-box-dates" id="step-dates-anchor">
             <div class="step-box-header">
-              <div class="step-icon-badge">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-              </div>
               <div class="step-title-group">
                 <h2>When are you travelling?</h2>
                 <p>Pick departure dates or choose a quick preset</p>
@@ -2642,9 +2639,6 @@ function preferencesPage() {
           <!-- TRAVEL VIBE & PREFERENCES ON RIGHT -->
           <section class="planner-step-box step-box-compact step-box-vibe" id="step-preferences-anchor">
             <div class="step-box-header">
-              <div class="step-icon-badge">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
-              </div>
               <div class="step-title-group">
                 <h2>Travel Vibe & Style</h2>
                 <p>Find companions who hike at your pace and vibe</p>
@@ -2694,9 +2688,6 @@ function preferencesPage() {
         <!-- BELOW TOP GRID: DESTINATION & SUMMIT SELECTION (FULL WIDTH) -->
         <section class="planner-step-box step-box-destination" id="step-destination-anchor">
           <div class="step-box-header">
-            <div class="step-icon-badge">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 2 22 22 22"></polygon></svg>
-            </div>
             <div class="step-title-group">
               <h2>Choose Your Destination</h2>
               <p>Browse 15 curated Himalayan treks or search by summit name and state</p>
