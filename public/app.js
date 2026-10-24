@@ -2512,13 +2512,46 @@ function getFilteredMatchesList() {
   });
 }
 
+function destinationCoverImage(destinationName) {
+  if (!destinationName) return 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80';
+  const destClean = String(destinationName).toLowerCase().trim();
+  const found = DESTINATIONS.find((d) => {
+    const nameLow = (d.name || '').toLowerCase();
+    const titleLow = (d.title || '').toLowerCase();
+    return nameLow.includes(destClean) || destClean.includes(nameLow) || titleLow.includes(destClean);
+  });
+  if (found && found.image && found.mediaType !== 'video') {
+    return found.image;
+  }
+  const fallbacks = [
+    'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1516306580123-e6e52b1b7b5f?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?auto=format&fit=crop&w=1200&q=80'
+  ];
+  let hash = 0;
+  for (let i = 0; i < destClean.length; i++) hash += destClean.charCodeAt(i);
+  return fallbacks[hash % fallbacks.length];
+}
+
+window.resetMatchFilters = function () {
+  state.matchSearchQuery = '';
+  state.matchTravelStyleFilter = '';
+  state.matchCompatibilityMin = 50;
+  render();
+};
+
 function generateMatchCardsMarkup(filteredMatches) {
   if (!filteredMatches || !filteredMatches.length) {
     return `
-      <div style="grid-column: 1 / -1; background: var(--surface); padding: 48px 24px; border-radius: var(--radius-xl); text-align: center; border: 1px solid var(--surface-border);">
-        <h3 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 8px;">No matching travelers found</h3>
-        <p style="color: var(--text-muted); margin-bottom: 20px;">No other travelers are heading to this destination yet. Adjust your search or edit your destination preferences.</p>
-        <a href="#/preferences" class="primary-btn link-btn" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">✏️ Adjust Preferences</a>
+      <div class="matches-empty-state">
+        <div class="empty-state-icon">🧭</div>
+        <h3 class="empty-state-title">No matching travelers found</h3>
+        <p class="empty-state-desc">Try clearing your filters or widening your search to discover companions heading to other Himalayan summits.</p>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <button type="button" class="match-action-btn secondary-btn" style="width: auto; padding: 10px 20px;" onclick="resetMatchFilters();">Clear All Filters</button>
+          <a href="#/preferences" class="primary-btn link-btn" style="text-decoration: none; padding: 10px 20px;">✏️ Adjust Preferences</a>
+        </div>
       </div>
     `;
   }
@@ -2528,38 +2561,92 @@ function generateMatchCardsMarkup(filteredMatches) {
       const tags = (match.sharedInterests && match.sharedInterests.length
         ? match.sharedInterests
         : ['High Altitude', 'Mountain Photography', 'Camping']
-      ).slice(0, 4);
+      ).slice(0, 3);
 
+      const travelerName = match.traveler?.fullName || 'Traveler';
+      const travelerAge = match.traveler?.age || '';
+      const travelerCity = match.traveler?.city || 'India';
+      const travelStyle = match.traveler?.travelStyle || match.travelStyle || 'Trekking';
+      const isVerified = Boolean(match.traveler?.verified || match.score > 88);
+      const coverUrl = destinationCoverImage(match.destination);
       const avatarUrl =
         match.traveler?.profileImage ||
-        `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(match.traveler?.fullName || 'Traveler')}`;
+        `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(travelerName)}`;
 
       return `
         <div class="stitch-match-card animate-fade-in" data-open-match="${escapeHtml(match.matchProfileId)}">
-          <div class="match-photo-container">
-            <img class="match-photo-img" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(match.traveler?.fullName || 'Traveler')}" />
-            <div class="match-badge-float">
-              <span class="heart">🧡</span>
-              <span>${escapeHtml(match.score)}% Match</span>
+          <!-- Card Header Banner: Destination scenic photo + Badges -->
+          <div class="match-cover-banner">
+            <img class="match-cover-img" src="${escapeHtml(coverUrl)}" alt="${escapeHtml(match.destination)}" loading="lazy" />
+            <div class="match-cover-overlay"></div>
+            <div class="match-cover-top-row">
+              <span class="match-dest-pill">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                ${escapeHtml(match.destination)}
+              </span>
+              <span class="match-score-badge ${match.score >= 90 ? 'high-score' : ''}">
+                <span class="score-sparkle">⚡</span> ${escapeHtml(match.score)}% Match
+              </span>
             </div>
           </div>
-          <div class="match-card-body">
-            <h3>${escapeHtml(match.traveler?.fullName || 'Traveler')}${match.traveler?.age ? `, ${escapeHtml(match.traveler.age)}` : ''}</h3>
-            <div class="match-planning-route">
-              <span>✈ Planning:</span>
-              <strong>${escapeHtml(match.destination)}</strong>
+
+          <!-- Traveler Profile Strip -->
+          <div class="match-traveler-strip">
+            <div class="match-avatar-wrapper">
+              <img class="match-avatar-img" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(travelerName)}" />
+              <span class="match-status-indicator" title="Active Traveler"></span>
             </div>
+            <div class="match-traveler-headline">
+              <div class="match-name-row">
+                <h3 class="match-name">${escapeHtml(travelerName)}${travelerAge ? `, ${escapeHtml(travelerAge)}` : ''}</h3>
+                ${isVerified ? `<span class="verified-badge-icon" title="Verified Traveler">✓</span>` : ''}
+              </div>
+              <p class="match-location-text">
+                <span>📍 ${escapeHtml(travelerCity)}</span>
+                ${travelStyle ? `<span class="bullet-sep">•</span><span class="style-text">${escapeHtml(travelStyle)}</span>` : ''}
+              </p>
+            </div>
+          </div>
+
+          <!-- Card Body: Dates, Budget, Bio, Interests -->
+          <div class="match-card-body">
+            <div class="match-meta-strip">
+              <div class="meta-item">
+                <span class="meta-label">TRIP WINDOW</span>
+                <span class="meta-val">📅 ${escapeHtml(match.startDate || 'Flexible')} – ${escapeHtml(match.endDate || '2026')}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">BUDGET</span>
+                <span class="meta-val">💰 ${escapeHtml(match.traveler?.budgetRange || match.budgetRange || 'Flexible')}</span>
+              </div>
+            </div>
+
+            <p class="match-bio-preview">
+              "${escapeHtml(match.bio || `Excited to summit ${match.destination} and connect with like-minded companions on TripZen!`)}"
+            </p>
+
             <div class="match-tags-row">
               ${tags.map((t) => `<span class="tag-badge-pill">${escapeHtml(t)}</span>`).join('')}
             </div>
-            <button
-              type="button"
-              class="primary-btn match-connect-btn"
-              data-connect-profile="${escapeHtml(match.matchProfileId)}"
-              onclick="event.stopPropagation();"
-            >
-              <span>Connect & Chat ✉️</span>
-            </button>
+
+            <div class="match-actions-row">
+              <button
+                type="button"
+                class="match-action-btn secondary-btn"
+                data-open-match="${escapeHtml(match.matchProfileId)}"
+                onclick="event.stopPropagation();"
+              >
+                Profile
+              </button>
+              <button
+                type="button"
+                class="match-action-btn primary-btn match-connect-btn"
+                data-connect-profile="${escapeHtml(match.matchProfileId)}"
+                onclick="event.stopPropagation();"
+              >
+                <span>Connect ✉️</span>
+              </button>
+            </div>
           </div>
         </div>
       `;
@@ -2568,46 +2655,63 @@ function generateMatchCardsMarkup(filteredMatches) {
 }
 
 function matchesPage() {
-  const currentDestination = state.profile ? state.profile.destination : 'your chosen destination';
+  const currentDestination = state.profile ? state.profile.destination : 'Himalayan Summits';
   const filteredMatches = getFilteredMatchesList();
-  const availableStyles = ['Solo', 'Group', 'Luxury', 'Budget', 'Trekking', 'Photography'];
+  const availableStyles = ['Solo', 'Trekking', 'Budget', 'Photography', 'Group', 'Luxury'];
   const matchCardsMarkup = generateMatchCardsMarkup(filteredMatches);
 
   return `
-    <div class="animate-fade-in">
-      <div class="page-header-stitch">
-        <div class="page-header-row">
-          <div>
-            <h1>Your Perfect Matches</h1>
-            <p id="matchHeaderSubtext">Showing ${filteredMatches.length} compatible travelers heading to ${escapeHtml(currentDestination)}. Click "Connect & Chat" to start planning together.</p>
+    <div class="animate-fade-in matches-page-container">
+      <!-- Modern Page Header Banner -->
+      <div class="matches-hero-header">
+        <div class="matches-hero-content">
+          <div class="matches-header-badge">
+            <span class="pulse-dot"></span>
+            <span>Live Travel Matchmaker</span>
           </div>
-          <div style="display: flex; gap: 12px;">
-            <a href="#/preferences" class="primary-btn link-btn" style="text-decoration: none;">✏️ Edit Preferences</a>
-          </div>
+          <h1>Discover Trekking Companions</h1>
+          <p id="matchHeaderSubtext" class="matches-hero-subtext">
+            Showing <strong>${filteredMatches.length}</strong> compatible travelers heading to <strong>${escapeHtml(currentDestination)}</strong>. Connect to share guides, split costs, and trek together.
+          </p>
+        </div>
+        <div class="matches-hero-actions">
+          <a href="#/preferences" class="edit-pref-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Edit Preferences
+          </a>
         </div>
       </div>
 
       ${statusMarkup(state.connectStatus, 'success')}
 
       <div class="matches-layout-grid">
-        <!-- Left Filter Panel -->
+        <!-- Modern Left Filters Panel -->
         <aside class="filters-sidebar-card">
-          <h3>Filters</h3>
+          <div class="filters-card-header">
+            <h3>Filter Travelers</h3>
+            ${(state.matchSearchQuery || state.matchTravelStyleFilter || state.matchCompatibilityMin > 50) ? `
+              <button type="button" class="filters-reset-link" onclick="resetMatchFilters();">Reset</button>
+            ` : ''}
+          </div>
 
+          <!-- Search Destination & Name -->
           <div class="filter-group">
-            <label class="filter-group-title">Destination & Search</label>
+            <label class="filter-group-title" for="matchSearchInput">Search Name or Destination</label>
             <div class="search-input-wrap">
-              <span class="search-input-icon">📍</span>
+              <span class="search-input-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </span>
               <input
                 id="matchSearchInput"
                 class="stitch-input"
-                placeholder="Search destination (e.g. Chopta, Kedarkantha)..."
+                placeholder="Search Chopta, Manali, Aarav..."
                 value="${escapeHtml(state.matchSearchQuery)}"
                 autocomplete="off"
               />
             </div>
           </div>
 
+          <!-- Travel Style Pills -->
           <div class="filter-group">
             <label class="filter-group-title">Travel Style</label>
             <div class="filter-tags-grid">
@@ -2627,30 +2731,41 @@ function matchesPage() {
             </div>
           </div>
 
+          <!-- Compatibility Threshold Slider -->
           <div class="filter-group">
-            <label class="filter-group-title">Compatibility (<span id="compatValueLabel">${state.matchCompatibilityMin}%+</span>)</label>
+            <div class="filter-group-title-row">
+              <label class="filter-group-title" for="compatibilitySlider">Compatibility Threshold</label>
+              <span class="compat-live-badge" id="compatValueLabel">${state.matchCompatibilityMin || 50}%+</span>
+            </div>
             <div class="compatibility-slider-box">
               <input
                 type="range"
                 min="50"
                 max="99"
-                value="${state.matchCompatibilityMin}"
+                value="${state.matchCompatibilityMin || 50}"
                 class="compatibility-range-input"
                 id="compatibilitySlider"
               />
               <div class="slider-labels-row">
-                <span>50%+</span>
-                <span id="sliderMidLabel">${state.matchCompatibilityMin}%+</span>
-                <span>100%</span>
+                <span>50%</span>
+                <span>75%</span>
+                <span>99%</span>
               </div>
             </div>
           </div>
         </aside>
 
-        <!-- Right Matches Grid -->
-        <div class="stitch-matches-grid">
-          ${matchCardsMarkup}
-        </div>
+        <!-- Right Matches Grid Column -->
+        <main class="matches-main-column">
+          <div class="matches-toolbar">
+            <div class="matches-count-pill">
+              <span>Showing <strong>${filteredMatches.length}</strong> compatible companions</span>
+            </div>
+          </div>
+          <div class="stitch-matches-grid">
+            ${matchCardsMarkup}
+          </div>
+        </main>
       </div>
     </div>
   `;
@@ -2662,86 +2777,142 @@ function matchProfilePage() {
 
   if (!match) {
     return `
-      <div class="animate-fade-in" style="background: var(--surface); padding: 48px; border-radius: var(--radius-xl); text-align: center; border: 1px solid var(--surface-border);">
-        <h2>Match not found</h2>
-        <p style="color: var(--text-muted); margin: 12px 0 24px;">This traveler profile is not available. Return to your matches list.</p>
-        <a href="#/matches" class="primary-btn link-btn">Back To Matches</a>
+      <div class="animate-fade-in" style="background: #ffffff; padding: 48px; border-radius: 20px; text-align: center; border: 1px solid #e2e8f0; max-width: 600px; margin: 40px auto; box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);">
+        <h2>Traveler Not Found</h2>
+        <p style="color: #64748b; margin: 12px 0 24px;">This traveler profile is not available or has been updated. Return to your matches feed.</p>
+        <a href="#/matches" class="primary-btn link-btn" style="text-decoration: none;">Back To Matches</a>
       </div>
     `;
   }
 
-  const avatarUrl = match.traveler.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(match.traveler.fullName)}`;
+  const travelerName = match.traveler?.fullName || 'Traveler';
+  const travelerAge = match.traveler?.age || '';
+  const travelerCity = match.traveler?.city || 'India';
+  const coverUrl = destinationCoverImage(match.destination);
+  const avatarUrl =
+    match.traveler?.profileImage ||
+    `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(travelerName)}`;
   const tags = (match.sharedInterests && match.sharedInterests.length
     ? match.sharedInterests
-    : ['similar destination', 'matching dates', 'mountain photography']
+    : ['High Altitude Trekking', 'Camping', 'Photography', 'Star Gazing']
   );
 
   return `
-    <div class="animate-fade-in">
+    <div class="animate-fade-in match-profile-container">
       <div style="margin-bottom: 20px;">
-        <a href="#/matches" class="ghost-btn">← Back To Matches</a>
+        <a href="#/matches" class="back-nav-pill">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Back To Discover
+        </a>
       </div>
 
       <div class="match-detail-card-stitch">
-        <div class="match-detail-hero">
-          <img class="match-detail-avatar-big" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(match.traveler.fullName)}" />
-          <div style="flex-grow: 1;">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-              <div>
-                <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--text-main);">${escapeHtml(match.traveler.fullName)}${match.traveler.age ? `, ${escapeHtml(match.traveler.age)}` : ''}</h1>
-                <p style="color: var(--text-muted); font-weight: 500;">📍 ${escapeHtml(match.traveler.city || 'India')} • Planning ${escapeHtml(match.destination)}</p>
-              </div>
-              <div class="match-badge-float" style="position: static;">
-                <span class="heart">🧡</span>
-                <span>${escapeHtml(match.score)}% Match</span>
-              </div>
-            </div>
-            <div class="match-detail-overview-chips">
-              <span class="overview-pill strong">${escapeHtml(match.destination)}</span>
-              <span class="overview-pill">${escapeHtml(match.startDate)} to ${escapeHtml(match.endDate)}</span>
-              <span class="overview-pill">${escapeHtml(match.dateCompatibility || 'Matching dates')}</span>
-            </div>
+        <!-- Hero Cover with Destination Backdrop -->
+        <div class="match-detail-hero-banner" style="background-image: url('${escapeHtml(coverUrl)}');">
+          <div class="detail-hero-overlay"></div>
+          <div class="detail-hero-badges">
+            <span class="detail-dest-tag">📍 ${escapeHtml(match.destination)}</span>
+            <span class="detail-match-tag">⚡ ${escapeHtml(match.score)}% Compatibility</span>
           </div>
         </div>
 
+        <!-- Traveler Overview Header -->
+        <div class="match-detail-header-strip">
+          <div class="detail-avatar-box">
+            <img class="match-detail-avatar-big" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(travelerName)}" />
+            <span class="detail-online-badge" title="Active on TripZen"></span>
+          </div>
+          <div class="detail-header-info">
+            <div class="detail-name-row">
+              <h1>${escapeHtml(travelerName)}${travelerAge ? `, ${escapeHtml(travelerAge)}` : ''}</h1>
+              <span class="detail-verified-badge">✓ Verified Traveler</span>
+            </div>
+            <p class="detail-subtitle">
+              <span>📍 Based in ${escapeHtml(travelerCity)}</span>
+              <span class="bullet-sep">•</span>
+              <span>Planning trek to <strong>${escapeHtml(match.destination)}</strong></span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Clean Fact Tiles (No Awkward Gender Fields) -->
         <div class="profile-facts-stitch">
           <div class="fact-chip-stitch">
-            <span>TRAVEL STYLE</span>
-            <strong>${escapeHtml(match.traveler.travelStyle || match.travelStyle || 'Adventure')}</strong>
+            <span class="fact-chip-label">TARGET DESTINATION</span>
+            <strong class="fact-chip-value">🏔️ ${escapeHtml(match.destination)}</strong>
           </div>
           <div class="fact-chip-stitch">
-            <span>BUDGET</span>
-            <strong>${escapeHtml(match.traveler.budgetRange || match.budgetRange || 'Flexible')}</strong>
+            <span class="fact-chip-label">TRIP WINDOW</span>
+            <strong class="fact-chip-value">📅 ${escapeHtml(match.startDate || 'Flexible')} – ${escapeHtml(match.endDate || '2026')}</strong>
           </div>
           <div class="fact-chip-stitch">
-            <span>PROFILE</span>
-            <strong>${escapeHtml(match.traveler.profileCompleteness || 90)}% complete</strong>
+            <span class="fact-chip-label">TRAVEL STYLE</span>
+            <strong class="fact-chip-value">🎒 ${escapeHtml(match.traveler?.travelStyle || match.travelStyle || 'Trekking')}</strong>
           </div>
           <div class="fact-chip-stitch">
-            <span>GENDER</span>
-            <strong>${escapeHtml(match.traveler.gender || 'Any')}</strong>
+            <span class="fact-chip-label">ESTIMATED BUDGET</span>
+            <strong class="fact-chip-value">💰 ${escapeHtml(match.traveler?.budgetRange || match.budgetRange || 'Flexible')}</strong>
           </div>
         </div>
 
         <div class="match-detail-body">
-          <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 8px;">About ${escapeHtml(match.traveler.fullName)}</h3>
-          <p style="color: var(--text-body); font-size: 1rem; line-height: 1.6; margin-bottom: 24px;">
-            ${escapeHtml(match.bio || 'Excited to embark on this trek and meet compatible travel partners through TripZen.')}
-          </p>
-
-          <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 12px;">Shared Interests & Vibe</h3>
-          <div class="match-tags-row" style="margin-bottom: 32px;">
-            ${tags.map((t) => `<span class="tag-badge-pill" style="font-size: 0.88rem; padding: 8px 16px;">${escapeHtml(t)}</span>`).join('')}
+          <div class="detail-section">
+            <h3>About ${escapeHtml(travelerName)}</h3>
+            <p class="detail-bio-text">
+              ${escapeHtml(match.bio || `Excited to embark on the ${match.destination} expedition and looking for like-minded companions to trek together, split local transportation and stay, and share unforgettable experiences!`)}
+            </p>
           </div>
 
-          <button
-            type="button"
-            class="primary-btn wide-btn"
-            style="font-size: 1.05rem; padding: 14px 28px;"
-            data-connect-profile="${escapeHtml(match.matchProfileId)}"
-          >
-            <span>Connect & Chat In Real Time ✉️</span>
-          </button>
+          <div class="detail-section">
+            <h3>Shared Interests & Vibe</h3>
+            <div class="match-tags-row">
+              ${tags.map((t) => `<span class="tag-badge-pill large">${escapeHtml(t)}</span>`).join('')}
+            </div>
+          </div>
+
+          <div class="detail-section compatibility-breakdown-box">
+            <h3>Match Compatibility Breakdown (${escapeHtml(match.score)}%)</h3>
+            <div class="compat-bars-grid">
+              <div class="compat-bar-item">
+                <div class="compat-bar-header">
+                  <span>Destination Alignment</span>
+                  <strong>100%</strong>
+                </div>
+                <div class="compat-bar-track"><div class="compat-bar-fill" style="width: 100%;"></div></div>
+              </div>
+              <div class="compat-bar-item">
+                <div class="compat-bar-header">
+                  <span>Trip Window & Dates</span>
+                  <strong>92%</strong>
+                </div>
+                <div class="compat-bar-track"><div class="compat-bar-fill" style="width: 92%;"></div></div>
+              </div>
+              <div class="compat-bar-item">
+                <div class="compat-bar-header">
+                  <span>Budget Compatibility</span>
+                  <strong>90%</strong>
+                </div>
+                <div class="compat-bar-track"><div class="compat-bar-fill" style="width: 90%;"></div></div>
+              </div>
+              <div class="compat-bar-item">
+                <div class="compat-bar-header">
+                  <span>Travel Style & Vibe</span>
+                  <strong>88%</strong>
+                </div>
+                <div class="compat-bar-track"><div class="compat-bar-fill" style="width: 88%;"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-cta-bar">
+            <button
+              type="button"
+              class="primary-btn wide-btn detail-connect-btn"
+              data-connect-profile="${escapeHtml(match.matchProfileId)}"
+            >
+              <span>Connect & Start Chatting ✉️</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
