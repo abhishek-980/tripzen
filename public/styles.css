@@ -3168,6 +3168,14 @@ video {
   transform: translateY(-1px);
 }
 
+/* Responsive Button Text Helpers */
+.btn-text-short {
+  display: none;
+}
+.btn-text-full {
+  display: inline;
+}
+
 .package-expanded-drawer {
   margin-top: 22px;
   padding-top: 22px;
@@ -5090,8 +5098,6 @@ video {
 
   /* Mobile Grids, Cards & Filters */
   .destination-cards-grid,
-  .stitch-matches-grid,
-  .packages-cards-grid-stitch,
   .group-cards-grid,
   .matches-layout-grid,
   .profile-setup-grid,
@@ -5099,6 +5105,355 @@ video {
     grid-template-columns: 1fr !important;
     gap: 16px !important;
   }
+
+  /* 2-COLUMN PAIR GRID ON MOBILE (PACKAGES & MATCHES) */
+  .packages-cards-grid-stitch,
+  .stitch-matches-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  /* ----------------------------------------------------
+     MOBILE 2-COLUMN PACKAGE CARDS
+     ---------------------------------------------------- */
+  .stitch-package-card {
+    border-radius: 14px !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-media-wrap {
+    height: 120px !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-rating-badge {
+    top: 6px !important;
+    left: 6px !important;
+    padding: 2px 6px !important;
+    font-size: 0.68rem !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-top-badge {
+    top: 6px !important;
+    right: 6px !important;
+    padding: 2px 6px !important;
+    font-size: 0.60rem !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-hover-tap-overlay {
+    display: none !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-card-content {
+    padding: 8px 8px 10px !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-card-title,
+  .stitch-package-card:not(.is-expanded) h3 {
+    font-size: 0.86rem !important;
+    line-height: 1.25 !important;
+    margin: 0 0 4px 0 !important;
+    height: 2.5em !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-meta-chips-row {
+    gap: 4px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-meta-chip {
+    font-size: 0.62rem !important;
+    padding: 2px 5px !important;
+    line-height: 1.2 !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-price-row-clean {
+    padding-top: 6px !important;
+    margin-top: auto !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-price-numbers {
+    gap: 4px !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-price-main {
+    font-size: 1.05rem !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-price-strikethrough {
+    font-size: 0.70rem !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-price-discount-pill {
+    font-size: 0.60rem !important;
+    padding: 1px 4px !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-price-caption {
+    font-size: 0.60rem !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-pdf-icon-btn {
+    display: none !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-card-action-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 5px !important;
+    margin-top: 8px !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .package-action-btn-secondary,
+  .stitch-package-card:not(.is-expanded) .package-action-btn-primary {
+    padding: 7px 2px !important;
+    font-size: 0.72rem !important;
+    font-weight: 800 !important;
+    border-radius: 8px !important;
+    text-align: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    min-height: 36px !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .btn-text-full {
+    display: none !important;
+  }
+
+  .stitch-package-card:not(.is-expanded) .btn-text-short {
+    display: inline !important;
+  }
+
+  /* EXPANDED PACKAGE CARD ON MOBILE: SPANS BOTH COLUMNS FULL WIDTH */
+  .stitch-package-card.is-expanded {
+    grid-column: 1 / -1 !important;
+    border-radius: 16px !important;
+  }
+
+  .stitch-package-card.is-expanded .btn-text-full {
+    display: inline !important;
+  }
+
+  .stitch-package-card.is-expanded .btn-text-short {
+    display: none !important;
+  }
+
+  .stitch-package-card.is-expanded .package-card-content {
+    padding: 14px 14px 18px !important;
+  }
+
+  .stitch-package-card.is-expanded .itinerary-user-spec-card {
+    padding: 16px 14px !important;
+    border-radius: 12px !important;
+  }
+
+  .stitch-package-card.is-expanded .itinerary-user-operator-line {
+    font-size: 0.90rem !important;
+  }
+
+  .stitch-package-card.is-expanded .itinerary-user-pill {
+    padding: 7px 10px !important;
+    font-size: 0.78rem !important;
+  }
+
+  .stitch-package-card.is-expanded .itinerary-user-batches-bar {
+    padding: 8px 12px !important;
+    font-size: 0.80rem !important;
+  }
+
+  .stitch-package-card.is-expanded .itinerary-user-highlight-card {
+    padding: 10px 12px !important;
+    font-size: 0.80rem !important;
+  }
+
+  .stitch-package-card.is-expanded .itinerary-day-box {
+    border-radius: 10px !important;
+  }
+
+  .stitch-package-card.is-expanded .itinerary-day-header {
+    padding: 10px 12px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+  }
+
+  .stitch-package-card.is-expanded .itinerary-day-content {
+    padding: 10px 12px !important;
+    font-size: 0.82rem !important;
+  }
+
+  .stitch-package-card.is-expanded .package-drawer-ideas-box {
+    padding: 14px 12px !important;
+  }
+
+  .stitch-package-card.is-expanded .package-drawer-ideas-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .stitch-package-card.is-expanded .package-drawer-bottom-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .stitch-package-card.is-expanded .package-drawer-bottom-bar button,
+  .stitch-package-card.is-expanded .package-drawer-bottom-bar a {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  /* ----------------------------------------------------
+     MOBILE 2-COLUMN MATCH CARDS
+     ---------------------------------------------------- */
+  .stitch-match-card {
+    border-radius: 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .stitch-match-card .match-cover-banner {
+    height: 75px !important;
+  }
+
+  .stitch-match-card .match-cover-top-row {
+    padding: 5px 6px !important;
+  }
+
+  .stitch-match-card .match-dest-pill {
+    font-size: 0.58rem !important;
+    padding: 2px 5px !important;
+    max-width: 80px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .stitch-match-card .match-score-badge {
+    font-size: 0.58rem !important;
+    padding: 2px 5px !important;
+  }
+
+  .stitch-match-card .match-avatar-row {
+    margin-top: -20px !important;
+    padding: 0 6px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .stitch-match-card .match-avatar-wrapper {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .stitch-match-card .match-avatar-img {
+    width: 38px !important;
+    height: 38px !important;
+    border: 2px solid #ffffff !important;
+  }
+
+  .stitch-match-card .match-style-badge {
+    font-size: 0.58rem !important;
+    padding: 2px 5px !important;
+  }
+
+  .stitch-match-card .match-card-body {
+    padding: 4px 6px 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex-grow: 1 !important;
+  }
+
+  .stitch-match-card .match-traveler-headline {
+    margin-bottom: 4px !important;
+  }
+
+  .stitch-match-card .match-name {
+    font-size: 0.84rem !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .stitch-match-card .match-location-text {
+    font-size: 0.62rem !important;
+    margin: 2px 0 4px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .stitch-match-card .match-location-text .planning-dest,
+  .stitch-match-card .match-location-text .bullet-sep {
+    display: none !important;
+  }
+
+  .stitch-match-card .match-meta-strip {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    padding: 3px 5px !important;
+    background: #f8fafc !important;
+    border-radius: 6px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .stitch-match-card .meta-item {
+    font-size: 0.60rem !important;
+  }
+
+  .stitch-match-card .meta-label {
+    display: none !important;
+  }
+
+  .stitch-match-card .meta-val {
+    font-size: 0.62rem !important;
+    font-weight: 700 !important;
+    color: #334155 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .stitch-match-card .match-bio-preview {
+    display: none !important;
+  }
+
+  .stitch-match-card .match-tags-row {
+    display: none !important;
+  }
+
+  .stitch-match-card .match-actions-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 4px !important;
+    margin-top: auto !important;
+    padding-top: 4px !important;
+  }
+
+  .stitch-match-card .match-action-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 6px 2px !important;
+    font-size: 0.70rem !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    text-align: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    min-height: 34px !important;
+  }
+
+  .stitch-match-card .btn-text-full {
+    display: none !important;
+  }
+
+  .stitch-match-card .btn-text-short {
+    display: inline !important;
+  }
+
   .curate-wrapper {
     padding: 10px 0 32px !important;
     width: 100% !important;
@@ -5159,30 +5514,41 @@ video {
 
   /* Mobile Auth & Hero Section */
   .auth-hero-wrapper {
-    padding: 20px 14px 40px !important;
+    padding: 16px 12px 36px !important;
     min-height: calc(100vh - 58px) !important;
     align-items: flex-start !important;
     box-sizing: border-box;
   }
   .auth-hero-container {
-    grid-template-columns: 1fr !important;
-    gap: 18px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
     width: 100% !important;
     max-width: 100% !important;
     padding: 0 !important;
   }
+  .auth-card-stitch {
+    order: 1 !important; /* Auth form immediately at top of mobile screen */
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 20px 16px 18px !important;
+    border-radius: 18px !important;
+    box-sizing: border-box;
+  }
   .auth-hero-left {
+    order: 2 !important;
     text-align: center;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    margin-top: 10px;
   }
   .auth-hero-badge {
     font-size: 0.74rem !important;
     padding: 5px 12px !important;
   }
   .auth-hero-title {
-    font-size: clamp(1.5rem, 5.2vw, 1.85rem) !important;
-    line-height: 1.18 !important;
+    font-size: clamp(1.4rem, 5vw, 1.7rem) !important;
+    line-height: 1.2 !important;
   }
   .auth-hero-desc {
     display: none !important;
@@ -5197,29 +5563,26 @@ video {
   .traveler-corner-love-card {
     display: none !important;
   }
-  .auth-card-stitch {
-    max-width: 100% !important;
-    width: 100% !important;
-    padding: 22px 18px 20px !important;
-    border-radius: 20px !important;
-    box-sizing: border-box;
-  }
   .auth-header-center h2 {
-    font-size: 1.35rem !important;
+    font-size: 1.30rem !important;
   }
   .auth-two-col-row.responsive-stack {
     grid-template-columns: 1fr !important;
     gap: 10px !important;
   }
-
+  .auth-card-stitch input,
+  .stitch-input,
+  .planner-date-input {
+    font-size: 16px !important; /* Prevents auto-zoom in mobile Safari */
+  }
 
   /* Modals on Mobile */
   .checkout-modal-card {
-    width: 100% !important;
-    max-width: 100% !important;
-    max-height: 94vh !important;
-    margin: 0 !important;
-    border-radius: var(--radius-lg) !important;
+    width: 95vw !important;
+    max-width: 95vw !important;
+    max-height: 92vh !important;
+    margin: 0 auto !important;
+    border-radius: 16px !important;
   }
   .checkout-modal-body {
     padding: 16px 14px !important;
@@ -5229,12 +5592,13 @@ video {
     gap: 10px !important;
   }
   .itinerary-modal-card {
-    max-width: 96vw !important;
-    max-height: 94vh !important;
+    max-width: 95vw !important;
+    max-height: 92vh !important;
     margin: 0 auto !important;
+    border-radius: 16px !important;
   }
   .itinerary-modal-hero {
-    padding: 20px 16px !important;
+    padding: 18px 14px !important;
   }
 
   .packages-filter-bar-stitch {
@@ -5246,23 +5610,6 @@ video {
   .packages-filter-bar-stitch .filter-bar-search {
     grid-column: span 2;
     min-width: 100%;
-  }
-  .package-card-bottom-row {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 12px !important;
-  }
-  .package-bottom-actions {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px !important;
-    width: 100% !important;
-  }
-  .package-bottom-actions .pay-btn {
-    grid-column: span 2;
-    width: 100%;
-    padding: 12px !important;
-    font-size: 0.95rem !important;
   }
   .page-header-row {
     flex-direction: column !important;

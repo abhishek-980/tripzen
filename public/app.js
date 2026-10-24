@@ -2977,7 +2977,8 @@ function generateMatchCardsMarkup(filteredMatches) {
                 data-connect-profile="${escapeHtml(match.matchProfileId)}"
                 onclick="event.stopPropagation();"
               >
-                <span>Connect ✉️</span>
+                <span class="btn-text-full">Connect ✉️</span>
+                <span class="btn-text-short">Chat ✉️</span>
               </button>
             </div>
           </div>
@@ -3630,7 +3631,8 @@ function joinBookPage() {
                     data-toggle-package="${escapeHtml(tripPackage.id)}"
                     title="Toggle detailed itinerary and trek inclusions"
                   >
-                    <span>${isExpanded ? 'Hide Details ▲' : 'Details & Itinerary ▼'}</span>
+                    <span class="btn-text-full">${isExpanded ? 'Hide Details ▲' : 'Details & Itinerary ▼'}</span>
+                    <span class="btn-text-short">${isExpanded ? 'Hide ▲' : 'Details ▼'}</span>
                   </button>
                   <button
                     type="button"
@@ -3638,7 +3640,8 @@ function joinBookPage() {
                     data-open-checkout="${escapeHtml(tripPackage.id)}"
                     title="Instant Booking via Razorpay"
                   >
-                    <span>⚡ Book Now</span>
+                    <span class="btn-text-full">⚡ Book Now</span>
+                    <span class="btn-text-short">⚡ Book</span>
                   </button>
                 </div>
 
@@ -7147,7 +7150,10 @@ function hydrateUI() {
     });
 
     document.querySelectorAll('[data-open-match]').forEach((card) => {
-      card.onclick = () => {
+      card.onclick = (e) => {
+        if (e && e.target && e.target.closest('[data-connect-profile]')) {
+          return;
+        }
         const matchProfileId = card.getAttribute('data-open-match') || '';
         if (!matchProfileId) return;
         state.selectedMatchProfileId = matchProfileId;
