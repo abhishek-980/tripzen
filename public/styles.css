@@ -1447,13 +1447,13 @@ video {
   font-size: 0.8rem;
 }
 
-/* Traveler Profile Strip (Avatar overlaps banner) */
-.match-traveler-strip {
+/* Avatar Floating Row (Only avatar overlaps banner edge) */
+.match-avatar-row {
   display: flex;
   align-items: flex-end;
-  gap: 12px;
+  justify-content: space-between;
   padding: 0 18px;
-  margin-top: -26px;
+  margin-top: -30px;
   position: relative;
   z-index: 3;
 }
@@ -1464,18 +1464,19 @@ video {
 }
 
 .match-avatar-img {
-  width: 58px;
-  height: 58px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   object-fit: cover;
   background: #ffffff;
-  border: 3px solid #ffffff;
-  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.14);
+  border: 3.5px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.16);
+  display: block;
 }
 
 .match-status-indicator {
   position: absolute;
-  bottom: 3px;
+  bottom: 2px;
   right: 2px;
   width: 12px;
   height: 12px;
@@ -1484,10 +1485,25 @@ video {
   border: 2px solid #ffffff;
 }
 
+.match-style-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1f5f9;
+  color: #0f766e;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 2px;
+}
+
 .match-traveler-headline {
-  flex-grow: 1;
-  min-width: 0;
-  padding-bottom: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
 }
 
 .match-name-row {
@@ -1497,14 +1513,15 @@ video {
 }
 
 .match-name {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: #0f172a;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 .verified-badge-icon {
@@ -1522,9 +1539,9 @@ video {
 }
 
 .match-location-text {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: #64748b;
-  margin: 2px 0 0;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1537,9 +1554,12 @@ video {
   color: #cbd5e1;
 }
 
-.style-text {
+.planning-dest {
+  color: #475569;
+}
+
+.planning-dest strong {
   color: #0f766e;
-  font-weight: 700;
 }
 
 /* Card Body Content */

@@ -2583,12 +2583,17 @@ function generateMatchCardsMarkup(filteredMatches) {
             </div>
           </div>
 
-          <!-- Traveler Profile Strip -->
-          <div class="match-traveler-strip">
+          <!-- Avatar Floating Row (Only avatar overlaps banner edge) -->
+          <div class="match-avatar-row">
             <div class="match-avatar-wrapper">
               <img class="match-avatar-img" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(travelerName)}" />
               <span class="match-status-indicator" title="Active Traveler"></span>
             </div>
+            ${travelStyle ? `<span class="match-style-badge">🎒 ${escapeHtml(travelStyle)}</span>` : ''}
+          </div>
+
+          <!-- Card Body: Name, Location, Dates, Budget, Bio, Interests -->
+          <div class="match-card-body">
             <div class="match-traveler-headline">
               <div class="match-name-row">
                 <h3 class="match-name">${escapeHtml(travelerName)}${travelerAge ? `, ${escapeHtml(travelerAge)}` : ''}</h3>
@@ -2596,13 +2601,10 @@ function generateMatchCardsMarkup(filteredMatches) {
               </div>
               <p class="match-location-text">
                 <span>📍 ${escapeHtml(travelerCity)}</span>
-                ${travelStyle ? `<span class="bullet-sep">•</span><span class="style-text">${escapeHtml(travelStyle)}</span>` : ''}
+                <span class="bullet-sep">•</span>
+                <span class="planning-dest">Planning <strong>${escapeHtml(match.destination)}</strong></span>
               </p>
             </div>
-          </div>
-
-          <!-- Card Body: Dates, Budget, Bio, Interests -->
-          <div class="match-card-body">
             <div class="match-meta-strip">
               <div class="meta-item">
                 <span class="meta-label">TRIP WINDOW</span>
