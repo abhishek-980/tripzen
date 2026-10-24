@@ -3266,7 +3266,11 @@ function chatPage() {
 
   const filteredConversations = (state.conversations || []).filter((conv) => {
     if (!state.chatSearchQuery) return true;
-    return (conv.partner?.fullName || '').toLowerCase().includes(state.chatSearchQuery.toLowerCase());
+    const q = state.chatSearchQuery.toLowerCase();
+    const nameMatch = (conv.partner?.fullName || '').toLowerCase().includes(q);
+    const destMatch = (conv.destination || conv.partner?.destination || '').toLowerCase().includes(q);
+    const lastMsgMatch = (conv.latestMessage?.text || '').toLowerCase().includes(q);
+    return nameMatch || destMatch || lastMsgMatch;
   });
 
   const conversationItemsMarkup = filteredConversations.length
@@ -3274,6 +3278,7 @@ function chatPage() {
         .map((conv) => {
           const isActive = currentConversation && currentConversation.id === conv.id;
           const avatarUrl = conv.partner?.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(conv.partner?.fullName || 'User')}`;
+          const isLastFromMe = conv.latestMessage && state.profile && conv.latestMessage.senderProfileId === state.profile.id;
           return `
             <div
               class="conversation-stitch-item ${isActive ? 'active' : ''}"
@@ -3287,11 +3292,16 @@ function chatPage() {
               </div>
               <div class="conversation-item-content">
                 <div class="conversation-item-top">
-                  <strong>${escapeHtml(conv.partner?.fullName || 'Travel Buddy')}</strong>
+                  <strong class="conv-partner-name">${escapeHtml(conv.partner?.fullName || 'Travel Buddy')}</strong>
                   <span class="time">${escapeHtml(formatMessageTime(conv.latestMessage?.createdAt || conv.updatedAt))}</span>
                 </div>
+                <div class="conv-item-meta-row">
+                  <span class="conv-dest-pill">🏔️ ${escapeHtml(conv.destination || conv.partner?.destination || 'Himalayas')}</span>
+                  ${conv.partner?.travelStyle ? `<span class="conv-style-pill">🎒 ${escapeHtml(conv.partner.travelStyle)}</span>` : ''}
+                </div>
                 <div class="conversation-item-snippet">
-                  ${escapeHtml(conv.latestMessage?.text || `Connected for ${conv.destination}`)}
+                  ${isLastFromMe ? '<span class="conv-check-icon">✓✓ </span>' : ''}
+                  ${escapeHtml(conv.latestMessage?.text || `Connected for ${conv.destination || 'trek'}`)}
                 </div>
               </div>
               ${conv.unreadCount > 0 ? `<span class="conversation-unread-pill">${conv.unreadCount}</span>` : ''}
@@ -3300,8 +3310,13 @@ function chatPage() {
         })
         .join('')
     : `
-      <div style="padding: 32px 20px; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
-        No active chats yet. Go to <a href="#/matches" style="color: var(--accent-strong); font-weight: 700;">Discover Matches</a> and click "Connect"!
+      <div class="conv-empty-state">
+        <div style="font-size: 2rem; margin-bottom: 8px;">💬</div>
+        <p style="font-weight: 700; color: var(--ink); margin-bottom: 4px;">No active chats yet</p>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">Connect with verified trekkers heading to your same destination.</p>
+        <a href="#/matches" class="primary-btn" style="padding: 7px 14px; font-size: 0.82rem; margin: 0 auto; display: inline-flex;">
+          Discover Matches ➔
+        </a>
       </div>
     `;
 
@@ -3310,18 +3325,23 @@ function chatPage() {
         .map((msg) => {
           const isMine = state.profile && msg.senderProfileId === state.profile.id;
           return `
-            <div class="message-row-wrap ${isMine ? 'outgoing' : 'incoming'}">
+            <div class="message-row-wrap ${isMine ? 'outgoing' : 'incoming'} animate-fade-in" id="msg-${msg.id}">
               <div class="message-bubble-stitch">
-                ${escapeHtml(msg.text)}
+                <div class="message-text-body">${escapeHtml(msg.text)}</div>
+                <div class="message-meta-inline">
+                  <span class="message-time-inline">${escapeHtml(formatMessageTime(msg.createdAt))}</span>
+                  ${isMine ? `<span class="message-check-status ${msg.pending ? 'pending' : 'delivered'}">✓✓</span>` : ''}
+                </div>
               </div>
-              <span class="message-time-sub">${escapeHtml(formatMessageTime(msg.createdAt))}</span>
             </div>
           `;
         })
         .join('')
     : `
-      <div class="chat-empty-notice" style="margin: auto; text-align: center; color: var(--text-muted); font-size: 0.95rem;">
-        <p>Say hello to ${escapeHtml(currentConversation ? currentConversation.partner?.fullName : 'your travel partner')}! 🏔️</p>
+      <div class="chat-empty-notice">
+        <div class="empty-notice-icon">🏔️</div>
+        <p class="empty-notice-title">Start Planning with ${escapeHtml(currentConversation ? currentConversation.partner?.fullName : 'your travel partner')}</p>
+        <p class="empty-notice-desc">Ask about departure dates, shared taxis, or cold weather gear using the quick icebreakers below!</p>
       </div>
     `;
 
@@ -3331,22 +3351,28 @@ function chatPage() {
   return `
     <div class="animate-fade-in">
       <div class="${containerClass}" id="chatSection">
-        <!-- Middle: Messages List Column -->
+        <!-- Left: Messages List Column -->
         <aside class="inbox-conversations-column">
           <div class="conversations-header">
-            <h2>Messages</h2>
-            <a href="#/matches" class="ghost-btn" style="padding: 4px 10px; font-size: 0.8rem;">+ New</a>
+            <div class="conv-header-title-row">
+              <h2>Chats</h2>
+              <span class="conv-count-badge">${filteredConversations.length} Active</span>
+            </div>
+            <a href="#/matches" class="conv-new-chat-btn" title="Discover Companions">
+              <span>+ Connect</span>
+            </a>
           </div>
           <div class="conversations-search-wrap">
-            <div class="search-input-wrap">
-              <span class="search-input-icon">🔍</span>
+            <div class="chat-search-input-box">
+              <span class="chat-search-icon">🔍</span>
               <input
                 id="chatSearchInput"
-                class="stitch-input"
-                placeholder="Search messages..."
+                class="chat-search-input"
+                placeholder="Search companions or chats..."
                 value="${escapeHtml(state.chatSearchQuery)}"
-                style="padding-top: 8px; padding-bottom: 8px; font-size: 0.88rem;"
+                autocomplete="off"
               />
+              ${state.chatSearchQuery ? `<button type="button" class="chat-search-clear" id="chatSearchClearBtn" title="Clear">✕</button>` : ''}
             </div>
           </div>
           <div class="conversations-scroll-list">
@@ -3366,27 +3392,73 @@ function chatPage() {
                     </button>
                     <div class="avatar-online-wrap">
                       <img
-                        class="conversation-item-avatar"
+                        class="conversation-item-avatar header-avatar"
                         src="${escapeHtml(currentConversation.partner?.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(currentConversation.partner?.fullName || 'User')}`)}"
                         alt="Avatar"
                       />
                       <div class="online-status-dot"></div>
                     </div>
-                    <div>
-                      <strong>${escapeHtml(currentConversation.partner?.fullName || 'Travel Partner')}</strong>
-                      <span class="status-text">Online</span>
+                    <div class="chat-partner-text-wrap">
+                      <div class="chat-partner-name-row">
+                        <strong>${escapeHtml(currentConversation.partner?.fullName || 'Travel Partner')}</strong>
+                        <span class="verified-trekker-badge" title="Verified Himalayan Trekker">✓ Verified</span>
+                      </div>
+                      <div class="chat-partner-meta-row">
+                        <span class="partner-meta-tag">📍 ${escapeHtml(currentConversation.destination || currentConversation.partner?.destination || 'Himalayan Summit')}</span>
+                        ${currentConversation.partner?.travelStyle ? `<span class="partner-meta-tag">🎒 ${escapeHtml(currentConversation.partner.travelStyle)}</span>` : ''}
+                        <span class="partner-status-tag"><span class="status-dot-mini"></span> Online</span>
+                      </div>
                     </div>
                   </div>
                   <div class="chat-header-actions">
-                    <a href="#/join-book" class="primary-btn" style="padding: 8px 16px; font-size: 0.85rem;">
+                    <button type="button" id="toggleTrekBioBtn" class="chat-trek-bio-btn" title="View Companion Trek Details">
+                      <span>🏔️ Trek Bio</span>
+                    </button>
+                    <a href="#/join-book" class="chat-share-pkg-btn" title="Browse Packages & Itineraries">
                       <span>📦 Share Packages ➔</span>
                     </a>
                   </div>
                 </div>
 
+                <!-- Companion Trek Details Slide-Down Drawer -->
+                <div id="partnerTrekBioDrawer" class="partner-trek-drawer ${state.showPartnerTrekDrawer ? 'open' : ''}">
+                  <div class="drawer-header-row">
+                    <div class="drawer-title">
+                      <span>🏔️ Companion Trek Compatibility</span>
+                      <span class="drawer-partner-sub">${escapeHtml(currentConversation.partner?.fullName || 'Traveler')}</span>
+                    </div>
+                    <button type="button" id="closeTrekDrawerBtn" class="drawer-close-btn" title="Close">✕</button>
+                  </div>
+                  <div class="drawer-facts-grid">
+                    <div class="drawer-fact">
+                      <span class="fact-label">DESTINATION</span>
+                      <span class="fact-val">🏔️ ${escapeHtml(currentConversation.destination || currentConversation.partner?.destination || 'Himalayas')}</span>
+                    </div>
+                    <div class="drawer-fact">
+                      <span class="fact-label">TRAVEL VIBE</span>
+                      <span class="fact-val">🎒 ${escapeHtml(currentConversation.partner?.travelStyle || 'Active Explorer')}</span>
+                    </div>
+                    <div class="drawer-fact">
+                      <span class="fact-label">HOME BASE</span>
+                      <span class="fact-val">📍 ${escapeHtml(currentConversation.partner?.city || 'India')}</span>
+                    </div>
+                    ${currentConversation.partner?.startDate ? `
+                      <div class="drawer-fact">
+                        <span class="fact-label">EXPEDITION DATES</span>
+                        <span class="fact-val">🗓️ ${escapeHtml(currentConversation.partner.startDate)} to ${escapeHtml(currentConversation.partner.endDate || 'Ongoing')}</span>
+                      </div>
+                    ` : ''}
+                  </div>
+                  ${currentConversation.partner?.bio ? `
+                    <div class="drawer-bio-box">
+                      <p class="drawer-bio-text">"${escapeHtml(currentConversation.partner.bio)}"</p>
+                    </div>
+                  ` : ''}
+                </div>
+
                 <div class="chat-messages-wrapper">
                   <div class="chat-messages-container" id="chatMessagesContainer">
-                    <div class="date-divider-pill">Previous &amp; Recent Messages</div>
+                    <div class="date-divider-pill"><span>🗓️</span> Active Himalayan Companion Chat</div>
                     ${messagesMarkup}
                   </div>
                   <button type="button" id="chatScrollBottomBtn" class="chat-scroll-bottom-btn hidden" title="Jump to latest messages">
@@ -3394,28 +3466,61 @@ function chatPage() {
                   </button>
                 </div>
 
+                <!-- Quick Icebreakers Bar (Always Accessible) -->
+                <div class="chat-icebreakers-container">
+                  <span class="icebreakers-label">⚡ QUICK ICEBREAKERS:</span>
+                  <div class="icebreakers-scroll-row">
+                    <button type="button" class="icebreaker-chip" data-chat-icebreaker="Hey! When are you planning to start the trek?">
+                      👋 When are you starting?
+                    </button>
+                    <button type="button" class="icebreaker-chip" data-chat-icebreaker="Want to split a shared cab to the base camp?">
+                      🚕 Split taxi / cab?
+                    </button>
+                    <button type="button" class="icebreaker-chip" data-chat-icebreaker="Are you camping by the summit or staying at homestays?">
+                      ⛺ Camping or homestays?
+                    </button>
+                    <button type="button" class="icebreaker-chip" data-chat-icebreaker="Excited to hike together! What gear are you carrying?">
+                      🎒 Cold weather gear check?
+                    </button>
+                  </div>
+                </div>
+
                 <form id="chatForm" class="chat-input-toolbar">
                   <input type="hidden" name="conversationId" value="${escapeHtml(currentConversation.id)}" />
-                  <a href="#/join-book" class="chat-icon-action-btn" title="Browse and Share Packages">📦</a>
+                  <a href="#/join-book" class="chat-pkg-icon-btn" title="Browse and Share Packages">
+                    <span>📦</span>
+                    <span class="pkg-btn-label">Packages</span>
+                  </a>
                   <div class="chat-input-bubble-wrap">
                     <input
                       name="text"
                       type="text"
                       class="chat-text-input"
-                      placeholder="Type a message..."
+                      placeholder="Type a message to ${escapeHtml((currentConversation.partner?.fullName || 'Travel Partner').split(' ')[0])}..."
                       value="${escapeHtml(state.chatDraft)}"
                       autocomplete="off"
                       required
                     />
-                    <span class="emoji-btn-inside">😊</span>
+                    <div class="chat-quick-emojis-row">
+                      <button type="button" class="quick-emoji-btn" data-insert-emoji="🏔️" title="Mountain">🏔️</button>
+                      <button type="button" class="quick-emoji-btn" data-insert-emoji="🎒" title="Backpack">🎒</button>
+                      <button type="button" class="quick-emoji-btn" data-insert-emoji="⛺" title="Tent">⛺</button>
+                      <button type="button" class="quick-emoji-btn" data-insert-emoji="👍" title="Thumbs Up">👍</button>
+                    </div>
                   </div>
-                  <button type="submit" class="chat-send-fab" title="Send">➤</button>
+                  <button type="submit" class="chat-send-fab" title="Send message">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                  </button>
                 </form>
               `
               : `
-                <div style="margin: auto; text-align: center; color: var(--text-muted);">
+                <div class="no-conv-selected-wrap">
+                  <div style="font-size: 3rem; margin-bottom: 12px;">💬</div>
                   <h3>No conversation selected</h3>
-                  <p style="margin-top: 8px;">Select a traveler from the left to start planning together.</p>
+                  <p style="margin-top: 8px; color: var(--text-muted); max-width: 340px;">Select a traveler from the left to start planning your Himalayan expedition together.</p>
                 </div>
               `
           }
@@ -5709,9 +5814,12 @@ function appendChatMessageDOM(msg, isMine) {
   msgRow.id = `msg-${msg.id}`;
   msgRow.innerHTML = `
     <div class="message-bubble-stitch">
-      ${escapeHtml(msg.text)}
+      <div class="message-text-body">${escapeHtml(msg.text)}</div>
+      <div class="message-meta-inline">
+        <span class="message-time-inline">${escapeHtml(formatMessageTime(msg.createdAt))}</span>
+        ${isMine ? `<span class="message-check-status ${msg.pending ? 'pending' : 'delivered'}">✓✓</span>` : ''}
+      </div>
     </div>
-    <span class="message-time-sub">${escapeHtml(formatMessageTime(msg.createdAt))}</span>
   `;
   container.appendChild(msgRow);
 
@@ -7353,6 +7461,56 @@ function hydrateUI() {
       scrollBottomBtn.addEventListener('click', () => {
         chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
         scrollBottomBtn.classList.add('hidden');
+      });
+    }
+
+    // Quick Icebreaker Chips
+    const icebreakers = document.querySelectorAll('[data-chat-icebreaker]');
+    icebreakers.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const text = btn.getAttribute('data-chat-icebreaker');
+        if (chatInput && text) {
+          chatInput.value = text;
+          state.chatDraft = text;
+          chatForm.requestSubmit();
+        }
+      });
+    });
+
+    // Quick Emojis
+    const emojiBtns = document.querySelectorAll('[data-insert-emoji]');
+    emojiBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const emoji = btn.getAttribute('data-insert-emoji');
+        if (chatInput && emoji) {
+          chatInput.value += emoji;
+          state.chatDraft = chatInput.value;
+          chatInput.focus();
+        }
+      });
+    });
+
+    // Toggle Companion Trek Bio Drawer
+    const toggleTrekBioBtn = document.getElementById('toggleTrekBioBtn');
+    const closeTrekDrawerBtn = document.getElementById('closeTrekDrawerBtn');
+    const trekBioDrawer = document.getElementById('partnerTrekBioDrawer');
+    if (toggleTrekBioBtn && trekBioDrawer) {
+      toggleTrekBioBtn.addEventListener('click', () => {
+        trekBioDrawer.classList.toggle('open');
+      });
+    }
+    if (closeTrekDrawerBtn && trekBioDrawer) {
+      closeTrekDrawerBtn.addEventListener('click', () => {
+        trekBioDrawer.classList.remove('open');
+      });
+    }
+
+    // Clear Search Button
+    const searchClearBtn = document.getElementById('chatSearchClearBtn');
+    if (searchClearBtn) {
+      searchClearBtn.addEventListener('click', () => {
+        state.chatSearchQuery = '';
+        renderApp();
       });
     }
   }

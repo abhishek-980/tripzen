@@ -1114,6 +1114,11 @@ function getConversationView(conversation, viewerProfileId) {
             fullName: otherUser.fullName,
             city: otherUser.city || 'India',
             profileImage: otherUser.profileImage || avatarForUser(otherUser),
+            travelStyle: otherProfile ? otherProfile.travelStyle : '',
+            destination: otherProfile ? otherProfile.destination : (conversation.destination || ''),
+            startDate: otherProfile ? otherProfile.startDate : '',
+            endDate: otherProfile ? otherProfile.endDate : '',
+            bio: otherProfile ? (otherProfile.bio || otherUser.bio || '') : (otherUser ? otherUser.bio || '' : ''),
           }
         : {
             id: otherProfile ? otherProfile.userId : '',
@@ -1123,6 +1128,11 @@ function getConversationView(conversation, viewerProfileId) {
               fullName: 'Traveler',
               id: otherProfile ? otherProfile.userId : conversation.id,
             }),
+            travelStyle: otherProfile ? otherProfile.travelStyle : '',
+            destination: otherProfile ? otherProfile.destination : (conversation.destination || ''),
+            startDate: otherProfile ? otherProfile.startDate : '',
+            endDate: otherProfile ? otherProfile.endDate : '',
+            bio: otherProfile ? otherProfile.bio || '' : '',
           },
     latestMessage: latestMessage
       ? {
