@@ -3583,55 +3583,63 @@ function joinBookPage() {
               </div>
 
               <div class="package-card-content">
-                <div class="package-card-header-tap" data-toggle-package="${escapeHtml(tripPackage.id)}" style="cursor: pointer;">
+                <div class="package-card-header-tap" data-toggle-package="${escapeHtml(tripPackage.id)}">
                   <h3 class="package-card-title">${escapeHtml(tripPackage.packageName)}</h3>
-                  <div class="package-quick-meta">
-                    <span>📍 ${escapeHtml(tripPackage.destination)}</span>
-                    <span>⏱️ ${escapeHtml(tripPackage.duration)}</span>
-                    <span>🏔️ ${escapeHtml(tripPackage.difficulty)}</span>
+                  <div class="package-meta-chips-row">
+                    <span class="package-meta-chip">
+                      <span class="meta-icon">📍</span>
+                      <span class="meta-text">${escapeHtml(tripPackage.destination)}</span>
+                    </span>
+                    <span class="package-meta-chip">
+                      <span class="meta-icon">⏱️</span>
+                      <span class="meta-text">${escapeHtml(tripPackage.duration)}</span>
+                    </span>
+                    <span class="package-meta-chip">
+                      <span class="meta-icon">🏔️</span>
+                      <span class="meta-text">${escapeHtml(tripPackage.difficulty)}</span>
+                    </span>
                   </div>
                 </div>
 
-                <div class="package-card-bottom-row">
-                  <div class="package-price-wrap">
-                    <div class="package-price-header">
-                      <strong>${escapeHtml(tripPackage.price)}</strong>
-                      ${tripPackage.originalPrice ? `<span class="package-original-price">${escapeHtml(tripPackage.originalPrice)}</span>` : ''}
-                      ${tripPackage.discount ? `<span class="package-discount-badge">${escapeHtml(tripPackage.discount)}</span>` : ''}
+                <div class="package-price-row-clean">
+                  <div class="package-price-left">
+                    <div class="package-price-numbers">
+                      <span class="package-price-main">${escapeHtml(tripPackage.price)}</span>
+                      ${tripPackage.originalPrice ? `<span class="package-price-strikethrough">${escapeHtml(tripPackage.originalPrice)}</span>` : ''}
+                      ${tripPackage.discount ? `<span class="package-price-discount-pill">${escapeHtml(tripPackage.discount)}</span>` : ''}
                     </div>
-                    <span class="package-price-sub">per person • all taxes incl.</span>
+                    <span class="package-price-caption">per person • all permits & taxes incl.</span>
                   </div>
+                  ${tripPackage.pdf ? `
+                    <a
+                      href="${escapeHtml(tripPackage.pdf)}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="package-pdf-icon-btn"
+                      title="View / Print PDF Itinerary in new tab"
+                    >
+                      🖨️ PDF
+                    </a>
+                  ` : ''}
+                </div>
 
-                  <div class="package-bottom-actions">
-                    <button
-                      type="button"
-                      class="ghost-btn package-expand-toggle-btn"
-                      data-toggle-package="${escapeHtml(tripPackage.id)}"
-                      title="Toggle detailed itinerary and trek inclusions"
-                    >
-                      <span>${isExpanded ? 'Hide Details ▲' : 'Details & Itinerary ▼'}</span>
-                    </button>
-                    ${tripPackage.pdf ? `
-                      <a
-                        href="${escapeHtml(tripPackage.pdf)}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="ghost-btn"
-                        style="padding: 7px 10px; font-size: 0.82rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;"
-                        title="Open Tripzen PDF / Printable document in new tab"
-                      >
-                        🖨️ PDF
-                      </a>
-                    ` : ''}
-                    <button
-                      type="button"
-                      class="primary-btn pay-btn"
-                      style="padding: 8px 16px; font-size: 0.88rem; font-weight: 800; display: inline-flex; align-items: center; gap: 6px;"
-                      data-open-checkout="${escapeHtml(tripPackage.id)}"
-                    >
-                      <span>⚡ Book Now</span>
-                    </button>
-                  </div>
+                <div class="package-card-action-grid">
+                  <button
+                    type="button"
+                    class="package-action-btn-secondary"
+                    data-toggle-package="${escapeHtml(tripPackage.id)}"
+                    title="Toggle detailed itinerary and trek inclusions"
+                  >
+                    <span>${isExpanded ? 'Hide Details ▲' : 'Details & Itinerary ▼'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="package-action-btn-primary"
+                    data-open-checkout="${escapeHtml(tripPackage.id)}"
+                    title="Instant Booking via Razorpay"
+                  >
+                    <span>⚡ Book Now</span>
+                  </button>
                 </div>
 
                 <!-- EXPANDED IN-LINE DETAILS (REVEALED ON TAP) -->
