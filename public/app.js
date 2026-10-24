@@ -2541,117 +2541,56 @@ function preferencesPage() {
 
   return `
     <div class="planner-wrapper animate-fade-in">
-      <!-- Modern Hero Header Banner -->
+      <!-- Modern Refined Hero Header Banner -->
       <div class="planner-hero-header">
         <div class="planner-hero-content">
           <div class="planner-badge">
             <span class="pulse-dot"></span>
-            <span>Live Travel Matchmaker • Step-by-Step Trip Planner</span>
+            <span>Himalayan Trek Planner • Companion Matching</span>
           </div>
           <h1>Plan Your Trip & Discover Companions</h1>
           <p class="planner-hero-desc">
-            Choose where you want to go, set your dates, and select your travel vibe. TripZen instantly matches you with verified travelers heading to the <strong>exact same summit</strong> around your dates.
+            Set your dates first, choose a summit, and connect with verified trekkers heading to the <strong>exact same trail</strong>.
           </p>
           <div class="planner-stats-chips">
             <span class="planner-chip">🏔️ 15 Curated Summits</span>
             <span class="planner-chip">⚡ Same-Destination Matches</span>
-            <span class="planner-chip">👥 Verified Solo & Group Trekkers</span>
-            <span class="planner-chip">🤝 Shared Taxis & Guides</span>
+            <span class="planner-chip">🤝 Shared Taxis & Camps</span>
           </div>
         </div>
         <div class="planner-hero-aside">
-          <a href="#/profile" class="planner-edit-profile-btn">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span>Edit Profile & Bio</span>
-          </a>
+          <div class="planner-hero-quick-card">
+            <div class="quick-card-user">
+              <div class="quick-card-avatar">
+                ${state.user?.profileImage ? `<img src="${escapeHtml(state.user.profileImage)}" alt="Avatar" />` : `<span>${escapeHtml((state.user?.fullName || 'T')[0].toUpperCase())}</span>`}
+              </div>
+              <div class="quick-card-meta">
+                <span class="quick-card-name">${escapeHtml(state.user?.fullName || 'Active Trekker')}</span>
+                <span class="quick-card-status">● Ready to Match</span>
+              </div>
+            </div>
+            <a href="#/profile" class="planner-edit-profile-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>Edit Profile</span>
+            </a>
+          </div>
         </div>
       </div>
 
       <form id="preferencesForm" class="planner-main-form">
-        <!-- Live Selected Destination Showcase Banner -->
-        <div class="planner-selected-banner" id="plannerSelectedBanner">
-          <div class="selected-banner-media">
-            <img id="selectedBannerImg" src="${escapeHtml(selectedDestObj.image)}" alt="${escapeHtml(selectedDestObj.name)}" />
-            <div class="selected-banner-overlay"></div>
-            <span class="selected-banner-tag">📍 ACTIVE SELECTION</span>
-          </div>
-          <div class="selected-banner-info">
-            <div class="selected-banner-headline">
-              <h2 id="selectedBannerTitle">${escapeHtml(selectedDestObj.title || selectedDestObj.name)}</h2>
-              <span id="selectedBannerRating" class="selected-banner-rating">⭐ ${escapeHtml(selectedDestObj.rating || 4.9)}</span>
-            </div>
-            <div class="selected-banner-meta-row" id="selectedBannerMeta">
-              <span class="banner-meta-pill">🏔️ ${escapeHtml(selectedDestObj.altitude || 'High Altitude')}</span>
-              <span class="banner-meta-pill">⏱️ ${escapeHtml(selectedDestObj.duration || '3-5 Days')}</span>
-              <span class="banner-meta-pill">📍 ${escapeHtml(selectedDestObj.state || 'Himalayas')}</span>
-              <span class="banner-meta-pill active-comp-pill">👥 ${escapeHtml(selectedDestObj.companions || 8)}+ Companions Active</span>
-            </div>
-            <p class="selected-banner-desc" id="selectedBannerDesc">
-              ${escapeHtml(selectedDestObj.description)}
-            </p>
-          </div>
-          <div class="selected-banner-cta-col">
-            <a href="#step-dates-anchor" class="jump-to-dates-btn">
-              <span>Set Dates Below ➔</span>
-            </a>
-          </div>
-        </div>
-
         <!-- Hidden Inputs for Form Submission -->
         <input type="hidden" name="destination" id="planDestinationInput" value="${escapeHtml(currentDestination)}" />
         <input type="hidden" name="travelStyle" id="planTravelStyleInput" value="${escapeHtml(currentTravelStyle)}" />
 
-        <!-- STEP 1: DESTINATION SELECTION -->
-        <section class="planner-step-box" id="step-destination-anchor">
-          <div class="step-box-header">
-            <div class="step-number-badge">1</div>
-            <div class="step-title-group">
-              <h2>Select Destination</h2>
-              <p>Browse 15 curated Himalayan treks or search by summit name and state</p>
-            </div>
-          </div>
-
-          <!-- Search & Category Filter Toolbar -->
-          <div class="dest-toolbar-row">
-            <div class="dest-search-wrap">
-              <span class="dest-search-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              </span>
-              <input
-                type="text"
-                id="destSearchInput"
-                class="dest-search-input"
-                placeholder="Search summits (e.g. Chopta, Kedarkantha, Spiti, Kinnaur, Valley of Flowers)..."
-                autocomplete="off"
-              />
-            </div>
-
-            <div class="dest-category-tabs">
-              <button type="button" class="dest-cat-tab active" data-dest-category="All">All Treks (15)</button>
-              <button type="button" class="dest-cat-tab" data-dest-category="Uttarakhand">🌲 Uttarakhand</button>
-              <button type="button" class="dest-cat-tab" data-dest-category="Himachal">🏔️ Himachal</button>
-              <button type="button" class="dest-cat-tab" data-dest-category="Nepal">🇳🇵 Nepal</button>
-              <button type="button" class="dest-cat-tab" data-dest-category="Weekend">🎒 Weekend Escapes</button>
-            </div>
-          </div>
-
-          <!-- Destination Cards Grid -->
-          <div class="planner-cards-grid" id="plannerDestCardsGrid">
-            ${renderPlannerDestinationCards(currentDestination)}
-          </div>
-
-          <div id="noDestFoundMsg" class="dest-empty-notice" style="display: none;">
-            <span>🔍</span>
-            <p>No summits match your search query. Try typing another summit or reset filters.</p>
-          </div>
-        </section>
-
-        <!-- STEP 2: TRAVEL DATES -->
+        <!-- STEP 1: TRAVEL DATES FIRST -->
         <section class="planner-step-box" id="step-dates-anchor">
           <div class="step-box-header">
-            <div class="step-number-badge">2</div>
+            <div class="step-icon-badge">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
             <div class="step-title-group">
-              <h2>Choose Travel Dates</h2>
+              <span class="step-kicker">STEP ONE • TRAVEL WINDOW</span>
+              <h2>When are you travelling?</h2>
               <p>Select your departure dates or tap a quick weekend preset to align with other travelers</p>
             </div>
           </div>
@@ -2709,13 +2648,93 @@ function preferencesPage() {
           </div>
         </section>
 
-        <!-- STEP 3: TRAVEL VIBE & STYLE -->
-        <section class="planner-step-box">
+        <!-- STEP 2: DESTINATION SELECTION SECOND -->
+        <section class="planner-step-box" id="step-destination-anchor">
           <div class="step-box-header">
-            <div class="step-number-badge">3</div>
+            <div class="step-icon-badge">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 2 22 22 22"></polygon></svg>
+            </div>
             <div class="step-title-group">
-              <h2>Select Travel Style</h2>
-              <p>Find companions who hike at your pace and share your travel vibe</p>
+              <span class="step-kicker">STEP TWO • SUMMIT & DESTINATION</span>
+              <h2>Where do you want to go?</h2>
+              <p>Browse 15 curated Himalayan treks or search by summit name and state</p>
+            </div>
+          </div>
+
+          <!-- Live Selected Destination Showcase Banner -->
+          <div class="planner-selected-banner" id="plannerSelectedBanner">
+            <div class="selected-banner-media">
+              <img id="selectedBannerImg" src="${escapeHtml(selectedDestObj.image)}" alt="${escapeHtml(selectedDestObj.name)}" />
+              <div class="selected-banner-overlay"></div>
+              <span class="selected-banner-tag">📍 ACTIVE SELECTION</span>
+            </div>
+            <div class="selected-banner-info">
+              <div class="selected-banner-headline">
+                <h2 id="selectedBannerTitle">${escapeHtml(selectedDestObj.title || selectedDestObj.name)}</h2>
+                <span id="selectedBannerRating" class="selected-banner-rating">⭐ ${escapeHtml(selectedDestObj.rating || 4.9)}</span>
+              </div>
+              <div class="selected-banner-meta-row" id="selectedBannerMeta">
+                <span class="banner-meta-pill">🏔️ ${escapeHtml(selectedDestObj.altitude || 'High Altitude')}</span>
+                <span class="banner-meta-pill">⏱️ ${escapeHtml(selectedDestObj.duration || '3-5 Days')}</span>
+                <span class="banner-meta-pill">📍 ${escapeHtml(selectedDestObj.state || 'Himalayas')}</span>
+                <span class="banner-meta-pill active-comp-pill">👥 ${escapeHtml(selectedDestObj.companions || 8)}+ Companions Active</span>
+              </div>
+              <p class="selected-banner-desc" id="selectedBannerDesc">
+                ${escapeHtml(selectedDestObj.description)}
+              </p>
+            </div>
+            <div class="selected-banner-cta-col">
+              <a href="#step-preferences-anchor" class="jump-to-dates-btn">
+                <span>Travel Vibe ➔</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Search & Category Filter Toolbar -->
+          <div class="dest-toolbar-row">
+            <div class="dest-search-wrap">
+              <span class="dest-search-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </span>
+              <input
+                type="text"
+                id="destSearchInput"
+                class="dest-search-input"
+                placeholder="Search summits (e.g. Chopta, Kedarkantha, Spiti, Kinnaur, Valley of Flowers)..."
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="dest-category-tabs">
+              <button type="button" class="dest-cat-tab active" data-dest-category="All">All Treks (15)</button>
+              <button type="button" class="dest-cat-tab" data-dest-category="Uttarakhand">🌲 Uttarakhand</button>
+              <button type="button" class="dest-cat-tab" data-dest-category="Himachal">🏔️ Himachal</button>
+              <button type="button" class="dest-cat-tab" data-dest-category="Nepal">🇳🇵 Nepal</button>
+              <button type="button" class="dest-cat-tab" data-dest-category="Weekend">🎒 Weekend Escapes</button>
+            </div>
+          </div>
+
+          <!-- Destination Cards Grid -->
+          <div class="planner-cards-grid" id="plannerDestCardsGrid">
+            ${renderPlannerDestinationCards(currentDestination)}
+          </div>
+
+          <div id="noDestFoundMsg" class="dest-empty-notice" style="display: none;">
+            <span>🔍</span>
+            <p>No summits match your search query. Try typing another summit or reset filters.</p>
+          </div>
+        </section>
+
+        <!-- STEP 3: TRAVEL VIBE & STYLE -->
+        <section class="planner-step-box" id="step-preferences-anchor">
+          <div class="step-box-header">
+            <div class="step-icon-badge">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+            </div>
+            <div class="step-title-group">
+              <span class="step-kicker">STEP THREE • TRAVEL STYLE & PACE</span>
+              <h2>Your Travel Vibe & Preferences</h2>
+              <p>Find companions who hike at your pace and share your mountain vibe</p>
             </div>
           </div>
 
@@ -2766,13 +2785,13 @@ function preferencesPage() {
               <strong id="actionDestName">${escapeHtml(currentDestination)}</strong>
             </div>
             <p class="action-assurance">
-              ✓ Matches guaranteed for <strong><span id="assuranceDestSpan">${escapeHtml(currentDestination)}</span></strong> with overlapping travel dates.
+              ✓ Guaranteed matches for <strong><span id="assuranceDestSpan">${escapeHtml(currentDestination)}</span></strong> around your travel dates.
             </p>
           </div>
 
           <button type="submit" class="planner-submit-btn" id="plannerSubmitBtn">
             <span class="btn-shine"></span>
-            <span id="btnSubmitText">Show Matches For ${escapeHtml(currentDestination)} 🚀</span>
+            <span id="btnSubmitText">Show Matches (${escapeHtml(currentDestination)}) ➔</span>
           </button>
         </div>
 
@@ -6771,7 +6790,7 @@ function hydrateUI() {
         if (bannerDesc) bannerDesc.textContent = destObj.description;
         if (actionDestName) actionDestName.textContent = destObj.name;
         if (assuranceDestSpan) assuranceDestSpan.textContent = destObj.name;
-        if (btnSubmitText) btnSubmitText.textContent = 'Show Matches For ' + destObj.name + ' 🚀';
+        if (btnSubmitText) btnSubmitText.textContent = 'Show Matches (' + destObj.name + ') ➔';
       }
     });
   });
