@@ -1807,16 +1807,28 @@ function userDropdownMenuHtml(avatarUrl) {
       <div class="user-dropdown-divider"></div>
       <a href="#/profile" class="user-dropdown-item">
         <span class="item-icon">👤</span>
-        <span class="item-label">Profile Details</span>
+        <span class="item-label">Profile &amp; Preferences</span>
       </a>
       <a href="#/bookings" class="user-dropdown-item">
         <span class="item-icon">🎟️</span>
         <span class="item-label">My Bookings</span>
+        ${state.bookings.length > 0 ? `<span class="nav-counter-pill">${state.bookings.length}</span>` : ''}
+      </a>
+      <a href="#/join-book" class="user-dropdown-item">
+        <span class="item-icon">📦</span>
+        <span class="item-label">Curated Packages</span>
       </a>
       <a href="#/groups" class="user-dropdown-item">
         <span class="item-icon">👥</span>
-        <span class="item-label">Cost Sharing</span>
+        <span class="item-label">Cost Sharing Groups</span>
+        ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}
       </a>
+      ${isAdminUser() ? `
+        <a href="/admin.html" target="_blank" class="user-dropdown-item" style="color: var(--accent);">
+          <span class="item-icon">🗄️</span>
+          <span class="item-label">RAW Data DB</span>
+        </a>
+      ` : ''}
       <div class="user-dropdown-divider"></div>
       <button type="button" class="user-dropdown-item logout-item action-logout-btn">
         <span class="item-icon">🚪</span>
@@ -1832,7 +1844,9 @@ function userMenuPillHtml(avatarUrl, displayName, wrapperClass = '', btnId = '')
       <button type="button" class="user-menu-trigger mobile-topbar-menu-trigger" ${btnId ? `id="${btnId}"` : ''} aria-label="Open User Menu" title="Profile & Account">
         <img src="${escapeHtml(avatarUrl)}" class="user-trigger-avatar mobile-topbar-avatar" alt="Avatar" />
         <span class="user-trigger-name mobile-topbar-name">${escapeHtml(displayName)}</span>
-        <span class="three-lines-icon">☰</span>
+        <span class="three-lines-icon" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </span>
       </button>
       ${userDropdownMenuHtml(avatarUrl)}
     </div>
@@ -1853,14 +1867,19 @@ function topbar() {
         </a>
 
         <nav class="stitch-nav-menu">
-          <a href="#/profile" class="stitch-nav-item ${current === '/profile' ? 'active' : ''}">Profile</a>
+          <a href="#/matches" class="stitch-nav-item ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}">Discover</a>
           <a href="#/preferences" class="stitch-nav-item ${current === '/preferences' ? 'active' : ''}">Plan Trip</a>
-          <a href="#/matches" class="stitch-nav-item ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}">Matches</a>
-          <a href="#/chat" class="stitch-nav-item ${current === '/chat' ? 'active' : ''}">Inbox ${state.unreadConversationCount > 0 ? `<span class="nav-counter-pill">${state.unreadConversationCount}</span>` : ''}</a>
+          <a href="#/groups" class="stitch-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">
+            Groups ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}
+          </a>
           <a href="#/join-book" class="stitch-nav-item ${current === '/join-book' || current === '/packages' ? 'active' : ''}">Packages</a>
-          <a href="#/groups" class="stitch-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">Cost Sharing ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}</a>
-          <a href="#/bookings" class="stitch-nav-item ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}">My Bookings ${state.bookings.length > 0 ? `<span class="nav-counter-pill">${state.bookings.length}</span>` : ''}</a>
-          ${isAdminUser() ? `<a href="/admin.html" target="_blank" class="stitch-nav-item admin-nav-pill">🗄️ RAW Data DB</a>` : ''}
+          <a href="#/chat" class="stitch-nav-item ${current === '/chat' ? 'active' : ''}">
+            Inbox ${state.unreadConversationCount > 0 ? `<span class="nav-counter-pill">${state.unreadConversationCount}</span>` : ''}
+          </a>
+          <a href="#/bookings" class="stitch-nav-item ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}">
+            Bookings ${state.bookings.length > 0 ? `<span class="nav-counter-pill">${state.bookings.length}</span>` : ''}
+          </a>
+          ${isAdminUser() ? `<a href="/admin.html" target="_blank" class="stitch-nav-item admin-nav-pill">🗄️ RAW DB</a>` : ''}
         </nav>
 
         <div class="stitch-topbar-actions">
@@ -1873,7 +1892,12 @@ function topbar() {
               `
           }
           <button type="button" class="mobile-nav-toggle-btn" id="mobileNavToggleBtn" aria-label="Toggle Navigation">
-            <span class="hamburger-icon">${state.mobileNavOpen ? '✕' : '☰'}</span>
+            <span class="hamburger-icon" aria-hidden="true">
+              ${state.mobileNavOpen
+                ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
+                : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>`
+              }
+            </span>
           </button>
         </div>
       </div>
@@ -1956,38 +1980,38 @@ function dashboardSidebar() {
       </div>
 
       <nav class="sidebar-nav-list">
-        <a href="#/profile" class="sidebar-nav-link ${current === '/profile' ? 'active' : ''}" title="Profile Setup">
-          <span class="sidebar-nav-icon">👤</span>
-          <span class="sidebar-nav-label">Profile</span>
+        <a href="#/matches" class="sidebar-nav-link ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}" title="Discover Matches">
+          <span class="sidebar-nav-icon">🧭</span>
+          <span class="sidebar-nav-label">Matches</span>
         </a>
         <a href="#/preferences" class="sidebar-nav-link ${current === '/preferences' ? 'active' : ''}" title="Plan Trip">
           <span class="sidebar-nav-icon">🎛️</span>
           <span class="sidebar-nav-label">Plan</span>
         </a>
-        <a href="#/matches" class="sidebar-nav-link ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}" title="Discover Matches">
-          <span class="sidebar-nav-icon">🧭</span>
-          <span class="sidebar-nav-label">Matches</span>
+        <a href="#/groups" class="sidebar-nav-link ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}" title="Cost Sharing Groups">
+          <span class="sidebar-nav-icon">👥</span>
+          <span class="sidebar-nav-label">Groups</span>
+          ${state.tripGroups.length > 0 ? `<span class="sidebar-nav-badge">${state.tripGroups.length}</span>` : ''}
         </a>
         <a href="#/chat" class="sidebar-nav-link ${current === '/chat' ? 'active' : ''}" title="Messages & Chat">
           <span class="sidebar-nav-icon">✉️</span>
-          <span class="sidebar-nav-label">Chat</span>
+          <span class="sidebar-nav-label">Inbox</span>
           ${state.unreadConversationCount > 0 ? `<span class="sidebar-nav-badge">${state.unreadConversationCount}</span>` : ''}
         </a>
-        <a href="#/join-book" class="sidebar-nav-link ${current === '/join-book' || current === '/packages' ? 'active' : ''}" title="Curated Packages">
+        <a href="#/profile" class="sidebar-nav-link ${current === '/profile' ? 'active' : ''}" title="Profile Setup">
+          <span class="sidebar-nav-icon">👤</span>
+          <span class="sidebar-nav-label">Profile</span>
+        </a>
+        <a href="#/join-book" class="sidebar-nav-link desktop-only ${current === '/join-book' || current === '/packages' ? 'active' : ''}" title="Curated Packages">
           <span class="sidebar-nav-icon">📦</span>
           <span class="sidebar-nav-label">Packages</span>
         </a>
-        <a href="#/groups" class="sidebar-nav-link ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}" title="Cost Sharing">
-          <span class="sidebar-nav-icon">👥</span>
-          <span class="sidebar-nav-label">Groups</span>
-          ${state.tripGroups.length > 0 ? `<span class="sidebar-nav-badge" style="background: rgba(35,89,70,0.12); color: var(--forest);">${state.tripGroups.length}</span>` : ''}
-        </a>
-        <a href="#/bookings" class="sidebar-nav-link ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}" title="My Bookings">
+        <a href="#/bookings" class="sidebar-nav-link desktop-only ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}" title="My Bookings">
           <span class="sidebar-nav-icon">🎟️</span>
           <span class="sidebar-nav-label">Bookings</span>
           ${state.bookings.length > 0 ? `<span class="sidebar-nav-badge" style="background: rgba(16,185,129,0.15); color: #047857; font-weight: 800;">${state.bookings.length}</span>` : ''}
         </a>
-        <a href="#/about" class="sidebar-nav-link ${current === '/about' ? 'active' : ''} desktop-only" title="About TripZen">
+        <a href="#/about" class="sidebar-nav-link desktop-only ${current === '/about' ? 'active' : ''}" title="About TripZen">
           <span class="sidebar-nav-icon">ℹ️</span>
           <span class="sidebar-nav-label">About</span>
         </a>
