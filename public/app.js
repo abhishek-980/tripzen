@@ -2811,23 +2811,34 @@ function matchProfilePage() {
           </div>
         </div>
 
-        <!-- Traveler Overview Header -->
-        <div class="match-detail-header-strip">
+        <!-- Avatar Floating Row: Only the circular avatar floats over the banner edge -->
+        <div class="match-detail-avatar-strip">
           <div class="detail-avatar-box">
             <img class="match-detail-avatar-big" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(travelerName)}" />
             <span class="detail-online-badge" title="Active on TripZen"></span>
           </div>
-          <div class="detail-header-info">
-            <div class="detail-name-row">
-              <h1>${escapeHtml(travelerName)}${travelerAge ? `, ${escapeHtml(travelerAge)}` : ''}</h1>
-              <span class="detail-verified-badge">✓ Verified Traveler</span>
-            </div>
-            <p class="detail-subtitle">
-              <span>📍 Based in ${escapeHtml(travelerCity)}</span>
-              <span class="bullet-sep">•</span>
-              <span>Planning trek to <strong>${escapeHtml(match.destination)}</strong></span>
-            </p>
+          <div class="detail-header-actions">
+            <button
+              type="button"
+              class="primary-btn match-connect-btn detail-quick-connect-btn"
+              data-connect-profile="${escapeHtml(match.matchProfileId)}"
+            >
+              <span>Connect &amp; Chat ✉️</span>
+            </button>
           </div>
+        </div>
+
+        <!-- Traveler Overview Info: 100% on clean white card background -->
+        <div class="match-detail-info-strip">
+          <div class="detail-name-row">
+            <h1>${escapeHtml(travelerName)}${travelerAge ? `, ${escapeHtml(travelerAge)}` : ''}</h1>
+            <span class="detail-verified-badge">✓ Verified Traveler</span>
+          </div>
+          <p class="detail-subtitle">
+            <span>📍 Based in ${escapeHtml(travelerCity)}</span>
+            <span class="bullet-sep">•</span>
+            <span>Planning trek to <strong>${escapeHtml(match.destination)}</strong></span>
+          </p>
         </div>
 
         <!-- Clean Fact Tiles (No Awkward Gender Fields) -->
