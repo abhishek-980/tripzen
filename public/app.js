@@ -2377,7 +2377,7 @@ function preferencesPage() {
         <div class="page-header-row">
           <div>
             <h1>Choose Your Destination & Travel Dates</h1>
-            <p>Select the trek or vacation you are planning and your date range. Then click "Find Matches" to discover compatible travel partners.</p>
+            <p>Select the trek or vacation you are planning and your date range. Then click "Show Matches" to discover compatible travel partners heading to the same destination.</p>
           </div>
           <a href="#/profile" class="ghost-btn">👤 Edit Profile Details</a>
         </div>
@@ -2431,7 +2431,7 @@ function preferencesPage() {
           <input type="hidden" name="destination" value="${escapeHtml(currentDestination)}" />
 
           <button type="submit" class="primary-btn wide-btn" style="margin-top: 24px;">
-            <span>Find Matches 🚀</span>
+            <span>Show Matches 🚀</span>
           </button>
           ${statusMarkup(state.preferenceStatus, state.preferenceStatusType)}
         </div>
@@ -2469,8 +2469,47 @@ function preferencesPage() {
   `;
 }
 
+function normalizeDestination(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function destinationsMatch(destA, destB) {
+  if (!destA || !destB) return false;
+  const normA = normalizeDestination(destA);
+  const normB = normalizeDestination(destB);
+  if (!normA || !normB) return false;
+  if (normA === normB) return true;
+  if (normA.includes(normB) || normB.includes(normA)) return true;
+
+  const stopWords = new Set([
+    'and', '&', 'the', 'of', 'in', 'at', 'to', 'for', 'with',
+    'pass', 'lake', 'valley', 'trek', 'temple', 'ridge', 'base', 'camp',
+    'trail', 'sanctuary', 'dham', 'ji', 'springs', 'summit', 'expedition',
+    'himalayan', 'himalayas', 'uttarakhand', 'himachal', 'winter', 'snow'
+  ]);
+
+  const wordsA = normA.split(/\s+/).filter((w) => w.length > 2 && !stopWords.has(w));
+  const wordsB = normB.split(/\s+/).filter((w) => w.length > 2 && !stopWords.has(w));
+
+  return wordsA.some((w) => wordsB.includes(w));
+}
+
 function getFilteredMatchesList() {
+  const currentPlannedDest = state.profile ? state.profile.destination : '';
+
   return (state.matches || []).filter((match) => {
+    // If user has a planned destination and hasn't explicitly searched for another location,
+    // only show matches heading to the same planned destination
+    if (currentPlannedDest && !state.matchSearchQuery) {
+      if (!destinationsMatch(match.destination, currentPlannedDest)) {
+        return false;
+      }
+    }
+
     if (match.score < (state.matchCompatibilityMin || 50)) return false;
     if (state.matchTravelStyleFilter) {
       const allTags = [
@@ -5054,6 +5093,14 @@ async function handlePreferencesSubmit(event) {
   const form = event.currentTarget;
   const payload = Object.fromEntries(new FormData(form).entries());
 
+  if (payload.startDate && !payload.endDate) {
+    const s = new Date(payload.startDate);
+    if (!isNaN(s.getTime())) {
+      s.setDate(s.getDate() + 4);
+      payload.endDate = s.toISOString().slice(0, 10);
+    }
+  }
+
   const chosenProfileImage =
     state.pendingProfileImage ||
     (document.getElementById('profileImageHiddenInput') ? document.getElementById('profileImageHiddenInput').value : '') ||
@@ -5074,7 +5121,13 @@ async function handlePreferencesSubmit(event) {
     }
     state.pendingProfileImage = '';
     state.preferenceStatusType = 'success';
-    state.preferenceStatus = 'Profile & preferences saved! Loading your perfect matches.';
+    state.preferenceStatus = 'Trip plan saved! Loading companions heading to ' + (state.profile?.destination || 'your destination') + '.';
+
+    // Reset filters so all same-destination matches appear immediately
+    state.matchSearchQuery = '';
+    state.matchTravelStyleFilter = '';
+    state.matchCompatibilityMin = 50;
+
     requestBrowserNotificationPermission();
     await loadMatches();
     routeTo('/matches');

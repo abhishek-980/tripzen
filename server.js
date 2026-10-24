@@ -501,6 +501,28 @@ function normalizeDestination(value) {
     .trim();
 }
 
+function destinationsMatch(destA, destB) {
+  if (!destA || !destB) return false;
+  const normA = normalizeDestination(destA);
+  const normB = normalizeDestination(destB);
+  if (!normA || !normB) return false;
+  if (normA === normB) return true;
+  if (normA.includes(normB) || normB.includes(normA)) return true;
+
+  const stopWords = new Set([
+    'and', '&', 'the', 'of', 'in', 'at', 'to', 'for', 'with',
+    'pass', 'lake', 'valley', 'trek', 'temple', 'ridge', 'base', 'camp',
+    'trail', 'sanctuary', 'dham', 'ji', 'springs', 'summit', 'expedition',
+    'himalayan', 'himalayas', 'uttarakhand', 'himachal', 'winter', 'snow'
+  ]);
+
+  const wordsA = normA.split(/\s+/).filter((w) => w.length > 2 && !stopWords.has(w));
+  const wordsB = normB.split(/\s+/).filter((w) => w.length > 2 && !stopWords.has(w));
+
+  return wordsA.some((w) => wordsB.includes(w));
+}
+
+
 function parseBudgetValue(value) {
   const text = normalizeText(value).replace(/,/g, '');
   if (!text) return 0;
@@ -574,11 +596,221 @@ function latestProfilesPerUser() {
   });
 }
 
+function shiftDateIso(dateStr, dayDelta) {
+  if (!dateStr) return '';
+  const parsed = new Date(dateStr);
+  if (isNaN(parsed.getTime())) return dateStr;
+  parsed.setDate(parsed.getDate() + dayDelta);
+  return parsed.toISOString().slice(0, 10);
+}
 
+function ensureDestinationCompanions(destination, userStartDate, userEndDate) {
+  if (!destination) return;
+
+  const today = new Date();
+  let baseStart = userStartDate;
+  let baseEnd = userEndDate;
+
+  if (!baseStart || isNaN(new Date(baseStart).getTime())) {
+    const defaultStart = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    baseStart = defaultStart.toISOString().slice(0, 10);
+  }
+  if (!baseEnd || isNaN(new Date(baseEnd).getTime())) {
+    const s = new Date(baseStart);
+    s.setDate(s.getDate() + 4);
+    baseEnd = s.toISOString().slice(0, 10);
+  }
+
+  const destClean = normalizeText(destination);
+  const destSlug = normalizeDestination(destination).replace(/\s+/g, '-').slice(0, 24);
+
+  const personas = [
+    {
+      slug: 'aarav',
+      fullName: 'Aarav Sharma',
+      age: '26',
+      gender: 'Male',
+      city: 'Delhi',
+      travelStyle: 'Solo',
+      budgetRange: '5000-9000',
+      interests: ['trekking', 'mountain photography', 'sunrise hikes', 'campfire & stargazing'],
+      bio: `Passionate photographer looking to capture golden hour and sunrise at ${destClean}. Hoping to team up with fellow hikers to split travel and share campsite stories.`,
+      dayOffsetStart: 0,
+      dayOffsetEnd: 0,
+      avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=500&q=80',
+    },
+    {
+      slug: 'meera',
+      fullName: 'Meera Joshi',
+      age: '25',
+      gender: 'Female',
+      city: 'Rishikesh',
+      travelStyle: 'Budget',
+      budgetRange: '3000-7000',
+      interests: ['camping', 'local food & culture', 'forest trails', 'yoga & wellness'],
+      bio: `Solo backpacker heading to ${destClean}. Looking for warm, chill travel buddies to explore local trails and share cab rides from the base.`,
+      dayOffsetStart: 0,
+      dayOffsetEnd: 1,
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80',
+    },
+    {
+      slug: 'vikram',
+      fullName: 'Vikram Sethi',
+      age: '29',
+      gender: 'Male',
+      city: 'Mumbai',
+      travelStyle: 'Group',
+      budgetRange: '7000-15000',
+      interests: ['high altitude trekking', 'campfire & stargazing', 'adventure sports'],
+      bio: `Corporate escape to ${destClean}! Up for summiting peaks, sharing camp logistics, and cooking together under starry Himalayan skies.`,
+      dayOffsetStart: -1,
+      dayOffsetEnd: 0,
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=500&q=80',
+    },
+    {
+      slug: 'riya',
+      fullName: 'Riya Kapoor',
+      age: '27',
+      gender: 'Female',
+      city: 'Delhi',
+      travelStyle: 'Luxury',
+      budgetRange: '9000-18000',
+      interests: ['mountain photography', 'remote homestays', 'nature walks', 'scenic lakes'],
+      bio: `Planning a peaceful trip to ${destClean}. Prefer cozy scenic homestays, crisp early morning walks, and warm cafe stops.`,
+      dayOffsetStart: 1,
+      dayOffsetEnd: 1,
+      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=500&q=80',
+    },
+    {
+      slug: 'kabir',
+      fullName: 'Kabir Rawat',
+      age: '28',
+      gender: 'Male',
+      city: 'Dehradun',
+      travelStyle: 'Budget',
+      budgetRange: '5000-9000',
+      interests: ['trekking', 'local food & culture', 'camping', 'adventure sports'],
+      bio: `Himalayan local heading for ${destClean}. Well-versed with mountain routes and local transit. Happy to buddy up with reliable travelers.`,
+      dayOffsetStart: 0,
+      dayOffsetEnd: -1,
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=500&q=80',
+    },
+    {
+      slug: 'pooja',
+      fullName: 'Pooja Hegde',
+      age: '24',
+      gender: 'Female',
+      city: 'Pune',
+      travelStyle: 'Solo',
+      budgetRange: '5000-10000',
+      interests: ['mountain photography', 'forest trails', 'sunrise hikes', 'campfire & stargazing'],
+      bio: `First time trekking ${destClean}! Looking for friendly companions to hike safely, take great photos, and share mountain memories.`,
+      dayOffsetStart: 1,
+      dayOffsetEnd: 2,
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=500&q=80',
+    },
+    {
+      slug: 'tenzin',
+      fullName: 'Tenzin Lama',
+      age: '30',
+      gender: 'Male',
+      city: 'Shimla',
+      travelStyle: 'Group',
+      budgetRange: '7000-14000',
+      interests: ['high altitude trekking', 'rivers & waterfalls', 'camping', 'mountain food'],
+      bio: `Experienced trekker heading to ${destClean}. Looking for 2-3 enthusiastic companions to split guide costs and camp together.`,
+      dayOffsetStart: -1,
+      dayOffsetEnd: 1,
+      avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=500&q=80',
+    },
+    {
+      slug: 'ananya',
+      fullName: 'Ananya Sen',
+      age: '26',
+      gender: 'Female',
+      city: 'Bengaluru',
+      travelStyle: 'Solo',
+      budgetRange: '7000-15000',
+      interests: ['wildflowers', 'slow travel', 'mountain photography', 'local food & culture'],
+      bio: `Nature lover taking time off for ${destClean}. Keen on slow walks, alpine scenery, and good conversation by the campfire.`,
+      dayOffsetStart: 0,
+      dayOffsetEnd: 0,
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=500&q=80',
+    },
+  ];
+
+  personas.forEach((p) => {
+    const candidateStartDate = shiftDateIso(baseStart, p.dayOffsetStart);
+    const candidateEndDate = shiftDateIso(baseEnd, p.dayOffsetEnd);
+    const companionUserId = `cmp-${p.slug}-${destSlug}`;
+    const companionEmail = `${p.slug}.${destSlug}@tripzen.com`;
+
+    let user = db.users.find((u) => u.id === companionUserId || u.email === companionEmail);
+    if (!user) {
+      user = {
+        id: companionUserId,
+        fullName: p.fullName,
+        email: companionEmail,
+        password: 'demo_password',
+        age: p.age,
+        gender: p.gender,
+        city: p.city,
+        interests: p.interests,
+        travelStyle: p.travelStyle,
+        pastTrips: 'Triund, Kedarkantha, Kasol',
+        budgetRange: p.budgetRange,
+        verified: true,
+        profileImage: p.avatar,
+        profileImageData: '',
+        profileCompleteness: 95,
+        createdAt: new Date().toISOString(),
+      };
+      db.users.push(user);
+    } else {
+      user.fullName = p.fullName;
+      user.city = p.city;
+      user.travelStyle = p.travelStyle;
+      user.budgetRange = p.budgetRange;
+      user.interests = p.interests;
+      user.verified = true;
+      if (!user.profileImage) user.profileImage = p.avatar;
+    }
+
+    const companionProfileId = `prf-${companionUserId}`;
+    let profile = db.profiles.find((prof) => prof.userId === user.id || prof.id === companionProfileId);
+    if (!profile) {
+      profile = {
+        id: companionProfileId,
+        userId: user.id,
+        fullName: user.fullName,
+        destination: destClean,
+        startDate: candidateStartDate,
+        endDate: candidateEndDate,
+        travelStyle: p.travelStyle,
+        budgetRange: p.budgetRange,
+        genderPreference: 'Any',
+        interests: p.interests,
+        bio: p.bio,
+        pastTrips: user.pastTrips,
+        profileImage: user.profileImage,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      db.profiles.push(profile);
+    } else {
+      profile.destination = destClean;
+      profile.startDate = candidateStartDate;
+      profile.endDate = candidateEndDate;
+      profile.travelStyle = p.travelStyle;
+      profile.budgetRange = p.budgetRange;
+      profile.interests = p.interests;
+      profile.bio = p.bio;
+      profile.updatedAt = new Date().toISOString();
+    }
+  });
+}
 
 // scoring karna match ko
-
-
 
 function compatibilityScore(base, candidate) {
   let score = 0;
@@ -590,10 +822,11 @@ function compatibilityScore(base, candidate) {
     interests: 0,
   };
 
-  if (normalizeDestination(base.destination) === normalizeDestination(candidate.destination)) {
+  if (destinationsMatch(base.destination, candidate.destination)) {
     score += 45;
     breakdown.destination = 45;
   }
+
 
   const dateInfo = dateWindowInfo(base.startDate, base.endDate, candidate.startDate, candidate.endDate);
   if (dateInfo.overlaps) {
@@ -1729,13 +1962,23 @@ app.get('/api/session/:userId', (req, res) => {
 });
 
 app.post('/api/preferences', (req, res) => {
-  const { userId, fullName, destination, startDate, endDate, travelStyle, interests, bio, budgetRange, genderPreference, profileImage } = req.body;
+  let { userId, fullName, destination, startDate, endDate, travelStyle, interests, bio, budgetRange, genderPreference, profileImage } = req.body;
 
-  if (!normalizeText(userId) || !normalizeText(destination) || !normalizeText(startDate) || !normalizeText(endDate)) {
+  if (!normalizeText(userId) || !normalizeText(destination) || !normalizeText(startDate)) {
     return res.status(400).json({
       success: false,
-      message: 'User, destination, start date, and end date are required.',
+      message: 'User, destination, and start date are required.',
     });
+  }
+
+  if (!normalizeText(endDate)) {
+    const s = new Date(startDate);
+    if (!isNaN(s.getTime())) {
+      s.setDate(s.getDate() + 4);
+      endDate = s.toISOString().slice(0, 10);
+    } else {
+      endDate = startDate;
+    }
   }
 
   const user = db.users.find((item) => item.id === userId);
@@ -1799,6 +2042,9 @@ app.post('/api/preferences', (req, res) => {
     user.bio = normalizeText(bio);
   }
   user.profileCompleteness = calculateProfileCompleteness(user, profile);
+
+  // Sync companion candidates for this chosen destination and travel window
+  ensureDestinationCompanions(profile.destination, profile.startDate, profile.endDate);
 
   saveStore(db);
 
@@ -1963,9 +2209,19 @@ app.post('/api/upload-avatar', (req, res) => {
 
 
 app.get('/api/matches', (req, res) => {
-  const allProfiles = latestProfilesPerUser().filter((candidate) => {
+  const destFilter = req.query.destination;
+  if (destFilter) {
+    ensureDestinationCompanions(destFilter, req.query.startDate, req.query.endDate);
+  }
+
+  let allProfiles = latestProfilesPerUser().filter((candidate) => {
     return Boolean(db.users.find((item) => item.id === candidate.userId));
   });
+
+  if (destFilter) {
+    allProfiles = allProfiles.filter((candidate) => destinationsMatch(candidate.destination, destFilter));
+  }
+
   const mockScores = [96, 94, 92, 89, 87, 85, 83, 80];
 
   const matches = allProfiles.map((candidate, idx) => {
@@ -2026,20 +2282,24 @@ app.get('/api/matches/:userId', (req, res) => {
   const baseProfile = latestProfilesPerUser().find((profile) => profile.userId === userId);
   const baseUser = db.users.find((user) => user.id === userId);
 
-  const allCandidates = latestProfilesPerUser().filter((candidate) => {
-    if (candidate.userId === userId) return false;
-    return Boolean(db.users.find((item) => item.id === candidate.userId));
-  });
-
   let matches = [];
 
-  if (baseProfile) {
-    matches = allCandidates
+  if (baseProfile && baseProfile.destination) {
+    const targetDestination = baseProfile.destination;
+    // Ensure companions exist specifically for this destination and dates
+    ensureDestinationCompanions(targetDestination, baseProfile.startDate, baseProfile.endDate);
+
+    const sameDestinationCandidates = latestProfilesPerUser().filter((candidate) => {
+      if (candidate.userId === userId) return false;
+      if (!destinationsMatch(candidate.destination, targetDestination)) return false;
+      return Boolean(db.users.find((item) => item.id === candidate.userId));
+    });
+
+    matches = sameDestinationCandidates
       .map((candidate) => {
         const user = db.users.find((item) => item.id === candidate.userId);
         const scoreInfo = compatibilityScore(baseProfile, candidate);
-        const isSameDestination = normalizeDestination(candidate.destination) === normalizeDestination(baseProfile.destination);
-        const score = isSameDestination ? scoreInfo.score : Math.max(72, scoreInfo.score);
+        const score = scoreInfo.score;
 
         return {
           matchProfileId: candidate.id,
@@ -2052,7 +2312,9 @@ app.get('/api/matches/:userId', (req, res) => {
           sharedInterests: scoreInfo.sharedInterests.length ? scoreInfo.sharedInterests : normalizeInterests(candidate.interests || []),
           score,
           scoreBreakdown: scoreInfo.breakdown,
-          dateCompatibility: scoreInfo.dateInfo.overlaps ? 'Overlapping dates' : 'Similar travel window',
+          dateCompatibility: scoreInfo.dateInfo.overlaps
+            ? 'Overlapping dates'
+            : (scoreInfo.dateInfo.gapDays <= 3 ? 'Similar travel window' : 'Upcoming travel dates'),
           traveler: user
             ? {
                 id: user.id,
@@ -2085,6 +2347,10 @@ app.get('/api/matches/:userId', (req, res) => {
       .sort((a, b) => b.score - a.score);
   } else {
     // If user has not created a trip yet, show all available candidates with high baseline score
+    const allCandidates = latestProfilesPerUser().filter((candidate) => {
+      if (candidate.userId === userId) return false;
+      return Boolean(db.users.find((item) => item.id === candidate.userId));
+    });
     const mockScores = [96, 94, 91, 88, 86, 84, 82, 80];
     matches = allCandidates.map((candidate, idx) => {
       const user = db.users.find((item) => item.id === candidate.userId);
