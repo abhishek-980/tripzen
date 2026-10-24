@@ -1435,6 +1435,7 @@ const state = {
   packageSelections: [],
   checkoutPackageId: '',
   itineraryPackageId: '',
+  expandedPackageId: '',
   itineraryActiveTab: 'schedule',
   checkoutTravelers: 1,
   checkoutDate: 'Upcoming Weekend',
@@ -3557,9 +3558,19 @@ function joinBookPage() {
               <img class="package-cover-img" src="${escapeHtml(tripPackage.image)}" alt="${escapeHtml(tripPackage.packageName)}" loading="lazy" />
             `;
 
+          const isExpanded = state.expandedPackageId === tripPackage.id;
+          const keyHighlights = (tripPackage.includes && tripPackage.includes.length >= 4)
+            ? tripPackage.includes.slice(0, 4)
+            : [
+                `${tripPackage.departure || 'Delhi/Rishikesh'} to ${tripPackage.destination} return AC/comfortable mountain transport`,
+                '2 Nights accommodation in sanitized alpine Swiss tents with clean bedding',
+                'All wholesome vegetarian meals (Breakfast, Lunch, Evening Snacks, Hot Dinner)',
+                'Certified Wilderness First Responder (WFR) Trek Leader & local guides'
+              ];
+
           return `
-            <div class="stitch-package-card animate-fade-in" data-open-itinerary="${escapeHtml(tripPackage.id)}">
-              <div class="package-media-wrap">
+            <div class="stitch-package-card animate-fade-in ${isExpanded ? 'is-expanded' : ''}" id="package-${escapeHtml(tripPackage.id)}">
+              <div class="package-media-wrap" data-toggle-package="${escapeHtml(tripPackage.id)}" style="cursor: pointer;">
                 ${mediaMarkup}
                 <div class="package-rating-badge">
                   <span>⭐</span>
@@ -3567,39 +3578,18 @@ function joinBookPage() {
                 </div>
                 ${tripPackage.badge ? `<div class="package-top-badge">${escapeHtml(tripPackage.badge)}</div>` : ''}
                 <div class="package-hover-tap-overlay">
-                  <span>🔍 Tap to view Day-by-Day Itinerary & Details →</span>
+                  <span>${isExpanded ? '▲ Tap to collapse details' : '▼ Tap to view Details & Itinerary'}</span>
                 </div>
               </div>
+
               <div class="package-card-content">
-                <h3>${escapeHtml(tripPackage.packageName)}</h3>
-                <span class="package-operator-sub">by <strong>${escapeHtml(tripPackage.company)}</strong> • 📍 ${escapeHtml(tripPackage.destination)}</span>
-                
-                <div class="package-chips-row" style="margin-bottom: 12px; flex-wrap: wrap; gap: 6px;">
-                  <span class="package-chip">⏱️ ${escapeHtml(tripPackage.duration)}</span>
-                  ${tripPackage.distance ? `<span class="package-chip">🥢 ${escapeHtml(tripPackage.distance)}</span>` : ''}
-                  <span class="package-chip">🏔️ ${escapeHtml(tripPackage.difficulty)}</span>
-                  <span class="package-chip">🚐 ${escapeHtml(tripPackage.departure)}</span>
-                </div>
-
-                ${tripPackage.dates ? `
-                  <div class="package-dates-tag" style="font-size: 0.78rem; color: var(--forest); font-weight: 700; background: rgba(35,89,70,0.08); padding: 5px 10px; border-radius: 6px; margin-bottom: 10px; display: inline-flex; align-items: center; gap: 5px;">
-                    <span>🗓️</span> <span>Batches: ${escapeHtml(tripPackage.dates)}</span>
+                <div class="package-card-header-tap" data-toggle-package="${escapeHtml(tripPackage.id)}" style="cursor: pointer;">
+                  <h3 class="package-card-title">${escapeHtml(tripPackage.packageName)}</h3>
+                  <div class="package-quick-meta">
+                    <span>📍 ${escapeHtml(tripPackage.destination)}</span>
+                    <span>⏱️ ${escapeHtml(tripPackage.duration)}</span>
+                    <span>🏔️ ${escapeHtml(tripPackage.difficulty)}</span>
                   </div>
-                ` : ''}
-
-                ${
-                  tripPackage.includes && tripPackage.includes.length
-                    ? `
-                      <div class="package-inclusions-list">
-                        ${tripPackage.includes.slice(0, 4).map((inc) => `<span class="package-inclusion-tag">✓ ${escapeHtml(inc)}</span>`).join('')}
-                      </div>
-                    `
-                    : ''
-                }
-
-                <div class="package-payment-badges-row">
-                  <span class="package-payment-method-pill" style="font-weight: 700; color: var(--forest);">🔒 Razorpay Secured</span>
-                  <span class="package-payment-method-pill">UPI • Cards • NetBanking</span>
                 </div>
 
                 <div class="package-card-bottom-row">
@@ -3611,15 +3601,15 @@ function joinBookPage() {
                     </div>
                     <span class="package-price-sub">per person • all taxes incl.</span>
                   </div>
-                  <div class="package-bottom-actions" style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+
+                  <div class="package-bottom-actions">
                     <button
                       type="button"
-                      class="ghost-btn package-itinerary-trigger-btn"
-                      style="padding: 7px 11px; font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"
-                      data-open-itinerary="${escapeHtml(tripPackage.id)}"
-                      title="View detailed day-by-day itinerary"
+                      class="ghost-btn package-expand-toggle-btn"
+                      data-toggle-package="${escapeHtml(tripPackage.id)}"
+                      title="Toggle detailed itinerary and trek inclusions"
                     >
-                      📄 Details
+                      <span>${isExpanded ? 'Hide Details ▲' : 'Details & Itinerary ▼'}</span>
                     </button>
                     ${tripPackage.pdf ? `
                       <a
@@ -3643,6 +3633,180 @@ function joinBookPage() {
                     </button>
                   </div>
                 </div>
+
+                <!-- EXPANDED IN-LINE DETAILS (REVEALED ON TAP) -->
+                ${isExpanded ? `
+                  <div class="package-expanded-drawer animate-fade-in">
+                    <!-- EXACT USER SCREENSHOT OVERVIEW -->
+                    <div class="itinerary-user-spec-card">
+                      <div class="itinerary-user-operator-line">
+                        by <strong>${escapeHtml(tripPackage.company || 'TripZen Himalayan Expeditions')}</strong> • 📍 ${escapeHtml(tripPackage.destination)}
+                      </div>
+
+                      <div class="itinerary-user-pills-grid">
+                        <div class="itinerary-user-pill">
+                          <span>⏱️</span>
+                          <span>${escapeHtml(tripPackage.duration)}</span>
+                        </div>
+                        <div class="itinerary-user-pill">
+                          <span>🥢</span>
+                          <span>${escapeHtml(tripPackage.distance || tripPackage.altitude || '15 km Total Trek')}</span>
+                        </div>
+                        <div class="itinerary-user-pill">
+                          <span>🏔️</span>
+                          <span>${escapeHtml(tripPackage.difficulty)}</span>
+                        </div>
+                        <div class="itinerary-user-pill">
+                          <span>🚐</span>
+                          <span>${escapeHtml(tripPackage.departure)}</span>
+                        </div>
+                      </div>
+
+                      <div class="itinerary-user-batches-bar">
+                        <span>🗓️</span>
+                        <span><strong>Batches:</strong> ${escapeHtml(tripPackage.dates || tripPackage.month || 'Every Weekend (Fri-Mon)')}</span>
+                      </div>
+
+                      <div class="itinerary-user-highlights-list">
+                        ${keyHighlights.map((hl) => `
+                          <div class="itinerary-user-highlight-card">
+                            <span class="highlight-check">✓</span>
+                            <span class="highlight-text">${escapeHtml(hl)}</span>
+                          </div>
+                        `).join('')}
+                      </div>
+
+                      <div class="itinerary-user-payment-trust-box">
+                        <span class="payment-trust-pill secure">🔒 Razorpay Secured</span>
+                        <span class="payment-trust-pill">UPI • Cards • NetBanking</span>
+                      </div>
+                    </div>
+
+                    <!-- DAY-BY-DAY ITINERARY TIMELINE -->
+                    ${tripPackage.days && tripPackage.days.length ? `
+                      <div class="package-drawer-timeline-wrap">
+                        <h4 class="package-drawer-section-title">📅 Day-by-Day Trek Schedule</h4>
+                        <div class="itinerary-timeline">
+                          ${tripPackage.days.map((d) => `
+                            <div class="itinerary-day-box">
+                              <div class="itinerary-day-header">
+                                <span class="itinerary-day-pill">DAY ${d.day}</span>
+                                <strong class="itinerary-day-title">${escapeHtml(d.title)}</strong>
+                                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                                  ${d.altitude ? `<span class="itinerary-day-alt">🏔️ ${escapeHtml(d.altitude)}</span>` : ''}
+                                  ${d.distance ? `<span class="itinerary-day-dist">🚶 ${escapeHtml(d.distance)}</span>` : ''}
+                                </div>
+                              </div>
+                              <div class="itinerary-day-content">
+                                <p>${escapeHtml(d.details)}</p>
+                                <div class="itinerary-day-meta">
+                                  <span>🍽️ <strong>Meals:</strong> ${escapeHtml(d.meals || 'Wholesome Meals Included')}</span>
+                                  <span>⛺ <strong>Stay:</strong> ${escapeHtml(d.stay || 'Alpine Camps / Homestay')}</span>
+                                </div>
+                              </div>
+                            </div>
+                          `).join('')}
+                        </div>
+                      </div>
+                    ` : ''}
+
+                    <!-- TREKKERS' IDEAS & TOOLKIT SECTION (SUGGEST OTHER IDEAS) -->
+                    <div class="package-drawer-ideas-box">
+                      <div class="package-drawer-ideas-header">
+                        <h4 style="margin: 0; font-size: 1.02rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                          💡 Trekkers' Toolkit & Expedition Ideas
+                        </h4>
+                        <span style="font-size: 0.8rem; color: #64748b; font-weight: 600;">TripZen Smart Trip Tips</span>
+                      </div>
+
+                      <div class="package-drawer-ideas-grid">
+                        <!-- IDEA 1: COMPANION MATCHING -->
+                        <div class="package-drawer-idea-card">
+                          <div class="idea-card-icon">👥</div>
+                          <div class="idea-card-body">
+                            <strong>Find Companions & Split Cabs</strong>
+                            <p>Heading solo? Connect with verified fellow travelers going to ${escapeHtml(tripPackage.destination)}, split taxi fares, and share alpine Swiss tents.</p>
+                            <button
+                              type="button"
+                              class="ghost-btn companion-match-trek-btn"
+                              data-find-companions="${escapeHtml(tripPackage.destination)}"
+                              style="padding: 7px 12px; font-size: 0.82rem; font-weight: 800; display: inline-flex; align-items: center; gap: 5px; margin-top: 6px;"
+                            >
+                              🧭 Find Trekkers for ${escapeHtml(tripPackage.destination)} →
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- IDEA 2: GEAR ADVISORY -->
+                        <div class="package-drawer-idea-card">
+                          <div class="idea-card-icon">🎒</div>
+                          <div class="idea-card-body">
+                            <strong>Essential Gear Checklist</strong>
+                            <p>Recommended packing for ${escapeHtml(tripPackage.destination)}:</p>
+                            <div class="idea-gear-chips">
+                              <span class="idea-gear-chip">🥾 Ankle-Support Boots</span>
+                              <span class="idea-gear-chip">🧥 3-Layer Thermal Fleece</span>
+                              <span class="idea-gear-chip">🥢 Trekking Pole</span>
+                              <span class="idea-gear-chip">🔦 Headlamp</span>
+                              <span class="idea-gear-chip">💧 1L Reusable Bottle</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- IDEA 3: DIRECT WHATSAPP EXPEDITION LEADER -->
+                        <div class="package-drawer-idea-card">
+                          <div class="idea-card-icon">💬</div>
+                          <div class="idea-card-body">
+                            <strong>Trek Leader WhatsApp Q&A</strong>
+                            <p>Need details on upcoming weekend batches, Rishikesh pickup spots, or physical fitness?</p>
+                            <a
+                              href="https://wa.me/918920632874?text=${encodeURIComponent(`Hi TripZen Team! I am looking at the ${tripPackage.packageName} (${tripPackage.price}). Can you please share batch availability and pickup info?`)}"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="ghost-btn"
+                              style="padding: 7px 12px; font-size: 0.82rem; font-weight: 800; display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; text-decoration: none; color: #047857; background: #ecfdf5; border-color: #a7f3d0;"
+                            >
+                              💬 Ask Expedition Leader
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- EXPANDED BOTTOM ACTION BAR -->
+                    <div class="package-drawer-bottom-bar">
+                      <button
+                        type="button"
+                        class="ghost-btn"
+                        data-toggle-package="${escapeHtml(tripPackage.id)}"
+                        style="padding: 9px 16px; font-weight: 700;"
+                      >
+                        ▲ Hide Details
+                      </button>
+                      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        ${tripPackage.pdf ? `
+                          <a
+                            href="${escapeHtml(tripPackage.pdf)}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="ghost-btn"
+                            style="padding: 9px 14px; font-size: 0.88rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;"
+                          >
+                            🖨️ PDF Itinerary
+                          </a>
+                        ` : ''}
+                        <button
+                          type="button"
+                          class="primary-btn pay-btn"
+                          style="padding: 10px 22px; font-weight: 800; font-size: 0.95rem;"
+                          data-open-checkout="${escapeHtml(tripPackage.id)}"
+                        >
+                          <span>⚡ Book ${escapeHtml(tripPackage.destination)} (${escapeHtml(tripPackage.price)})</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ` : ''}
               </div>
             </div>
           `;
@@ -5964,13 +6128,6 @@ function renderItineraryModal() {
   const pkg = TRIP_PACKAGES.find((item) => item.id === state.itineraryPackageId);
   if (!pkg) return '';
 
-  const pkgCover = pkg.image && (pkg.image.endsWith('.mov') || pkg.image.endsWith('.mp4')) ? './assets/tripzen-logo.png' : pkg.image;
-  const activeTab = state.itineraryActiveTab || 'schedule';
-
-  // Find 3 recommended similar treks (different from current pkg)
-  const similarTreks = TRIP_PACKAGES.filter((p) => p.id !== pkg.id).slice(0, 3);
-
-  // Key highlight inclusion items (as seen in user spec)
   const keyHighlights = (pkg.includes && pkg.includes.length >= 4)
     ? pkg.includes.slice(0, 4)
     : [
@@ -5980,28 +6137,19 @@ function renderItineraryModal() {
         'Certified Wilderness First Responder (WFR) Trek Leader & local guides'
       ];
 
-  const waInquiryText = encodeURIComponent(
-    `Hi TripZen Expeditions! I am interested in the ${pkg.packageName} (${pkg.price}) trek. Could you please share the upcoming batch dates and pickup details?`
-  );
-
   return `
     <div class="checkout-modal-overlay" id="itineraryModalOverlay">
       <div class="itinerary-modal-card">
-        <!-- HERO BANNER -->
-        <div class="itinerary-modal-hero" style="background-image: linear-gradient(to top, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.45)), url('${escapeHtml(pkgCover)}');">
-          <button type="button" class="checkout-close-btn itinerary-close-btn" id="closeItineraryModalBtn" title="Close details">×</button>
-          <div class="itinerary-modal-badges">
-            <span class="package-card-badge">🛡️ Verified TripZen Operator</span>
-            <span class="package-difficulty-badge ${escapeHtml((pkg.difficulty || '').toLowerCase())}">⛰️ ${escapeHtml(pkg.difficulty)}</span>
-            <span class="package-card-badge" style="background: rgba(255,255,255,0.22); color: #fff;">⭐ ${pkg.rating || '4.9'} (420+ Reviews)</span>
-            ${pkg.altitude ? `<span class="package-card-badge" style="background: rgba(255,255,255,0.18); color: #fff;">🏔️ ${escapeHtml(pkg.altitude)}</span>` : ''}
+        <div class="itinerary-modal-header-simple">
+          <div>
+            <h2 class="itinerary-modal-simple-title">${escapeHtml(pkg.packageName)}</h2>
+            <p class="itinerary-modal-simple-sub">📍 ${escapeHtml(pkg.destination)} • Organized by <strong>${escapeHtml(pkg.company)}</strong></p>
           </div>
-          <h2 class="itinerary-modal-title">${escapeHtml(pkg.packageName)}</h2>
-          <p class="itinerary-modal-subtitle">📍 ${escapeHtml(pkg.destination)} • Operated by <strong>${escapeHtml(pkg.company)}</strong></p>
+          <button type="button" class="checkout-close-btn itinerary-close-simple-btn" id="closeItineraryModalBtn" title="Close">×</button>
         </div>
 
         <div class="itinerary-modal-body">
-          <!-- USER SPEC EXACT OVERVIEW CARD -->
+          <!-- EXACT USER SPEC CARD -->
           <div class="itinerary-user-spec-card">
             <div class="itinerary-user-operator-line">
               by <strong>${escapeHtml(pkg.company || 'TripZen Himalayan Expeditions')}</strong> • 📍 ${escapeHtml(pkg.destination)}
@@ -6010,26 +6158,26 @@ function renderItineraryModal() {
             <!-- 4 Pill Badges in 2x2 grid -->
             <div class="itinerary-user-pills-grid">
               <div class="itinerary-user-pill">
-                <span class="pill-icon">⏱️</span>
+                <span>⏱️</span>
                 <span>${escapeHtml(pkg.duration)}</span>
               </div>
               <div class="itinerary-user-pill">
-                <span class="pill-icon">🥢</span>
+                <span>🥢</span>
                 <span>${escapeHtml(pkg.distance || pkg.altitude || '15 km Total Trek')}</span>
               </div>
               <div class="itinerary-user-pill">
-                <span class="pill-icon">🏔️</span>
+                <span>🏔️</span>
                 <span>${escapeHtml(pkg.difficulty)}</span>
               </div>
               <div class="itinerary-user-pill">
-                <span class="pill-icon">🚐</span>
+                <span>🚐</span>
                 <span>${escapeHtml(pkg.departure)}</span>
               </div>
             </div>
 
             <!-- Batches Pill -->
             <div class="itinerary-user-batches-bar">
-              <span class="pill-icon">🗓️</span>
+              <span>🗓️</span>
               <span><strong>Batches:</strong> ${escapeHtml(pkg.dates || pkg.month || 'Every Weekend (Fri-Mon)')}</span>
             </div>
 
@@ -6047,246 +6195,30 @@ function renderItineraryModal() {
             <div class="itinerary-user-payment-trust-box">
               <span class="payment-trust-pill secure">🔒 Razorpay Secured</span>
               <span class="payment-trust-pill">UPI • Cards • NetBanking</span>
-              <span class="payment-trust-pill instant">⚡ 100% Instant Confirmation</span>
             </div>
           </div>
 
-          <!-- NAVIGATION TABS -->
-          <div class="itinerary-nav-tabs">
-            <button type="button" class="itinerary-tab-btn ${activeTab === 'schedule' ? 'active' : ''}" data-itinerary-tab="schedule">
-              📅 Day-by-Day Route (${pkg.days ? pkg.days.length : 3} Days)
-            </button>
-            <button type="button" class="itinerary-tab-btn ${activeTab === 'packing' ? 'active' : ''}" data-itinerary-tab="packing">
-              🎒 Gear & Packing Checklist
-            </button>
-            <button type="button" class="itinerary-tab-btn ${activeTab === 'weather' ? 'active' : ''}" data-itinerary-tab="weather">
-              ⛅ Weather & Altitude Guide
-            </button>
-            <button type="button" class="itinerary-tab-btn ${activeTab === 'inclusions' ? 'active' : ''}" data-itinerary-tab="inclusions">
-              📋 Inclusions & Rules
-            </button>
-          </div>
-
-          <!-- TAB 1: DAY BY DAY ROUTE -->
-          <div class="itinerary-tab-panel" id="tab-panel-schedule" style="${activeTab === 'schedule' ? 'display:flex;' : 'display:none;'}">
-            <div class="itinerary-overview-box">
-              <p>${escapeHtml(pkg.description)}</p>
-            </div>
-
-            ${pkg.days && pkg.days.length > 0 ? `
-              <div class="itinerary-timeline-section">
-                <div class="itinerary-timeline">
-                  ${pkg.days.map((d) => `
-                    <div class="itinerary-day-box">
-                      <div class="itinerary-day-header">
-                        <span class="itinerary-day-pill">DAY ${d.day}</span>
-                        <strong class="itinerary-day-title">${escapeHtml(d.title)}</strong>
-                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                          ${d.altitude ? `<span class="itinerary-day-alt">🏔️ ${escapeHtml(d.altitude)}</span>` : ''}
-                          ${d.distance ? `<span class="itinerary-day-dist">🚶 ${escapeHtml(d.distance)}</span>` : ''}
-                        </div>
-                      </div>
-                      <div class="itinerary-day-content">
-                        <p>${escapeHtml(d.details)}</p>
-                        <div class="itinerary-day-meta">
-                          <span>🍽️ <strong>Meals:</strong> ${escapeHtml(d.meals || 'Wholesome Pahadi Meals Included')}</span>
-                          <span>⛺ <strong>Stay:</strong> ${escapeHtml(d.stay || 'Alpine Swiss Tents / Homestay')}</span>
-                        </div>
+          <!-- DAY-BY-DAY ITINERARY -->
+          ${pkg.days && pkg.days.length ? `
+            <div class="package-drawer-timeline-wrap">
+              <h4 class="package-drawer-section-title">📅 Day-by-Day Trek Schedule</h4>
+              <div class="itinerary-timeline">
+                ${pkg.days.map((d) => `
+                  <div class="itinerary-day-box">
+                    <div class="itinerary-day-header">
+                      <span class="itinerary-day-pill">DAY ${d.day}</span>
+                      <strong class="itinerary-day-title">${escapeHtml(d.title)}</strong>
+                      <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                        ${d.altitude ? `<span class="itinerary-day-alt">🏔️ ${escapeHtml(d.altitude)}</span>` : ''}
+                        ${d.distance ? `<span class="itinerary-day-dist">🚶 ${escapeHtml(d.distance)}</span>` : ''}
                       </div>
                     </div>
-                  `).join('')}
-                </div>
-              </div>
-            ` : ''}
-
-            <div class="itinerary-safety-alert">
-              <strong>💡 TripZen Acclimatization & Safety Guarantee:</strong> Daily summit pushes are planned before dawn for optimum weather conditions and breathtaking sunrise panoramas. Certified Trek Leaders carry pulse oximeters, high-altitude first-aid, and oxygen canisters on every batch.
-            </div>
-          </div>
-
-          <!-- TAB 2: GEAR & PACKING CHECKLIST -->
-          <div class="itinerary-tab-panel" id="tab-panel-packing" style="${activeTab === 'packing' ? 'display:flex;' : 'display:none;'}">
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; font-size: 0.9rem; color: #334155;">
-              <strong>🎒 Trekker's Interactive Checklist:</strong> Tap the boxes to check items off as you pack your rucksack. Proper gear ensures warmth, safety, and comfort at high altitudes!
-            </div>
-
-            <div class="itinerary-gear-grid">
-              <div class="itinerary-gear-category">
-                <h4>🥾 Footwear & Socks</h4>
-                <div class="itinerary-gear-list">
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>Waterproof high-ankle trekking shoes with deep lug sole</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>3-4 pairs moisture-wicking synthetic or merino wool socks</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox" checked> <span>Microspikes & gaiters (Provided Free by TripZen on snow batches)</span></label>
-                </div>
-              </div>
-
-              <div class="itinerary-gear-category">
-                <h4>🧥 3-Layer Mountain Clothing</h4>
-                <div class="itinerary-gear-list">
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>2-3 Quick-dry moisture-wicking polyester t-shirts</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>Warm breathable fleece jacket (150-200 GSM)</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>Windproof & water-resistant down jacket (-5°C rating)</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>2 Pairs quick-dry stretch trekking pants</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>Thermal inner wear (top + bottom) for campsite nights</span></label>
-                </div>
-              </div>
-
-              <div class="itinerary-gear-category">
-                <h4>🎒 Backpack & Rain Cover</h4>
-                <div class="itinerary-gear-list">
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>40-50L Ergonomic backpack with padded hip strap</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>Heavy-duty waterproof rain cover for backpack</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>Lightweight mountain poncho or waterproof outer shell</span></label>
-                </div>
-              </div>
-
-              <div class="itinerary-gear-category">
-                <h4>🧢 Head, Hands & Eye Care</h4>
-                <div class="itinerary-gear-list">
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>Warm woollen beanie or balaclava for chilly winds</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>Sun cap / wide-brim hat with neck flap for sunny hours</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>UV 400 polarized sunglasses (essential on snow summits)</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>Fleece gloves + 1 pair waterproof outer gloves</span></label>
-                </div>
-              </div>
-
-              <div class="itinerary-gear-category">
-                <h4>🔦 Electronics & Essentials</h4>
-                <div class="itinerary-gear-list">
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>LED Headlamp / torch with spare AAA batteries</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>10,000 - 20,000 mAh Power bank (cold drains batteries faster)</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>2x 1-Liter reusable insulated water bottles</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>Trekking poles with anti-shock spring mechanism</span></label>
-                </div>
-              </div>
-
-              <div class="itinerary-gear-category">
-                <h4>💊 First Aid & Personal Toiletries</h4>
-                <div class="itinerary-gear-list">
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>Personal prescription medication + Diamox 250mg</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>Blister tape / Compeed pads & adhesive bandages</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>Sunscreen lotion SPF 50+ & petroleum jelly / lip balm</span></label>
-                  <label class="itinerary-gear-item"><input type="checkbox"> <span>Biodegradable wet wipes & pocket hand sanitizer</span></label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 3: WEATHER & ALTITUDE GUIDE -->
-          <div class="itinerary-tab-panel" id="tab-panel-weather" style="${activeTab === 'weather' ? 'display:flex;' : 'display:none;'}">
-            <div class="itinerary-weather-grid">
-              <div class="itinerary-season-card">
-                <h4>🌸 Spring & Summer (Apr - Jun)</h4>
-                <div class="itinerary-season-temp">Day: 14°C to 22°C • Night: 6°C to 12°C</div>
-                <p class="itinerary-season-desc">Lush green alpine bugyals (meadows) carpeted with scarlet and pink rhododendron blossoms. Clear sunny mornings and pleasant weather.</p>
-              </div>
-
-              <div class="itinerary-season-card" style="border-color: #f59e0b; background: #fffbeb;">
-                <h4>🍂 Autumn (Sep - Nov)</h4>
-                <div class="itinerary-season-temp" style="color: #b45309;">Day: 10°C to 16°C • Night: 0°C to 5°C</div>
-                <p class="itinerary-season-desc">Crispest visibility of the year! 360° unobstructed golden panoramic views of Chaukhamba, Trishul, and Nanda Devi peaks.</p>
-              </div>
-
-              <div class="itinerary-season-card" style="border-color: #60a5fa; background: #eff6ff;">
-                <h4>❄️ Winter Snow Summit (Dec - Mar)</h4>
-                <div class="itinerary-season-temp" style="color: #1d4ed8;">Day: 2°C to 8°C • Night: -4°C to -10°C</div>
-                <p class="itinerary-season-desc">A surreal white wonderland. The stone trail to Tungnath Temple and Chandrashila Peak gets blanketed in thick snow.</p>
-              </div>
-            </div>
-
-            <div class="itinerary-facts-strip">
-              <div class="itinerary-fact-item">
-                <span class="itinerary-fact-label">Summit Altitude</span>
-                <strong class="itinerary-fact-val">${escapeHtml(pkg.altitude || '13,100 ft')}</strong>
-              </div>
-              <div class="itinerary-fact-item">
-                <span class="itinerary-fact-label">Base Elevation</span>
-                <strong class="itinerary-fact-val">6,600 ft - 8,790 ft</strong>
-              </div>
-              <div class="itinerary-fact-item">
-                <span class="itinerary-fact-label">Difficulty Grade</span>
-                <strong class="itinerary-fact-val">${escapeHtml(pkg.difficulty || 'Easy to Moderate')}</strong>
-              </div>
-              <div class="itinerary-fact-item">
-                <span class="itinerary-fact-label">Trek Distance</span>
-                <strong class="itinerary-fact-val">${escapeHtml(pkg.distance || '15 km Total')}</strong>
-              </div>
-            </div>
-
-            <div class="itinerary-safety-alert">
-              <strong>🏔️ Altitude Acclimatization Advisory:</strong> As you gain elevation, atmospheric oxygen decreases. We strictly follow the 'climb high, sleep low' principle. Maintain consistent hydration (minimum 3.5 liters/day) and inform your TripZen expedition leader if you experience mild headaches or dizziness.
-            </div>
-          </div>
-
-          <!-- TAB 4: INCLUSIONS & EXCLUSIONS -->
-          <div class="itinerary-tab-panel" id="tab-panel-inclusions" style="${activeTab === 'inclusions' ? 'display:flex;' : 'display:none;'}">
-            <div class="itinerary-two-col">
-              <div class="itinerary-col-box">
-                <h4 style="color: var(--forest); margin: 0 0 12px 0; font-weight: 800; font-size: 1.05rem;">✓ What is 100% Included</h4>
-                <ul class="itinerary-checklist-ul">
-                  ${(pkg.includes || []).map((inc) => `<li>${escapeHtml(inc)}</li>`).join('')}
-                  <li>High-altitude sleeping bags, fleece liners & sanitized camp mattresses</li>
-                  <li>Boiled / mineral drinking water at campsites</li>
-                  <li>Experienced local Garhwali / Kumaoni guides & mule team for group gear</li>
-                </ul>
-              </div>
-
-              <div class="itinerary-col-box">
-                <h4 style="color: #ef4444; margin: 0 0 12px 0; font-weight: 800; font-size: 1.05rem;">✕ What is Excluded</h4>
-                <ul class="itinerary-checklist-ul exclusions">
-                  <li>Personal trekking gear (hiking boots, thermal jackets, personal backpack)</li>
-                  <li>Luggage offloading or personal mule charges (₹350-500/day if needed)</li>
-                  <li>Highway dhaba meals during road transit from/to base city</li>
-                  <li>Emergency helicopter rescue, hospitalization, or individual medical evacuation insurance</li>
-                  <li>Any extra expenses incurred due to landslides, road blockages, or natural weather delays</li>
-                </ul>
-              </div>
-            </div>
-
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; font-size: 0.86rem; color: #475569;">
-              <strong>🔄 Flexible Cancellation & Reschedule Policy:</strong> Free batch reschedule or 100% wallet credit up to 7 days before departure. 50% refund up to 3 days before departure.
-            </div>
-          </div>
-
-          <!-- COMPANION DISCOVERY & WHATSAPP SUPPORT CTA -->
-          <div class="itinerary-companion-connect-strip">
-            <div class="companion-connect-info">
-              <h4>👥 Looking for Trek Companions?</h4>
-              <p>Traveling solo or want to join a group? Connect with fellow trekkers heading to ${escapeHtml(pkg.destination)}, split cab fares from Delhi/Rishikesh, and share preparation tips!</p>
-            </div>
-            <div class="companion-connect-actions">
-              <button
-                type="button"
-                class="ghost-btn"
-                id="findCompanionsForTrekBtn"
-                data-destination="${escapeHtml(pkg.destination)}"
-                style="padding: 9px 15px; font-weight: 800; font-size: 0.84rem; display: inline-flex; align-items: center; gap: 6px;"
-              >
-                🧭 Find Trekkers for ${escapeHtml(pkg.destination)}
-              </button>
-              <a
-                href="https://wa.me/918920632874?text=${waInquiryText}"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="whatsapp-inquire-btn"
-              >
-                💬 WhatsApp Trek Leader
-              </a>
-            </div>
-          </div>
-
-          <!-- SIMILAR RECOMMENDED TREKS -->
-          ${similarTreks.length ? `
-            <div class="itinerary-similar-treks-section">
-              <h4 class="itinerary-similar-title">🏔️ Similar Himalayan Adventures You May Like</h4>
-              <div class="itinerary-similar-grid">
-                ${similarTreks.map((sim) => `
-                  <div class="itinerary-similar-card" data-switch-itinerary="${escapeHtml(sim.id)}">
-                    <img class="similar-card-img" src="${escapeHtml(sim.image)}" alt="${escapeHtml(sim.packageName)}" loading="lazy" />
-                    <div class="similar-card-body">
-                      <strong>${escapeHtml(sim.packageName)}</strong>
-                      <span>📍 ${escapeHtml(sim.destination)} • ⏱️ ${escapeHtml(sim.duration)}</span>
-                      <div class="similar-card-price">${escapeHtml(sim.price)} <small style="font-weight: 500; color: #64748b;">per person</small></div>
+                    <div class="itinerary-day-content">
+                      <p>${escapeHtml(d.details)}</p>
+                      <div class="itinerary-day-meta">
+                        <span>🍽️ <strong>Meals:</strong> ${escapeHtml(d.meals || 'Wholesome Meals Included')}</span>
+                        <span>⛺ <strong>Stay:</strong> ${escapeHtml(d.stay || 'Alpine Camps / Homestay')}</span>
+                      </div>
                     </div>
                   </div>
                 `).join('')}
@@ -6305,15 +6237,17 @@ function renderItineraryModal() {
               <div class="itinerary-price-sub">per person • all permits & taxes incl.</div>
             </div>
             <div class="itinerary-cta-btns">
-              <a
-                href="${escapeHtml(pkg.pdf || `/itineraries/${pkg.slug}.html`)}"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="ghost-btn"
-                style="padding: 11px 18px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"
-              >
-                🖨️ View / Print PDF
-              </a>
+              ${pkg.pdf ? `
+                <a
+                  href="${escapeHtml(pkg.pdf)}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="ghost-btn"
+                  style="padding: 10px 18px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"
+                >
+                  🖨️ PDF
+                </a>
+              ` : ''}
               <button
                 type="button"
                 class="primary-btn pay-btn"
@@ -7306,25 +7240,53 @@ function hydrateUI() {
   });
 
   
-  // Card and details click handlers
-  document.querySelectorAll('.stitch-package-card[data-open-itinerary]').forEach((card) => {
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('[data-open-checkout]') || e.target.closest('a')) {
+  // Package expansion toggle (tap card header, cover image, or Details button)
+  document.querySelectorAll('[data-toggle-package]').forEach((elem) => {
+    elem.addEventListener('click', (e) => {
+      // Do not toggle if clicking checkout, link, companion search
+      if (
+        e.target.closest('[data-open-checkout]') ||
+        e.target.closest('a') ||
+        e.target.closest('[data-find-companions]')
+      ) {
+        return;
+      }
+      // If click originated inside the expanded drawer, only toggle if on an explicit toggle button
+      if (e.target.closest('.package-expanded-drawer') && !e.target.closest('button[data-toggle-package]')) {
         return;
       }
       e.preventDefault();
-      const pkgId = card.getAttribute('data-open-itinerary');
-      if (pkgId) {
-        openItineraryModal(pkgId);
+      e.stopPropagation();
+      const pkgId = elem.getAttribute('data-toggle-package');
+      if (!pkgId) return;
+
+      state.expandedPackageId = state.expandedPackageId === pkgId ? '' : pkgId;
+      renderApp();
+
+      if (state.expandedPackageId) {
+        setTimeout(() => {
+          const cardEl = document.getElementById(`package-${pkgId}`);
+          if (cardEl) {
+            cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }, 60);
       }
     });
   });
 
-  document.querySelectorAll('button[data-open-itinerary]').forEach((button) => {
-    button.addEventListener('click', (e) => {
+  // Companion discovery button inside package drawer
+  document.querySelectorAll('[data-find-companions]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      openItineraryModal(button.getAttribute('data-open-itinerary'));
+      const destination = btn.getAttribute('data-find-companions');
+      if (destination) {
+        state.packageDestinationFilter = destination;
+        state.destinationSearchQuery = destination;
+      }
+      state.activeTab = 'companions';
+      renderApp();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   });
 
