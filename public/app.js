@@ -2651,6 +2651,20 @@ function preferencesPage() {
   const defaultStart = state.profile?.startDate || new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const defaultEnd = state.profile?.endDate || new Date(today.getTime() + 11 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
+  const startVal = state.profile?.startDate || defaultStart;
+  const endVal = state.profile?.endDate || defaultEnd;
+  let initialDurationText = '4 Nights / 5 Days';
+  let initialAutoBadge = '+4 days';
+  if (startVal && endVal) {
+    const d1 = new Date(startVal);
+    const d2 = new Date(endVal);
+    const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+    if (diff > 0) {
+      initialDurationText = `${diff} Nights / ${diff + 1} Days`;
+      initialAutoBadge = `+${diff} days`;
+    }
+  }
+
   return `
     <div class="planner-wrapper animate-fade-in">
       <!-- Full-Width Panoramic Kareri Lake Mountain Hero Header -->
@@ -2688,147 +2702,87 @@ function preferencesPage() {
         <input type="hidden" name="destination" id="planDestinationInput" value="${escapeHtml(currentDestination)}" />
         <input type="hidden" name="travelStyle" id="planTravelStyleInput" value="${escapeHtml(currentTravelStyle)}" />
 
-        <!-- TOP 2-COLUMN SPLIT: TRAVEL DATES (LEFT) & TRAVEL VIBE (RIGHT) -->
-        <div class="planner-top-steps-grid">
-          <!-- TRAVEL DATES ON LEFT (COMPACT) -->
-          <section class="planner-step-box step-box-compact step-box-dates" id="step-dates-anchor">
-            <div class="step-box-header">
-              <div class="step-title-group">
-                <h2>
-                  <span class="step-title-full">When are you travelling?</span>
-                  <span class="step-title-short">🗓️ Travel Dates</span>
-                </h2>
-                <p class="step-subtitle">Pick departure dates or choose a quick preset</p>
-              </div>
+        <!-- STEP 1: TRAVEL DATES & TIMELINE (FOCUSED & BEAUTIFULLY PROPORTIONED) -->
+        <section class="planner-step-box step-box-dates-pro" id="step-dates-anchor">
+          <div class="dates-pro-header">
+            <div class="dates-pro-title-group">
+              <span class="step-kicker">STEP 1 • TRIP TIMELINE</span>
+              <h2 class="dates-pro-title">When are you travelling?</h2>
+              <p class="dates-pro-subtitle">Pick your departure dates or use a quick preset to match with companions.</p>
             </div>
+            <div class="dates-duration-badge" id="tripDurationBadge">
+              <span class="duration-icon">🗓️</span>
+              <span id="tripDurationText">${initialDurationText}</span>
+            </div>
+          </div>
 
-            <!-- Quick Date Presets -->
-            <div class="date-presets-row compact-presets">
-              <button type="button" class="date-preset-btn" data-date-preset="this-weekend">
-                <span class="preset-label-full">📅 This Weekend</span>
-                <span class="preset-label-short">This Wknd</span>
+          <!-- Quick Date Presets -->
+          <div class="date-presets-pills-wrap">
+            <span class="presets-label">Quick Pick:</span>
+            <div class="date-presets-pills-list">
+              <button type="button" class="date-preset-pill" data-date-preset="this-weekend">
+                <span>⚡ This Weekend</span>
               </button>
-              <button type="button" class="date-preset-btn" data-date-preset="next-weekend">
-                <span class="preset-label-full">🎒 Next Weekend</span>
-                <span class="preset-label-short">Next Wknd</span>
+              <button type="button" class="date-preset-pill" data-date-preset="next-weekend">
+                <span>🎒 Next Weekend</span>
               </button>
-              <button type="button" class="date-preset-btn" data-date-preset="next-month">
-                <span class="preset-label-full">❄️ Next Month</span>
-                <span class="preset-label-short">Next Mth</span>
+              <button type="button" class="date-preset-pill" data-date-preset="next-month">
+                <span>❄️ Next Month</span>
               </button>
-              <button type="button" class="date-preset-btn active" data-date-preset="custom">
-                <span class="preset-label-full">✨ Custom</span>
-                <span class="preset-label-short">Custom</span>
+              <button type="button" class="date-preset-pill active" data-date-preset="custom">
+                <span>✨ Custom Dates</span>
               </button>
             </div>
+          </div>
 
-            <div class="planner-dates-grid compact-dates">
-              <div class="date-field-card">
-                <label class="field-floating-label" for="planStartDate">
-                  <span class="field-title">START DATE *</span>
-                  <div class="input-with-icon">
-                    <span class="input-icon">📅</span>
-                    <input
-                      id="planStartDate"
-                      name="startDate"
-                      type="date"
-                      required
-                      value="${escapeHtml(state.profile?.startDate || defaultStart)}"
-                      class="planner-date-input"
-                    />
-                  </div>
-                </label>
-              </div>
-
-              <div class="date-field-card">
-                <label class="field-floating-label" for="planEndDate">
-                  <div class="label-row">
-                    <span class="field-title">END DATE</span>
-                    <span class="auto-calc-tag">+4 days</span>
-                  </div>
-                  <div class="input-with-icon">
-                    <span class="input-icon">🏁</span>
-                    <input
-                      id="planEndDate"
-                      name="endDate"
-                      type="date"
-                      value="${escapeHtml(state.profile?.endDate || defaultEnd)}"
-                      class="planner-date-input"
-                    />
-                  </div>
-                </label>
-              </div>
+          <!-- Modern Unified Travel Date Picker Bar -->
+          <div class="travel-date-picker-card">
+            <div class="date-picker-field">
+              <label class="date-field-label" for="planStartDate">
+                <span class="field-kicker-text">START / DEPARTURE DATE *</span>
+                <div class="date-input-box">
+                  <span class="date-icon">📅</span>
+                  <input
+                    id="planStartDate"
+                    name="startDate"
+                    type="date"
+                    required
+                    value="${escapeHtml(startVal)}"
+                    class="planner-date-input-clean"
+                  />
+                </div>
+              </label>
             </div>
 
-            <div class="date-summary-banner compact-summary" id="dateSummaryBanner">
-              <span class="summary-icon">🗓️</span>
-              <span id="dateSummaryText">Dates set. Companion matching will prioritize overlapping dates.</span>
-            </div>
-          </section>
-
-          <!-- TRAVEL VIBE & PREFERENCES ON RIGHT -->
-          <section class="planner-step-box step-box-compact step-box-vibe" id="step-preferences-anchor">
-            <div class="step-box-header">
-              <div class="step-title-group">
-                <h2>
-                  <span class="step-title-full">Travel Vibe &amp; Style</span>
-                  <span class="step-title-short">✨ Travel Vibe</span>
-                </h2>
-                <p class="step-subtitle">Find companions who hike at your pace and vibe</p>
-              </div>
+            <div class="date-arrow-separator">
+              <span class="arrow-symbol">➔</span>
             </div>
 
-            <div class="planner-styles-grid compact-styles">
-              <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'solo' ? 'active' : ''}" data-select-planner-style="Solo">
-                <div class="style-icon-wrap">🥾</div>
-                <div class="style-info">
-                  <h3>
-                    <span class="vibe-title-full">Solo Backpacking</span>
-                    <span class="vibe-title-short">Solo</span>
-                  </h3>
-                  <p class="vibe-desc">Hike independently, share local taxis &amp; camps.</p>
+            <div class="date-picker-field">
+              <label class="date-field-label" for="planEndDate">
+                <div class="field-kicker-row">
+                  <span class="field-kicker-text">RETURN / END DATE</span>
+                  <span class="auto-calc-pill" id="autoCalcBadge">${initialAutoBadge}</span>
                 </div>
-                <div class="style-check-circle">✓</div>
-              </div>
-
-              <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'group' ? 'active' : ''}" data-select-planner-style="Group">
-                <div class="style-icon-wrap">👥</div>
-                <div class="style-info">
-                  <h3>
-                    <span class="vibe-title-full">Group Explorer</span>
-                    <span class="vibe-title-short">Group</span>
-                  </h3>
-                  <p class="vibe-desc">Social vibe, split guides &amp; campfire nights.</p>
+                <div class="date-input-box">
+                  <span class="date-icon">🏁</span>
+                  <input
+                    id="planEndDate"
+                    name="endDate"
+                    type="date"
+                    value="${escapeHtml(endVal)}"
+                    class="planner-date-input-clean"
+                  />
                 </div>
-                <div class="style-check-circle">✓</div>
-              </div>
-
-              <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'budget' ? 'active' : ''}" data-select-planner-style="Budget">
-                <div class="style-icon-wrap">💰</div>
-                <div class="style-info">
-                  <h3>
-                    <span class="vibe-title-full">Budget Conscious</span>
-                    <span class="vibe-title-short">Budget</span>
-                  </h3>
-                  <p class="vibe-desc">Shared homestays, public transit, cost-effective meals.</p>
-                </div>
-                <div class="style-check-circle">✓</div>
-              </div>
-
-              <div class="style-card-stitch ${currentTravelStyle.toLowerCase() === 'luxury' ? 'active' : ''}" data-select-planner-style="Luxury">
-                <div class="style-icon-wrap">✨</div>
-                <div class="style-info">
-                  <h3>
-                    <span class="vibe-title-full">Comfort &amp; Stay</span>
-                    <span class="vibe-title-short">Luxury</span>
-                  </h3>
-                  <p class="vibe-desc">Cozy cottages, guided comfort, relaxed photography.</p>
-                </div>
-                <div class="style-check-circle">✓</div>
-              </div>
+              </label>
             </div>
-          </section>
-        </div>
+          </div>
+
+          <div class="date-summary-banner-clean" id="dateSummaryBanner">
+            <span class="summary-check-icon">✓</span>
+            <span id="dateSummaryText">Dates set. Companions heading to your chosen trail around these dates will be prioritized.</span>
+          </div>
+        </section>
 
         <!-- BELOW TOP GRID: DESTINATION & SUMMIT SELECTION (FULL WIDTH) -->
         <section class="planner-step-box step-box-destination" id="step-destination-anchor">
@@ -7373,7 +7327,59 @@ function hydrateUI() {
     });
   });
 
-  // Date Presets
+  // Interactive Trip Timeline & Date Calculations in Planner
+  const planStartInput = document.getElementById('planStartDate');
+  const planEndInput = document.getElementById('planEndDate');
+
+  const updateDateCalculations = () => {
+    const s = planStartInput ? planStartInput.value : '';
+    const e = planEndInput ? planEndInput.value : '';
+    const durationText = document.getElementById('tripDurationText');
+    const autoCalcBadge = document.getElementById('autoCalcBadge');
+    const summaryText = document.getElementById('dateSummaryText');
+
+    if (!s) {
+      if (durationText) durationText.textContent = 'Select Dates';
+      if (autoCalcBadge) autoCalcBadge.textContent = 'Pending';
+      if (summaryText) summaryText.textContent = 'Please choose your departure date to find matching trekking companions.';
+      return;
+    }
+
+    if (s && e) {
+      const d1 = new Date(s);
+      const d2 = new Date(e);
+      const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+      if (diff > 0) {
+        const nights = diff;
+        const days = diff + 1;
+        if (durationText) durationText.textContent = `${nights} ${nights === 1 ? 'Night' : 'Nights'} / ${days} Days`;
+        if (autoCalcBadge) autoCalcBadge.textContent = `+${diff} days`;
+        if (summaryText) {
+          summaryText.textContent = `Travel dates locked: ${s} ➔ ${e} (${nights} nights). Companions matching your trail around these dates will be prioritized.`;
+        }
+      } else if (diff === 0) {
+        if (durationText) durationText.textContent = '1-Day Day Trek';
+        if (autoCalcBadge) autoCalcBadge.textContent = 'Same day';
+        if (summaryText) {
+          summaryText.textContent = `Single-day trip set for ${s}. Matching companions starting on this date.`;
+        }
+      } else {
+        if (durationText) durationText.textContent = 'Check Dates';
+        if (autoCalcBadge) autoCalcBadge.textContent = 'Invalid';
+        if (summaryText) {
+          summaryText.textContent = 'Return date is before start date. Please adjust your return date.';
+        }
+      }
+    } else if (s) {
+      if (durationText) durationText.textContent = 'Flexible Return';
+      if (autoCalcBadge) autoCalcBadge.textContent = 'Open';
+      if (summaryText) {
+        summaryText.textContent = `Departing on ${s} with open return date. Matching companions departing around the same time.`;
+      }
+    }
+  };
+
+  // Quick Date Presets
   document.querySelectorAll('[data-date-preset]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const presetKey = btn.getAttribute('data-date-preset');
@@ -7382,45 +7388,38 @@ function hydrateUI() {
 
       const range = getDatePresetRange(presetKey);
       if (range) {
-        const startInput = document.getElementById('planStartDate');
-        const endInput = document.getElementById('planEndDate');
-        if (startInput) startInput.value = range.start;
-        if (endInput) endInput.value = range.end;
-
-        const summaryText = document.getElementById('dateSummaryText');
-        if (summaryText) {
-          summaryText.textContent = `📅 Travel window set: ${range.start} to ${range.end}. Discovering companions with overlapping dates.`;
-        }
+        if (planStartInput) planStartInput.value = range.start;
+        if (planEndInput) planEndInput.value = range.end;
+        updateDateCalculations();
       }
     });
   });
 
-  // Travel Style Selector in Planner
-  document.querySelectorAll('[data-select-planner-style]').forEach((card) => {
-    card.addEventListener('click', () => {
-      const style = card.getAttribute('data-select-planner-style');
-      const form = document.getElementById('preferencesForm');
-      if (form && form.travelStyle) {
-        form.travelStyle.value = style;
-      }
-      document.querySelectorAll('[data-select-planner-style]').forEach((c) => c.classList.remove('active'));
-      card.classList.add('active');
+  // Start Date / End Date Change & Input Listeners
+  if (planStartInput) {
+    planStartInput.addEventListener('change', () => {
+      updateDateCalculations();
+      document.querySelectorAll('[data-date-preset]').forEach((b) => {
+        b.classList.toggle('active', b.getAttribute('data-date-preset') === 'custom');
+      });
     });
-  });
+    planStartInput.addEventListener('input', updateDateCalculations);
+  }
 
-  // Start Date / End Date Change Listeners
-  const planStartInput = document.getElementById('planStartDate');
-  const planEndInput = document.getElementById('planEndDate');
-  const updateDateSummary = () => {
-    const s = planStartInput ? planStartInput.value : '';
-    const e = planEndInput ? planEndInput.value : '';
-    const summaryText = document.getElementById('dateSummaryText');
-    if (summaryText && s) {
-      summaryText.textContent = `📅 Travel window set: ${s} ${e ? 'to ' + e : '(flexible end date)'}. Matching companions heading there around these dates.`;
-    }
-  };
-  if (planStartInput) planStartInput.addEventListener('change', updateDateSummary);
-  if (planEndInput) planEndInput.addEventListener('change', updateDateSummary);
+  if (planEndInput) {
+    planEndInput.addEventListener('change', () => {
+      updateDateCalculations();
+      document.querySelectorAll('[data-date-preset]').forEach((b) => {
+        b.classList.toggle('active', b.getAttribute('data-date-preset') === 'custom');
+      });
+    });
+    planEndInput.addEventListener('input', updateDateCalculations);
+  }
+
+  // Trigger initial calculation if planner is rendered
+  if (planStartInput && planEndInput) {
+    updateDateCalculations();
+  }
 
 
   function hydrateMatchEvents() {
