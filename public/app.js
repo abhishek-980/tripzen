@@ -2647,12 +2647,21 @@ function preferencesPage() {
   const selectedDestObj = getDestinationByName(currentDestination);
 
   // Default dates if not already present
-  const today = new Date();
-  const defaultStart = state.profile?.startDate || new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const defaultEnd = state.profile?.endDate || new Date(today.getTime() + 11 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const endDefaultDate = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);
+  const defaultEndStr = `${endDefaultDate.getFullYear()}-${String(endDefaultDate.getMonth() + 1).padStart(2, '0')}-${String(endDefaultDate.getDate()).padStart(2, '0')}`;
 
-  const startVal = state.profile?.startDate || defaultStart;
-  const endVal = state.profile?.endDate || defaultEnd;
+  // Start date defaults to current date (today)
+  let startVal = todayStr;
+  if (state.profile?.startDate && state.profile.startDate >= todayStr) {
+    startVal = state.profile.startDate;
+  }
+  let endVal = defaultEndStr;
+  if (state.profile?.endDate && state.profile.endDate >= startVal) {
+    endVal = state.profile.endDate;
+  }
+
   let initialDurationText = '4 Nights / 5 Days';
   let initialAutoBadge = '+4 days';
   if (startVal && endVal) {
@@ -2702,36 +2711,16 @@ function preferencesPage() {
         <input type="hidden" name="destination" id="planDestinationInput" value="${escapeHtml(currentDestination)}" />
         <input type="hidden" name="travelStyle" id="planTravelStyleInput" value="${escapeHtml(currentTravelStyle)}" />
 
-        <!-- STEP 1: TRAVEL DATES & TIMELINE (FOCUSED & BEAUTIFULLY PROPORTIONED) -->
+        <!-- TRAVEL DATES SELECTION (CLEAN & PRECISE) -->
         <section class="planner-step-box step-box-dates-pro" id="step-dates-anchor">
           <div class="dates-pro-header">
             <div class="dates-pro-title-group">
-              <span class="step-kicker">STEP 1 • TRIP TIMELINE</span>
               <h2 class="dates-pro-title">When are you travelling?</h2>
-              <p class="dates-pro-subtitle">Pick your departure dates or use a quick preset to match with companions.</p>
+              <p class="dates-pro-subtitle">Select your departure and return dates to find matching companions.</p>
             </div>
             <div class="dates-duration-badge" id="tripDurationBadge">
               <span class="duration-icon">🗓️</span>
               <span id="tripDurationText">${initialDurationText}</span>
-            </div>
-          </div>
-
-          <!-- Quick Date Presets -->
-          <div class="date-presets-pills-wrap">
-            <span class="presets-label">Quick Pick:</span>
-            <div class="date-presets-pills-list">
-              <button type="button" class="date-preset-pill" data-date-preset="this-weekend">
-                <span>⚡ This Weekend</span>
-              </button>
-              <button type="button" class="date-preset-pill" data-date-preset="next-weekend">
-                <span>🎒 Next Weekend</span>
-              </button>
-              <button type="button" class="date-preset-pill" data-date-preset="next-month">
-                <span>❄️ Next Month</span>
-              </button>
-              <button type="button" class="date-preset-pill active" data-date-preset="custom">
-                <span>✨ Custom Dates</span>
-              </button>
             </div>
           </div>
 
@@ -2747,6 +2736,7 @@ function preferencesPage() {
                     name="startDate"
                     type="date"
                     required
+                    min="${todayStr}"
                     value="${escapeHtml(startVal)}"
                     class="planner-date-input-clean"
                   />
@@ -2770,6 +2760,7 @@ function preferencesPage() {
                     id="planEndDate"
                     name="endDate"
                     type="date"
+                    min="${startVal || todayStr}"
                     value="${escapeHtml(endVal)}"
                     class="planner-date-input-clean"
                   />
@@ -2780,7 +2771,7 @@ function preferencesPage() {
 
           <div class="date-summary-banner-clean" id="dateSummaryBanner">
             <span class="summary-check-icon">✓</span>
-            <span id="dateSummaryText">Dates set. Companions heading to your chosen trail around these dates will be prioritized.</span>
+            <span id="dateSummaryText">Dates set. Companions heading along your trail around these dates will be prioritized.</span>
           </div>
         </section>
 
@@ -7379,40 +7370,24 @@ function hydrateUI() {
     }
   };
 
-  // Quick Date Presets
-  document.querySelectorAll('[data-date-preset]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const presetKey = btn.getAttribute('data-date-preset');
-      document.querySelectorAll('[data-date-preset]').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-
-      const range = getDatePresetRange(presetKey);
-      if (range) {
-        if (planStartInput) planStartInput.value = range.start;
-        if (planEndInput) planEndInput.value = range.end;
-        updateDateCalculations();
-      }
-    });
-  });
-
   // Start Date / End Date Change & Input Listeners
   if (planStartInput) {
     planStartInput.addEventListener('change', () => {
+      if (planEndInput && planStartInput.value) {
+        planEndInput.min = planStartInput.value;
+        if (planEndInput.value && planEndInput.value < planStartInput.value) {
+          const sDate = new Date(planStartInput.value);
+          const newEndDate = new Date(sDate.getTime() + 4 * 24 * 60 * 60 * 1000);
+          planEndInput.value = `${newEndDate.getFullYear()}-${String(newEndDate.getMonth() + 1).padStart(2, '0')}-${String(newEndDate.getDate()).padStart(2, '0')}`;
+        }
+      }
       updateDateCalculations();
-      document.querySelectorAll('[data-date-preset]').forEach((b) => {
-        b.classList.toggle('active', b.getAttribute('data-date-preset') === 'custom');
-      });
     });
     planStartInput.addEventListener('input', updateDateCalculations);
   }
 
   if (planEndInput) {
-    planEndInput.addEventListener('change', () => {
-      updateDateCalculations();
-      document.querySelectorAll('[data-date-preset]').forEach((b) => {
-        b.classList.toggle('active', b.getAttribute('data-date-preset') === 'custom');
-      });
-    });
+    planEndInput.addEventListener('change', updateDateCalculations);
     planEndInput.addEventListener('input', updateDateCalculations);
   }
 
