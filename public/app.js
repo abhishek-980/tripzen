@@ -2204,106 +2204,49 @@ function profilePage() {
     ? state.selectedInterests
     : (user.interests || state.profile?.interests || ['trekking', 'photography', 'camping']);
 
-  // Calculate profile completeness score and interactive checklist
-  const checklist = [
-    { key: 'name', label: 'Full Name', done: Boolean(user.fullName && user.fullName.trim()), bonus: 17 },
-    { key: 'city', label: 'Base City', done: Boolean(user.city && user.city.trim()), bonus: 17 },
-    { key: 'phone', label: 'Mobile Phone', done: Boolean(user.phone && user.phone.trim()), bonus: 17 },
-    { key: 'bio', label: 'Trekker Bio', done: Boolean((user.bio || state.profile?.bio || '').trim()), bonus: 17 },
-    { key: 'trips', label: 'Past Summits', done: Boolean((user.pastTrips || state.profile?.pastTrips || '').trim()), bonus: 16 },
-    { key: 'photo', label: 'Profile Photo', done: Boolean(currentAvatar && !currentAvatar.includes('seed=Traveler')), bonus: 16 },
+  // Calculate profile completeness score
+  const items = [
+    Boolean(user.fullName && user.fullName.trim()),
+    Boolean(user.city && user.city.trim()),
+    Boolean(user.phone && user.phone.trim()),
+    Boolean((user.bio || state.profile?.bio || '').trim()),
+    Boolean((user.pastTrips || state.profile?.pastTrips || '').trim()),
+    Boolean(currentAvatar && !currentAvatar.includes('seed=Traveler')),
   ];
+  const completedCount = items.filter(Boolean).length;
+  const profileScore = Math.min(100, Math.round((completedCount / items.length) * 100));
 
-  const completedCount = checklist.filter((item) => item.done).length;
-  const profileScore = Math.min(100, Math.round((completedCount / checklist.length) * 100));
-
-  let tierName = 'Strong Trekker';
-  let tierClass = 'strength-badge-strong';
-  let tierTag = '🔥 High Match Priority';
-  let tipMessage = 'Great job! Your profile has high credibility among companion seekers.';
-
-  if (profileScore < 50) {
-    tierName = 'Getting Started';
-    tierClass = 'strength-badge-low';
-    tierTag = '🌱 Step 1 of 6';
-    tipMessage = 'Add your base city & photo to unlock companion invites and trail chat.';
-  } else if (profileScore < 80) {
-    tierName = 'Good Progress';
-    tierClass = 'strength-badge-med';
-    tierTag = '⚡ 2x More Requests';
-    tipMessage = 'Add your past mountain treks & bio to reach All-Star status.';
-  } else if (profileScore >= 95) {
-    tierName = 'All-Star Passport';
-    tierClass = 'strength-badge-strong';
-    tierTag = '⭐ 100% Verified Vibe';
-    tipMessage = 'Your profile is fully complete and verified for all upcoming Himalayan treks.';
+  let tipMessage = 'Add bio & past summits to reach 100%';
+  if (profileScore >= 100) {
+    tipMessage = 'All-Star profile! Ready for mountain trails';
+  } else if (!user.bio && !user.pastTrips) {
+    tipMessage = 'Add bio & past summits to reach 100%';
+  } else if (!user.pastTrips) {
+    tipMessage = 'Add past mountain treks to reach 100%';
+  } else if (!user.bio) {
+    tipMessage = 'Add a short bio to reach 100%';
+  } else {
+    tipMessage = 'Complete remaining details to reach 100%';
   }
-
-  const checklistMarkup = checklist.map((item) => `
-    <span class="checklist-pill ${item.done ? 'done' : 'pending'}" data-check-key="${item.key}">
-      ${item.done ? '✓ ' + item.label : '+ Add ' + item.label + ' (+' + item.bonus + '%)'}
-    </span>
-  `).join('');
 
   return `
     <div class="curate-wrapper animate-fade-in">
-      <!-- Clean Executive Profile Nav & Breadcrumb Row -->
-      <div class="profile-page-nav-row">
-        <div class="profile-page-titles">
-          <div class="profile-badge-pill">
-            <span class="badge-icon">🪪</span>
-            <span>TREKKER IDENTITY &amp; PASSPORT</span>
-          </div>
-          <h1 class="profile-page-main-title">
-            ${user.fullName ? 'Your Trekker Profile &amp; Bio' : 'Create Your Trekker Profile'}
+      <!-- Clean, Professional Page Header -->
+      <div class="profile-header-clean">
+        <div class="profile-header-info">
+          <span class="profile-header-tag">EXPLORER PROFILE</span>
+          <h1 class="profile-header-title">
+            ${user.fullName ? 'Your Trekker Profile' : 'Create Your Trekker Profile'}
           </h1>
-          <p class="profile-page-sub-desc">
-            Build your mountain identity, showcase your trail vibe, and connect with verified companions heading to your dream trails.
+          <p class="profile-header-sub">
+            Set up your public mountain identity and preferences to connect with verified companions.
           </p>
         </div>
-        <div class="profile-page-actions">
-          <a href="#/preferences" class="profile-to-plan-btn">
+        <div class="profile-header-action">
+          <a href="#/preferences" class="profile-plan-link">
             <span>🗺️ Plan a Trip</span>
-            <span class="arrow-icon">➔</span>
+            <span class="plan-link-arrow">➔</span>
           </a>
-        </div>
-      </div>
-
-      <!-- Standout Dedicated Profile Strength Dashboard Card -->
-      <div class="profile-strength-dashboard-card animate-fade-in">
-        <div class="strength-card-left">
-          <div class="strength-gauge-wrapper">
-            <svg class="strength-circle-svg" viewBox="0 0 36 36">
-              <path class="circle-track" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              <path class="circle-fill" id="profileStrengthSvgFill" stroke-dasharray="${profileScore}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-            </svg>
-            <div class="strength-gauge-number">
-              <span id="profileStrengthScore">${profileScore}%</span>
-              <small>STRENGTH</small>
-            </div>
-          </div>
-        </div>
-
-        <div class="strength-card-right">
-          <div class="strength-heading-row">
-            <div class="strength-title-group">
-              <span class="strength-kicker">PROFILE COMPLETENESS</span>
-              <h2 class="strength-title">
-                Strength: <span id="profileStrengthTier">${tierName}</span>
-              </h2>
-            </div>
-            <span class="strength-status-badge ${tierClass}" id="profileStrengthBadge">${tierTag}</span>
-          </div>
-
-          <p class="strength-desc" id="profileStrengthDesc">${tipMessage}</p>
-
-          <div class="strength-linear-bar-wrap">
-            <div class="strength-linear-bar-fill" id="profileStrengthFill" style="width: ${profileScore}%;"></div>
-          </div>
-
-          <div class="strength-checklist-pills" id="profileStrengthChecklist">
-            ${checklistMarkup}
-          </div>
         </div>
       </div>
 
@@ -2316,7 +2259,7 @@ function profilePage() {
           <div class="trekker-id-card-preview">
             <div class="trekker-card-cover">
               <span class="trekker-status-pill">Active Member</span>
-              <span class="trekker-verified-pill">✓ Verified Trekker</span>
+              <span class="trekker-verified-pill">✓ Verified</span>
             </div>
 
             <div class="trekker-avatar-anchor">
@@ -2333,6 +2276,18 @@ function profilePage() {
                 <span class="trekker-card-sep">•</span>
                 <span id="previewTrekkerStyle" class="trekker-card-style">🥾 ${escapeHtml(currentTravelStyle)}</span>
               </div>
+            </div>
+
+            <!-- Sleek Integrated Profile Strength Bar -->
+            <div class="trekker-strength-box">
+              <div class="strength-meta-line">
+                <span class="strength-label">Profile Strength</span>
+                <span class="strength-percentage" id="profileStrengthScore">${profileScore}%</span>
+              </div>
+              <div class="strength-progress-track">
+                <div class="strength-progress-bar" id="profileStrengthFill" style="width: ${profileScore}%;"></div>
+              </div>
+              <span class="strength-hint-text" id="profileStrengthDesc">${tipMessage}</span>
             </div>
           </div>
 
@@ -2594,22 +2549,6 @@ function profilePage() {
           </div>
         </div>
       </form>
-
-      ${state.user ? `
-        <!-- Device Session Card with Direct Log Out -->
-        <div class="profile-session-logout-card animate-fade-in">
-          <div class="session-info-left">
-            <div class="session-badge">
-              <span class="session-icon">🔒</span>
-              <strong>Active Device Session</strong>
-            </div>
-            <p>Signed in as <strong>${escapeHtml(user.fullName || 'Traveler')}</strong> (${escapeHtml(user.email || user.phone || 'Active Session')})</p>
-          </div>
-          <button type="button" class="profile-logout-btn" id="profilePageLogoutBtn">
-            <span>🚪 Log Out from Device</span>
-          </button>
-        </div>
-      ` : ''}
     </div>
   `;
 }
@@ -7109,15 +7048,15 @@ function hydrateUI() {
     const hasCustomAvatar = Boolean(avatar && !avatar.includes('seed=Traveler'));
 
     const items = [
-      { key: 'name', label: 'Full Name', done: Boolean(fullName), bonus: 17 },
-      { key: 'city', label: 'Base City', done: Boolean(city), bonus: 17 },
-      { key: 'phone', label: 'Mobile Phone', done: Boolean(phone), bonus: 17 },
-      { key: 'bio', label: 'Trekker Bio', done: Boolean(bio), bonus: 17 },
-      { key: 'trips', label: 'Past Summits', done: Boolean(pastTrips), bonus: 16 },
-      { key: 'photo', label: 'Profile Photo', done: hasCustomAvatar, bonus: 16 },
+      Boolean(fullName),
+      Boolean(city),
+      Boolean(phone),
+      Boolean(bio),
+      Boolean(pastTrips),
+      hasCustomAvatar,
     ];
 
-    const doneCount = items.filter((i) => i.done).length;
+    const doneCount = items.filter(Boolean).length;
     const score = Math.min(100, Math.round((doneCount / items.length) * 100));
 
     const scoreEl = document.getElementById('profileStrengthScore');
@@ -7126,54 +7065,20 @@ function hydrateUI() {
     const fillEl = document.getElementById('profileStrengthFill');
     if (fillEl) fillEl.style.width = score + '%';
 
-    const svgFillEl = document.getElementById('profileStrengthSvgFill');
-    if (svgFillEl) svgFillEl.setAttribute('stroke-dasharray', `${score}, 100`);
-
-    const tierEl = document.getElementById('profileStrengthTier');
-    const badgeEl = document.getElementById('profileStrengthBadge');
     const descEl = document.getElementById('profileStrengthDesc');
-
-    let tierName = 'Strong Trekker';
-    let tierClass = 'strength-badge-strong';
-    let tierTag = '🔥 High Match Priority';
-    let tipMessage = 'Great job! Your profile has high credibility among companion seekers.';
-
-    if (score < 50) {
-      tierName = 'Getting Started';
-      tierClass = 'strength-badge-low';
-      tierTag = '🌱 Step 1 of 6';
-      tipMessage = 'Add your base city & photo to unlock companion invites and trail chat.';
-    } else if (score < 80) {
-      tierName = 'Good Progress';
-      tierClass = 'strength-badge-med';
-      tierTag = '⚡ 2x More Requests';
-      tipMessage = 'Add your past mountain treks & bio to reach All-Star status.';
-    } else if (score >= 95) {
-      tierName = 'All-Star Passport';
-      tierClass = 'strength-badge-strong';
-      tierTag = '⭐ 100% Verified Vibe';
-      tipMessage = 'Your profile is fully complete and verified for all upcoming Himalayan treks.';
-    }
-
-    if (tierEl) tierEl.textContent = tierName;
-    if (badgeEl) {
-      badgeEl.textContent = tierTag;
-      badgeEl.className = `strength-status-badge ${tierClass}`;
-    }
-    if (descEl) descEl.textContent = tipMessage;
-
-    items.forEach((item) => {
-      const pill = document.querySelector(`.checklist-pill[data-check-key="${item.key}"]`);
-      if (pill) {
-        if (item.done) {
-          pill.className = 'checklist-pill done';
-          pill.textContent = '✓ ' + item.label;
-        } else {
-          pill.className = 'checklist-pill pending';
-          pill.textContent = '+ Add ' + item.label + ' (+' + item.bonus + '%)';
-        }
+    if (descEl) {
+      if (score >= 100) {
+        descEl.textContent = 'All-Star profile! Ready for mountain trails';
+      } else if (!bio && !pastTrips) {
+        descEl.textContent = 'Add bio & past summits to reach 100%';
+      } else if (!pastTrips) {
+        descEl.textContent = 'Add past mountain treks to reach 100%';
+      } else if (!bio) {
+        descEl.textContent = 'Add a short bio to reach 100%';
+      } else {
+        descEl.textContent = 'Complete remaining details to reach 100%';
       }
-    });
+    }
   }
 
   // Live Trekker Passport Card Preview updates
