@@ -2204,166 +2204,270 @@ function profilePage() {
     ? state.selectedInterests
     : (user.interests || state.profile?.interests || ['trekking', 'photography', 'camping']);
 
+  // Calculate profile completeness score
+  let completedFields = 0;
+  const totalFields = 6;
+  if (user.fullName) completedFields++;
+  if (user.city) completedFields++;
+  if (user.phone) completedFields++;
+  if (user.bio || state.profile?.bio) completedFields++;
+  if (user.pastTrips || state.profile?.pastTrips) completedFields++;
+  if (currentAvatar && !currentAvatar.includes('seed=Traveler')) completedFields++;
+  const profileScore = Math.min(100, Math.max(45, Math.round((completedFields / totalFields) * 100)));
+
   return `
     <div class="curate-wrapper animate-fade-in">
-      <div class="page-header-stitch">
-        <div class="page-header-row">
-          <div>
-            <h1>${state.user?.fullName ? 'Your Profile Details' : 'Create & Customize Your Profile'}</h1>
-            <p>${state.user?.fullName ? 'Manage your photo, personal bio, and travel vibe.' : 'Add your picture, details, and travel vibe to find travelers who truly match your energy and pace.'}</p>
+      <!-- Full-Width Panoramic Mountain Profile Header -->
+      <div class="profile-hero-header">
+        <div class="profile-hero-content">
+          <div class="profile-hero-badge">
+            <span>🏔️ TREKKER IDENTITY &amp; PASSPORT</span>
           </div>
-          ${
-            state.profile
-              ? `<a href="#/preferences" class="ghost-btn">Plan Trip & Dates ➔</a>`
-              : ''
-          }
+          <h1 class="profile-hero-title">
+            ${user.fullName ? 'Your Trekker Profile &amp; Bio' : 'Create Your Trekker Profile'}
+          </h1>
+          <p class="profile-hero-desc">
+            Build your mountain identity, showcase your trail vibe, and connect with verified companions heading to your dream trails.
+          </p>
+          <div class="profile-hero-chips">
+            <span class="profile-hero-chip">✓ Verified Community</span>
+            <span class="profile-hero-chip">⚡ Instant Companion Matching</span>
+            <span class="profile-hero-chip">🔒 100% Privacy Protected</span>
+          </div>
+        </div>
+
+        <div class="profile-hero-aside">
+          <div class="profile-completion-meter">
+            <div class="meter-header">
+              <span class="meter-label">Profile Strength</span>
+              <span class="meter-score" id="profileStrengthScore">${profileScore}%</span>
+            </div>
+            <div class="meter-track">
+              <div class="meter-fill" id="profileStrengthFill" style="width: ${profileScore}%;"></div>
+            </div>
+            <span class="meter-tip">Add your bio &amp; past treks for 3x more match invites</span>
+          </div>
         </div>
       </div>
 
       ${statusMarkup(state.profileStatus, state.profileStatusType)}
 
       <form id="profileCreationForm" class="profile-setup-grid">
-        <!-- Left Column: Avatar & Photo Picker -->
+        <!-- Left Column: Interactive Trekker ID Card & Avatar Studio -->
         <aside class="profile-setup-avatar-card">
-          <div class="card-section-title" style="margin-bottom: 16px;">
-            <span>📸</span>
-            <span>Profile Picture</span>
+          <!-- Live Passport Badge Preview -->
+          <div class="trekker-id-card-preview">
+            <div class="trekker-card-cover">
+              <span class="trekker-status-pill">Active Trekker</span>
+              <span class="trekker-verified-pill">✓ Verified</span>
+            </div>
+
+            <div class="trekker-avatar-anchor">
+              <div class="profile-avatar-large-wrap" id="avatarLargeUploadTrigger" title="Click to upload custom photo">
+                <img id="profileImageLargePreview" class="profile-avatar-large-img" src="${escapeHtml(currentAvatar)}" alt="Profile Photo" />
+                <div class="profile-avatar-edit-badge" title="Upload new photo">📷</div>
+              </div>
+            </div>
+
+            <div class="trekker-card-meta">
+              <h3 id="previewTrekkerName" class="trekker-card-name">${escapeHtml(user.fullName || 'Your Name')}</h3>
+              <div class="trekker-card-sub">
+                <span id="previewTrekkerCity">📍 ${escapeHtml(user.city || 'Base City')}</span>
+                <span class="trekker-card-sep">•</span>
+                <span id="previewTrekkerStyle" class="trekker-card-style">🥾 ${escapeHtml(currentTravelStyle)}</span>
+              </div>
+            </div>
           </div>
 
-          <div class="profile-avatar-large-wrap" id="avatarLargeUploadTrigger" title="Click to upload custom photo">
-            <img id="profileImageLargePreview" class="profile-avatar-large-img" src="${escapeHtml(currentAvatar)}" alt="Profile Photo" />
-            <div class="profile-avatar-edit-badge" style="width: 32px; height: 32px; font-size: 0.95rem;">📷</div>
+          <!-- Photo Controls Box -->
+          <div class="avatar-controls-box">
+            <button type="button" class="upload-custom-photo-btn" id="uploadPhotoBtn">
+              <span>📁 Upload Custom Photo</span>
+            </button>
+            <input id="profileImageFileInput" type="file" accept="image/*" style="display: none;" />
+            <input type="hidden" name="profileImage" id="profileImageHiddenInput" value="${escapeHtml(currentAvatar)}" />
+
+            <div class="avatar-presets-title">Or Choose an Adventurer Avatar</div>
+            <div class="avatar-presets-grid">
+              ${PRESET_AVATARS.map((avatarUrl, idx) => `
+                <button
+                  type="button"
+                  class="preset-avatar-btn ${currentAvatar === avatarUrl ? 'active' : ''}"
+                  data-preset-avatar="${escapeHtml(avatarUrl)}"
+                  title="Select Avatar ${idx + 1}"
+                >
+                  <img src="${escapeHtml(avatarUrl)}" class="preset-avatar-img" alt="Preset Avatar" />
+                </button>
+              `).join('')}
+            </div>
           </div>
 
-          <button type="button" class="ghost-btn" id="uploadPhotoBtn" style="padding: 6px 14px; font-size: 0.8rem; margin-top: 4px;">
-            📁 Upload Custom Photo
-          </button>
-          <input id="profileImageFileInput" type="file" accept="image/*" style="display: none;" />
-          <input type="hidden" name="profileImage" id="profileImageHiddenInput" value="${escapeHtml(currentAvatar)}" />
-
-          <div class="avatar-presets-title">Or Choose an Adventurer Avatar</div>
-          <div class="avatar-presets-grid">
-            ${PRESET_AVATARS.map((avatarUrl, idx) => `
-              <button
-                type="button"
-                class="preset-avatar-btn ${currentAvatar === avatarUrl ? 'active' : ''}"
-                data-preset-avatar="${escapeHtml(avatarUrl)}"
-                title="Select Avatar ${idx + 1}"
-              >
-                <img src="${escapeHtml(avatarUrl)}" class="preset-avatar-img" alt="Preset Avatar" />
-              </button>
-            `).join('')}
-          </div>
-
-          <div style="margin-top: 24px; padding: 14px; background: var(--surface-alt); border-radius: var(--radius-md); font-size: 0.82rem; color: var(--muted); text-align: left; width: 100%;">
-            💡 <strong>Pro-Tip:</strong> Verified profiles with genuine photos receive 3x more travel buddy requests!
+          <div class="profile-trust-box">
+            <div class="trust-icon-box">🛡️</div>
+            <div class="trust-content">
+              <strong>Verified Companion Guarantee</strong>
+              <p>Verified profiles with authentic photos receive 3x more travel buddy requests &amp; faster responses.</p>
+            </div>
           </div>
         </aside>
 
         <!-- Right Column: Personal Details, Style, Interests & Budget -->
-        <div class="curate-form-card" style="margin-bottom: 0;">
+        <div class="curate-form-card">
           <!-- Section 1: Basic Information -->
-          <div class="card-section-title">
-            <span>👤</span>
-            <span>Personal Information</span>
-          </div>
-
-          <div style="margin-bottom: 14px; background: rgba(255, 255, 255, 0.03); padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-            <label class="field-label" style="margin-bottom: 0; flex: 1; min-width: 240px;">
-              <span>REGISTERED EMAIL 🔒</span>
-              <input type="text" readonly class="stitch-input" style="opacity: 0.9; background: var(--surface); cursor: not-allowed; font-size: 0.88rem;" value="${escapeHtml(user.email || 'Not set')}" />
-            </label>
-            <div style="display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; background: rgba(5, 150, 105, 0.12); border: 1px solid rgba(5, 150, 105, 0.3); color: #10b981; font-size: 0.8rem; font-weight: 600; align-self: flex-end; margin-bottom: 2px;">
-              <span>✓ Verified Traveler Account</span>
+          <div class="profile-section-header">
+            <div class="section-icon-badge">👤</div>
+            <div class="section-title-group">
+              <h2>Personal Information</h2>
+              <p>Your public identity on Tripzen trails and shared rides</p>
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
-            <label class="field-label">
-              <span>FULL NAME</span>
-              <input name="fullName" placeholder="Elena Rostova" class="stitch-input" value="${escapeHtml(user.fullName || '')}" required />
+          <!-- Registered Email Status Banner -->
+          <div class="registered-email-banner">
+            <div class="email-info-group">
+              <span class="email-info-kicker">REGISTERED LOGIN ACCOUNT 🔒</span>
+              <span class="email-info-val">${escapeHtml(user.email || 'Verified Account')}</span>
+            </div>
+            <div class="email-verified-tag">
+              <span>✓ Verified Traveler</span>
+            </div>
+          </div>
+
+          <!-- Name & Age Row -->
+          <div class="form-row-split-2">
+            <label class="profile-input-field">
+              <span class="field-kicker">FULL NAME *</span>
+              <div class="input-icon-box">
+                <span class="field-icon">👤</span>
+                <input name="fullName" placeholder="e.g. Elena Rostova" class="profile-text-input" value="${escapeHtml(user.fullName || '')}" required />
+              </div>
             </label>
-            <label class="field-label">
-              <span>AGE</span>
-              <input name="age" type="number" min="18" max="99" placeholder="26" class="stitch-input" value="${escapeHtml(user.age || '26')}" />
+
+            <label class="profile-input-field age-field">
+              <span class="field-kicker">AGE</span>
+              <div class="input-icon-box">
+                <span class="field-icon">🎂</span>
+                <input name="age" type="number" min="18" max="99" placeholder="26" class="profile-text-input" value="${escapeHtml(user.age || '26')}" />
+              </div>
             </label>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <label class="field-label">
-              <span>CURRENT CITY / BASE</span>
-              <input name="city" placeholder="Bangalore / Delhi / Mumbai" class="stitch-input" value="${escapeHtml(user.city || '')}" />
+          <!-- City & Phone Row -->
+          <div class="form-row-split-2">
+            <label class="profile-input-field">
+              <span class="field-kicker">CURRENT BASE / CITY</span>
+              <div class="input-icon-box">
+                <span class="field-icon">📍</span>
+                <input name="city" placeholder="e.g. Bangalore, Delhi, Mumbai, Pune" class="profile-text-input" value="${escapeHtml(user.city || '')}" />
+              </div>
             </label>
 
-            <label class="field-label">
-              <span>MOBILE PHONE NUMBER</span>
-              <input name="phone" type="tel" placeholder="+91 98765 43210 (10 digits)" class="stitch-input" value="${escapeHtml(user.phone || '')}" />
+            <label class="profile-input-field">
+              <span class="field-kicker">MOBILE / WHATSAPP NUMBER</span>
+              <div class="input-icon-box">
+                <span class="field-icon">📱</span>
+                <input name="phone" type="tel" placeholder="+91 98765 43210" class="profile-text-input" value="${escapeHtml(user.phone || '')}" />
+              </div>
             </label>
           </div>
 
-          <div class="field-label" style="margin-bottom: 16px;">
-            <span>GENDER</span>
+          <!-- Gender Identity -->
+          <div class="profile-gender-section">
+            <span class="field-kicker">GENDER IDENTITY</span>
             <div class="interactive-choice-grid">
-              <button type="button" class="choice-pill-btn ${currentGender === 'Female' ? 'active' : ''}" data-profile-gender-val="Female">👩 Female</button>
-              <button type="button" class="choice-pill-btn ${currentGender === 'Male' ? 'active' : ''}" data-profile-gender-val="Male">👨 Male</button>
-              <button type="button" class="choice-pill-btn ${currentGender === 'Other' || currentGender === 'Any' ? 'active' : ''}" data-profile-gender-val="Other">✨ Other</button>
+              <button type="button" class="choice-pill-btn ${currentGender === 'Female' ? 'active' : ''}" data-profile-gender-val="Female">
+                <span>👩 Female</span>
+              </button>
+              <button type="button" class="choice-pill-btn ${currentGender === 'Male' ? 'active' : ''}" data-profile-gender-val="Male">
+                <span>👨 Male</span>
+              </button>
+              <button type="button" class="choice-pill-btn ${currentGender === 'Other' || currentGender === 'Any' ? 'active' : ''}" data-profile-gender-val="Other">
+                <span>✨ Non-Binary / Any</span>
+              </button>
             </div>
             <input type="hidden" name="gender" id="profileGenderInput" value="${escapeHtml(currentGender)}" />
           </div>
 
-          <label class="field-label">
-            <span>ABOUT YOU (BIO)</span>
-            <textarea name="bio" rows="3" placeholder="Tell other travelers about yourself, your pace, and what kind of travel buddy you are..." class="stitch-textarea">${escapeHtml(state.profile?.bio || user.bio || '')}</textarea>
-          </label>
+          <!-- Bio & Pace -->
+          <div class="profile-bio-section">
+            <div class="bio-header-row">
+              <span class="field-kicker">ABOUT YOU (BIO &amp; PACE)</span>
+              <span class="bio-counter" id="bioCharCounter">Personal bio</span>
+            </div>
+            <textarea name="bio" rows="3" placeholder="Tell other travelers about yourself, your pace, morning vs night habits, camping spirit, and what makes you a great travel buddy..." class="profile-textarea-input">${escapeHtml(state.profile?.bio || user.bio || '')}</textarea>
+            <div class="bio-quick-prompts">
+              <span class="prompt-kicker">Quick Add:</span>
+              <button type="button" class="bio-prompt-chip" data-bio-suggest="Steady moderate pace hiker">🥾 Moderate Pace</button>
+              <button type="button" class="bio-prompt-chip" data-bio-suggest="Early morning sunrise starter">🌅 Sunrise Hikes</button>
+              <button type="button" class="bio-prompt-chip" data-bio-suggest="Loves mountain photography & stargazing">📸 Photography &amp; Stars</button>
+              <button type="button" class="bio-prompt-chip" data-bio-suggest="Always happy to split guides & local cabs">🤝 Split Cabs &amp; Stays</button>
+            </div>
+          </div>
 
-          <label class="field-label">
-            <span>PAST TREKS & TRAVEL EXPERIENCES</span>
-            <input name="pastTrips" placeholder="e.g. Kedarkantha 2024, Hampta Pass, Goa Backpacker, Triund Hiker" class="stitch-input" value="${escapeHtml(user.pastTrips || state.profile?.pastTrips || '')}" />
-          </label>
+          <!-- Past Treks & Summits -->
+          <div class="profile-past-treks-section">
+            <span class="field-kicker">PAST TREKS &amp; MOUNTAIN EXPERIENCES</span>
+            <div class="input-icon-box">
+              <span class="field-icon">🏔️</span>
+              <input name="pastTrips" placeholder="e.g. Kedarkantha 2024, Hampta Pass, Triund, Kasol Backpacker" class="profile-text-input" value="${escapeHtml(user.pastTrips || state.profile?.pastTrips || '')}" />
+            </div>
+            <div class="treks-quick-suggestions">
+              <span class="prompt-kicker">Popular Summits:</span>
+              <button type="button" class="trek-suggest-chip" data-trek-suggest="Kedarkantha">Kedarkantha</button>
+              <button type="button" class="trek-suggest-chip" data-trek-suggest="Chopta Tungnath">Chopta</button>
+              <button type="button" class="trek-suggest-chip" data-trek-suggest="Hampta Pass">Hampta Pass</button>
+              <button type="button" class="trek-suggest-chip" data-trek-suggest="Valley of Flowers">Valley of Flowers</button>
+              <button type="button" class="trek-suggest-chip" data-trek-suggest="Triund">Triund</button>
+              <button type="button" class="trek-suggest-chip" data-trek-suggest="Spiti Valley">Spiti</button>
+            </div>
+          </div>
 
           <hr class="form-divider-line" />
 
           <!-- Section 2: Preferred Travel Style -->
-          <div class="card-section-title">
-            <span>🎒</span>
-            <span>Preferred Travel Style</span>
+          <div class="profile-section-header">
+            <div class="section-icon-badge">🎒</div>
+            <div class="section-title-group">
+              <h2>Preferred Travel Style</h2>
+              <p>Match with trekkers who share your travel pace, budget, and group dynamic</p>
+            </div>
           </div>
 
           <div class="interactive-style-grid">
             <button type="button" class="style-choice-card ${currentTravelStyle === 'Solo' ? 'active' : ''}" data-profile-style-val="Solo">
-              <span class="style-card-icon">🎒</span>
-              <div class="style-card-text">
+              <div class="style-choice-icon-wrap">🥾</div>
+              <div class="style-choice-text">
                 <strong>Solo Trekker</strong>
-                <small>Independent & flexible</small>
+                <p>Independent hiking, split local cabs &amp; meet companions on trail</p>
               </div>
-              <div class="style-check-circle">✓</div>
+              <div class="style-choice-check">✓</div>
             </button>
 
             <button type="button" class="style-choice-card ${currentTravelStyle === 'Group' ? 'active' : ''}" data-profile-style-val="Group">
-              <span class="style-card-icon">👥</span>
-              <div class="style-card-text">
+              <div class="style-choice-icon-wrap">👥</div>
+              <div class="style-choice-text">
                 <strong>Group Squad</strong>
-                <small>Social & campfire vibes</small>
+                <p>Social vibe, split guides, campfire nights &amp; group games</p>
               </div>
-              <div class="style-check-circle">✓</div>
+              <div class="style-choice-check">✓</div>
             </button>
 
             <button type="button" class="style-choice-card ${currentTravelStyle === 'Luxury' ? 'active' : ''}" data-profile-style-val="Luxury">
-              <span class="style-card-icon">✨</span>
-              <div class="style-card-text">
-                <strong>Comfort Trek</strong>
-                <small>Curated & scenic stays</small>
+              <div class="style-choice-icon-wrap">✨</div>
+              <div class="style-choice-text">
+                <strong>Comfort &amp; Stay</strong>
+                <p>Curated stays, private tents, scenic cottages &amp; relaxed tempo</p>
               </div>
-              <div class="style-check-circle">✓</div>
+              <div class="style-choice-check">✓</div>
             </button>
 
             <button type="button" class="style-choice-card ${currentTravelStyle === 'Budget' ? 'active' : ''}" data-profile-style-val="Budget">
-              <span class="style-card-icon">⛺</span>
-              <div class="style-card-text">
+              <div class="style-choice-icon-wrap">⛺</div>
+              <div class="style-choice-text">
                 <strong>Backpacker</strong>
-                <small>Budget & cost-sharing</small>
+                <p>Budget homestays, public buses, cost-sharing &amp; light packing</p>
               </div>
-              <div class="style-check-circle">✓</div>
+              <div class="style-choice-check">✓</div>
             </button>
           </div>
           <input type="hidden" name="travelStyle" id="profileTravelStyleInput" value="${escapeHtml(currentTravelStyle)}" />
@@ -2371,9 +2475,12 @@ function profilePage() {
           <hr class="form-divider-line" />
 
           <!-- Section 3: Interests & Trail Vibes -->
-          <div class="card-section-title">
-            <span>✨</span>
-            <span>Your Travel Interests & Trail Vibes (Select All That Apply)</span>
+          <div class="profile-section-header">
+            <div class="section-icon-badge">✨</div>
+            <div class="section-title-group">
+              <h2>Trail Interests &amp; Vibes</h2>
+              <p>Select activities and interests that elevate your mountain trips</p>
+            </div>
           </div>
 
           <div class="interests-tags-grid">
@@ -2396,9 +2503,12 @@ function profilePage() {
           <hr class="form-divider-line" />
 
           <!-- Section 4: Typical Trip Budget Preference -->
-          <div class="card-section-title">
-            <span>💳</span>
-            <span>Budget Preference</span>
+          <div class="profile-section-header">
+            <div class="section-icon-badge">💳</div>
+            <div class="section-title-group">
+              <h2>Typical Trip Budget Preference</h2>
+              <p>Helps match companions with aligned spending on stays and transit</p>
+            </div>
           </div>
 
           <div class="budget-chips-grid">
@@ -2408,33 +2518,37 @@ function profilePage() {
                 class="budget-chip-card ${currentBudget === opt.value ? 'active' : ''}"
                 data-profile-budget-val="${escapeHtml(opt.value)}"
               >
-                <strong>${escapeHtml(opt.title)}</strong>
+                <div class="budget-card-top">
+                  <strong>${escapeHtml(opt.title)}</strong>
+                  <span class="budget-check-badge">✓</span>
+                </div>
                 <small>${escapeHtml(opt.desc)}</small>
               </button>
             `).join('')}
           </div>
           <input type="hidden" name="budgetRange" id="profileBudgetInput" value="${escapeHtml(currentBudget)}" />
 
-          <div style="margin-top: 32px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
-            <button type="submit" class="primary-btn" style="padding: 14px 28px; font-size: 1rem; flex: 1; min-width: 220px;">
-              <span>Save Profile & Plan Trip ➔</span>
+          <div class="profile-form-footer">
+            <button type="submit" class="profile-save-btn" id="saveProfileSubmitBtn">
+              <span class="btn-shine"></span>
+              <span>Save Profile &amp; Plan Trip ➔</span>
             </button>
-            <a href="#/preferences" class="ghost-btn" style="padding: 14px 20px;">Skip to Trip Dates</a>
+            <a href="#/preferences" class="profile-skip-link">Plan Trip &amp; Dates ➔</a>
           </div>
         </div>
       </form>
 
       ${state.user ? `
         <!-- Device Session Card with Direct Log Out -->
-        <div class="profile-session-logout-card animate-fade-in" style="margin-top: 24px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: var(--radius-xl); padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-          <div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 1.15rem;">🔒</span>
-              <strong style="color: #991b1b; font-size: 0.95rem;">Active Device Session</strong>
+        <div class="profile-session-logout-card animate-fade-in">
+          <div class="session-info-left">
+            <div class="session-badge">
+              <span class="session-icon">🔒</span>
+              <strong>Active Device Session</strong>
             </div>
-            <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: #7f1d1d;">Signed in as <strong>${escapeHtml(user.fullName || 'Traveler')}</strong> (${escapeHtml(user.email || user.phone || 'Active Session')})</p>
+            <p>Signed in as <strong>${escapeHtml(user.fullName || 'Traveler')}</strong> (${escapeHtml(user.email || user.phone || 'Active Session')})</p>
           </div>
-          <button type="button" class="action-logout-btn" id="profilePageLogoutBtn" style="background: #dc2626; color: #ffffff; border: none; padding: 10px 22px; font-weight: 800; border-radius: var(--radius-full); cursor: pointer; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);">
+          <button type="button" class="profile-logout-btn" id="profilePageLogoutBtn">
             <span>🚪 Log Out from Device</span>
           </button>
         </div>
@@ -6907,6 +7021,8 @@ function hydrateUI() {
       if (input) input.value = val;
       document.querySelectorAll('[data-profile-style-val]').forEach((c) => c.classList.remove('active'));
       card.classList.add('active');
+      const previewStyle = document.getElementById('previewTrekkerStyle');
+      if (previewStyle) previewStyle.textContent = '🥾 ' + val;
     });
   });
 
@@ -6918,6 +7034,56 @@ function hydrateUI() {
       if (input) input.value = val;
       document.querySelectorAll('[data-profile-budget-val]').forEach((c) => c.classList.remove('active'));
       card.classList.add('active');
+    });
+  });
+
+  // Live Trekker Passport Card Preview updates
+  const profileFullNameInput = document.querySelector('input[name="fullName"]');
+  if (profileFullNameInput) {
+    profileFullNameInput.addEventListener('input', (e) => {
+      const val = e.target.value.trim();
+      const previewName = document.getElementById('previewTrekkerName');
+      if (previewName) previewName.textContent = val || 'Your Name';
+    });
+  }
+
+  const profileCityInput = document.querySelector('input[name="city"]');
+  if (profileCityInput) {
+    profileCityInput.addEventListener('input', (e) => {
+      const val = e.target.value.trim();
+      const previewCity = document.getElementById('previewTrekkerCity');
+      if (previewCity) previewCity.textContent = '📍 ' + (val || 'Base City');
+    });
+  }
+
+  // Quick Bio Suggestions
+  document.querySelectorAll('[data-bio-suggest]').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const bioTextarea = document.querySelector('textarea[name="bio"]');
+      if (bioTextarea) {
+        const text = chip.getAttribute('data-bio-suggest');
+        if (bioTextarea.value && !bioTextarea.value.includes(text)) {
+          bioTextarea.value += (bioTextarea.value.endsWith(' ') ? '' : ' ') + text + '.';
+        } else if (!bioTextarea.value) {
+          bioTextarea.value = text + '.';
+        }
+      }
+    });
+  });
+
+  // Quick Past Trek Suggestions
+  document.querySelectorAll('[data-trek-suggest]').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const trekInput = document.querySelector('input[name="pastTrips"]');
+      if (trekInput) {
+        const text = chip.getAttribute('data-trek-suggest');
+        const cur = trekInput.value.trim();
+        if (cur && !cur.toLowerCase().includes(text.toLowerCase())) {
+          trekInput.value = cur + ', ' + text;
+        } else if (!cur) {
+          trekInput.value = text;
+        }
+      }
     });
   });
 
