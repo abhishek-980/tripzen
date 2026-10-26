@@ -2196,21 +2196,46 @@ function destinationCards(selected) {
 
 function profilePage() {
   const user = state.user || {};
-  const currentAvatar = state.pendingProfileImage || user.profileImage || localStorage.getItem('tripzenUserAvatar') || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(user.fullName || 'Traveler')}`;
-  const currentGender = user.gender || 'Any';
-  const currentTravelStyle = user.travelStyle || state.profile?.travelStyle || 'Solo';
-  const currentBudget = user.budgetRange || state.profile?.budgetRange || '7000-15000';
+  const savedDraft = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('tripzenProfileDraft') || '{}');
+    } catch (e) {
+      return {};
+    }
+  })();
+
+  const currentAvatar =
+    state.pendingProfileImage ||
+    user.profileImage ||
+    savedDraft.profileImage ||
+    localStorage.getItem('tripzenUserAvatar') ||
+    `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(user.fullName || savedDraft.fullName || 'Traveler')}`;
+  const currentGender = user.gender || savedDraft.gender || 'Any';
+  const currentTravelStyle = user.travelStyle || state.profile?.travelStyle || savedDraft.travelStyle || 'Solo';
+  const currentBudget = user.budgetRange || state.profile?.budgetRange || savedDraft.budgetRange || '7000-15000';
   const userInterests = state.selectedInterests && state.selectedInterests.length
     ? state.selectedInterests
-    : (user.interests || state.profile?.interests || ['trekking', 'photography', 'camping']);
+    : (user.interests || state.profile?.interests || savedDraft.interests || ['trekking', 'photography', 'camping']);
+
+  const currentAge = (user.age !== undefined && user.age !== null && String(user.age).trim() !== '')
+    ? user.age
+    : ((savedDraft.age !== undefined && savedDraft.age !== null && String(savedDraft.age).trim() !== '')
+      ? savedDraft.age
+      : (localStorage.getItem('tripzenUserAge') || ''));
+
+  const currentName = user.fullName || savedDraft.fullName || '';
+  const currentCity = user.city || savedDraft.city || '';
+  const currentPhone = user.phone || savedDraft.phone || '';
+  const currentBio = state.profile?.bio || user.bio || savedDraft.bio || '';
+  const currentPastTrips = user.pastTrips || state.profile?.pastTrips || savedDraft.pastTrips || '';
 
   // Calculate profile completeness score
   const items = [
-    Boolean(user.fullName && user.fullName.trim()),
-    Boolean(user.city && user.city.trim()),
-    Boolean(user.phone && user.phone.trim()),
-    Boolean((user.bio || state.profile?.bio || '').trim()),
-    Boolean((user.pastTrips || state.profile?.pastTrips || '').trim()),
+    Boolean(currentName && currentName.trim()),
+    Boolean(currentCity && currentCity.trim()),
+    Boolean(currentPhone && currentPhone.trim()),
+    Boolean((currentBio).trim()),
+    Boolean((currentPastTrips).trim()),
     Boolean(currentAvatar && !currentAvatar.includes('seed=Traveler')),
   ];
   const completedCount = items.filter(Boolean).length;
@@ -2219,11 +2244,11 @@ function profilePage() {
   let tipMessage = 'Add bio & past summits to reach 100%';
   if (profileScore >= 100) {
     tipMessage = 'All-Star profile! Ready for mountain trails';
-  } else if (!user.bio && !user.pastTrips) {
+  } else if (!currentBio && !currentPastTrips) {
     tipMessage = 'Add bio & past summits to reach 100%';
-  } else if (!user.pastTrips) {
+  } else if (!currentPastTrips) {
     tipMessage = 'Add past mountain treks to reach 100%';
-  } else if (!user.bio) {
+  } else if (!currentBio) {
     tipMessage = 'Add a short bio to reach 100%';
   } else {
     tipMessage = 'Complete remaining details to reach 100%';
@@ -2236,7 +2261,7 @@ function profilePage() {
         <div class="profile-header-info">
           <span class="profile-header-tag">EXPLORER PROFILE</span>
           <h1 class="profile-header-title">
-            ${user.fullName ? 'Your Trekker Profile' : 'Create Your Trekker Profile'}
+            ${currentName ? 'Your Trekker Profile' : 'Create Your Trekker Profile'}
           </h1>
           <p class="profile-header-sub">
             Set up your public mountain identity and preferences to connect with verified companions.
@@ -2270,9 +2295,9 @@ function profilePage() {
             </div>
 
             <div class="trekker-card-meta">
-              <h3 id="previewTrekkerName" class="trekker-card-name">${escapeHtml(user.fullName || 'Your Name')}</h3>
+              <h3 id="previewTrekkerName" class="trekker-card-name">${escapeHtml(currentName || 'Your Name')}</h3>
               <div class="trekker-card-sub">
-                <span id="previewTrekkerCity">📍 ${escapeHtml(user.city || 'Base City')}</span>
+                <span id="previewTrekkerCity">📍 ${escapeHtml(currentCity || 'Base City')}</span>
                 <span class="trekker-card-sep">•</span>
                 <span id="previewTrekkerStyle" class="trekker-card-style">🥾 ${escapeHtml(currentTravelStyle)}</span>
               </div>
@@ -2351,7 +2376,7 @@ function profilePage() {
               <span class="field-kicker">FULL NAME *</span>
               <div class="input-icon-box">
                 <span class="field-icon">👤</span>
-                <input name="fullName" placeholder="e.g. Elena Rostova" class="profile-text-input" value="${escapeHtml(user.fullName || '')}" required />
+                <input name="fullName" placeholder="e.g. Elena Rostova" class="profile-text-input" value="${escapeHtml(currentName)}" required />
               </div>
             </label>
 
@@ -2359,7 +2384,7 @@ function profilePage() {
               <span class="field-kicker">AGE</span>
               <div class="input-icon-box">
                 <span class="field-icon">🎂</span>
-                <input name="age" type="number" min="18" max="99" placeholder="26" class="profile-text-input" value="${escapeHtml(user.age || '26')}" />
+                <input name="age" type="number" min="18" max="99" placeholder="21" class="profile-text-input" value="${escapeHtml(currentAge)}" />
               </div>
             </label>
           </div>
@@ -2370,7 +2395,7 @@ function profilePage() {
               <span class="field-kicker">CURRENT BASE / CITY</span>
               <div class="input-icon-box">
                 <span class="field-icon">📍</span>
-                <input name="city" placeholder="e.g. Bangalore, Delhi, Mumbai, Pune" class="profile-text-input" value="${escapeHtml(user.city || '')}" />
+                <input name="city" placeholder="e.g. Bangalore, Delhi, Mumbai, Pune" class="profile-text-input" value="${escapeHtml(currentCity)}" />
               </div>
             </label>
 
@@ -2378,7 +2403,7 @@ function profilePage() {
               <span class="field-kicker">MOBILE / WHATSAPP NUMBER</span>
               <div class="input-icon-box">
                 <span class="field-icon">📱</span>
-                <input name="phone" type="tel" placeholder="+91 98765 43210" class="profile-text-input" value="${escapeHtml(user.phone || '')}" />
+                <input name="phone" type="tel" placeholder="+91 98765 43210" class="profile-text-input" value="${escapeHtml(currentPhone)}" />
               </div>
             </label>
           </div>
@@ -2406,7 +2431,7 @@ function profilePage() {
               <span class="field-kicker">ABOUT YOU (BIO &amp; PACE)</span>
               <span class="bio-counter" id="bioCharCounter">Personal bio</span>
             </div>
-            <textarea name="bio" rows="3" placeholder="Tell other travelers about yourself, your pace, morning vs night habits, camping spirit, and what makes you a great travel buddy..." class="profile-textarea-input">${escapeHtml(state.profile?.bio || user.bio || '')}</textarea>
+            <textarea name="bio" rows="3" placeholder="Tell other travelers about yourself, your pace, morning vs night habits, camping spirit, and what makes you a great travel buddy..." class="profile-textarea-input">${escapeHtml(currentBio)}</textarea>
             <div class="bio-quick-prompts">
               <span class="prompt-kicker">Quick Add:</span>
               <button type="button" class="bio-prompt-chip" data-bio-suggest="Steady moderate pace hiker">🥾 Moderate Pace</button>
@@ -2421,7 +2446,7 @@ function profilePage() {
             <span class="field-kicker">PAST TREKS &amp; MOUNTAIN EXPERIENCES</span>
             <div class="input-icon-box">
               <span class="field-icon">🏔️</span>
-              <input name="pastTrips" placeholder="e.g. Kedarkantha 2024, Hampta Pass, Triund, Kasol Backpacker" class="profile-text-input" value="${escapeHtml(user.pastTrips || state.profile?.pastTrips || '')}" />
+              <input name="pastTrips" placeholder="e.g. Kedarkantha 2024, Hampta Pass, Triund, Kasol Backpacker" class="profile-text-input" value="${escapeHtml(currentPastTrips)}" />
             </div>
             <div class="treks-quick-suggestions">
               <span class="prompt-kicker">Popular Summits:</span>
@@ -4445,6 +4470,20 @@ function authPage() {
   const isForgotPassword = state.authMode === 'forgot_password';
   const isLogin = !isSignup && !isForgotPassword;
 
+  const savedDraft = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('tripzenProfileDraft') || '{}');
+    } catch (e) {
+      return {};
+    }
+  })();
+  const draftAge = (savedDraft.age !== undefined && savedDraft.age !== null && String(savedDraft.age).trim() !== '')
+    ? savedDraft.age
+    : (localStorage.getItem('tripzenUserAge') || '21');
+  const draftName = savedDraft.fullName || '';
+  const draftCity = savedDraft.city || '';
+  const draftPhone = savedDraft.phone || '';
+
   let headerTitle = 'Welcome Back';
   let headerSubtitle = 'Sign in to access your travel matches and group trips';
   if (isSignup) {
@@ -4564,14 +4603,14 @@ function authPage() {
                   <div class="auth-two-col-row responsive-stack">
                     <label class="field-label">
                       <span>FULL NAME</span>
-                      <input name="fullName" required placeholder="Aarav Mehta" class="stitch-input" />
+                      <input name="fullName" required placeholder="Aarav Mehta" class="stitch-input" value="${escapeHtml(draftName)}" />
                     </label>
 
                     <label class="field-label">
                       <span>MOBILE NUMBER</span>
                       <div class="phone-input-group">
                         <span class="phone-prefix-addon">🇮🇳 +91</span>
-                        <input name="phone" type="tel" autocomplete="tel" placeholder="98765 43210" class="stitch-input phone-input-field" />
+                        <input name="phone" type="tel" autocomplete="tel" placeholder="98765 43210" class="stitch-input phone-input-field" value="${escapeHtml(draftPhone)}" />
                       </div>
                     </label>
                   </div>
@@ -4594,12 +4633,12 @@ function authPage() {
                   <div class="auth-two-col-row">
                     <label class="field-label">
                       <span>CURRENT CITY</span>
-                      <input name="city" placeholder="Mumbai / Delhi / Bengaluru" class="stitch-input" />
+                      <input name="city" placeholder="Mumbai / Delhi / Bengaluru" class="stitch-input" value="${escapeHtml(draftCity)}" />
                     </label>
 
                     <label class="field-label">
                       <span>AGE</span>
-                      <input name="age" type="number" min="16" max="90" placeholder="26" class="stitch-input" />
+                      <input name="age" type="number" min="16" max="90" placeholder="21" class="stitch-input" value="${escapeHtml(draftAge)}" />
                     </label>
                   </div>
 
@@ -5006,8 +5045,19 @@ async function loadSession() {
     const data = await api(`/api/session/${userId}`);
     state.user = data.user || null;
     state.profile = data.profile || null;
-    if (state.user && state.user.profileImage) {
-      localStorage.setItem('tripzenUserAvatar', state.user.profileImage);
+    if (state.user) {
+      if (state.user.profileImage) {
+        localStorage.setItem('tripzenUserAvatar', state.user.profileImage);
+      } else {
+        const storedAvatar = localStorage.getItem('tripzenUserAvatar');
+        if (storedAvatar) state.user.profileImage = storedAvatar;
+      }
+      if (state.user.age) {
+        localStorage.setItem('tripzenUserAge', state.user.age);
+      } else {
+        const storedAge = localStorage.getItem('tripzenUserAge');
+        if (storedAge) state.user.age = storedAge;
+      }
     }
   } catch (error) {
     localStorage.removeItem('tripzenUserId');
@@ -5696,8 +5746,67 @@ async function handleAuthSubmit(event) {
     if (data.user && data.user.profileImage) {
       localStorage.setItem('tripzenUserAvatar', data.user.profileImage);
     }
+    if (data.user && data.user.age) {
+      localStorage.setItem('tripzenUserAge', data.user.age);
+    }
     state.user = data.user;
     state.profile = data.profile || null;
+
+    // Check if user edited their profile before logging in/registering, and sync it to the server
+    const savedDraft = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('tripzenProfileDraft') || '{}');
+      } catch (e) {
+        return {};
+      }
+    })();
+
+    const draftAge = savedDraft.age || localStorage.getItem('tripzenUserAge');
+    const draftAvatar = savedDraft.profileImage || localStorage.getItem('tripzenUserAvatar');
+    const hasPendingEdits = Boolean(
+      (draftAge && draftAge !== data.user.age) ||
+      (draftAvatar && !draftAvatar.includes('seed=Traveler') && draftAvatar !== data.user.profileImage) ||
+      (savedDraft.fullName && savedDraft.fullName !== data.user.fullName) ||
+      (savedDraft.city && savedDraft.city !== data.user.city) ||
+      (savedDraft.bio && savedDraft.bio !== data.user.bio) ||
+      (savedDraft.pastTrips && savedDraft.pastTrips !== data.user.pastTrips)
+    );
+
+    if (hasPendingEdits) {
+      try {
+        const syncRes = await api('/api/profile', 'POST', {
+          userId: data.user.id,
+          fullName: savedDraft.fullName || data.user.fullName,
+          age: draftAge || data.user.age,
+          city: savedDraft.city || data.user.city,
+          phone: savedDraft.phone || data.user.phone,
+          gender: savedDraft.gender || data.user.gender,
+          travelStyle: savedDraft.travelStyle || data.user.travelStyle,
+          interests: (savedDraft.interests && savedDraft.interests.length) ? savedDraft.interests : data.user.interests,
+          bio: savedDraft.bio || data.user.bio,
+          pastTrips: savedDraft.pastTrips || data.user.pastTrips,
+          budgetRange: savedDraft.budgetRange || data.user.budgetRange,
+          profileImage: draftAvatar || data.user.profileImage,
+        });
+        if (syncRes && syncRes.user) {
+          state.user = syncRes.user;
+          data.user = syncRes.user;
+          if (syncRes.profile) {
+            state.profile = syncRes.profile;
+            data.profile = syncRes.profile;
+          }
+          if (state.user.profileImage) {
+            localStorage.setItem('tripzenUserAvatar', state.user.profileImage);
+          }
+          if (state.user.age) {
+            localStorage.setItem('tripzenUserAge', state.user.age);
+          }
+        }
+      } catch (syncErr) {
+        console.warn('Profile draft sync failed after auth:', syncErr);
+      }
+    }
+
     state.authStatusType = 'success';
     state.authStatus = 'Logged in successfully! Welcome back.';
     requestBrowserNotificationPermission();
@@ -5727,6 +5836,101 @@ async function handleAuthSubmit(event) {
   }
 }
 
+function saveProfileDraft() {
+  const form = document.getElementById('profileCreationForm');
+  const currentDraft = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('tripzenProfileDraft') || '{}');
+    } catch (e) {
+      return {};
+    }
+  })();
+
+  const fullName = form ? (form.querySelector('input[name="fullName"]')?.value || '').trim() : '';
+  const age = form ? (form.querySelector('input[name="age"]')?.value || '').trim() : '';
+  const city = form ? (form.querySelector('input[name="city"]')?.value || '').trim() : '';
+  const phone = form ? (form.querySelector('input[name="phone"]')?.value || '').trim() : '';
+  const bio = form ? (form.querySelector('textarea[name="bio"]')?.value || '').trim() : '';
+  const pastTrips = form ? (form.querySelector('input[name="pastTrips"]')?.value || '').trim() : '';
+  const gender = form ? (form.querySelector('input[name="gender"]')?.value || '').trim() : '';
+  const travelStyle = form ? (form.querySelector('input[name="travelStyle"]')?.value || '').trim() : '';
+  const budgetRange = form ? (form.querySelector('input[name="budgetRange"]')?.value || '').trim() : '';
+  const profileImage =
+    state.pendingProfileImage ||
+    (document.getElementById('profileImageHiddenInput') ? document.getElementById('profileImageHiddenInput').value : '') ||
+    state.user?.profileImage ||
+    localStorage.getItem('tripzenUserAvatar') ||
+    '';
+
+  const activeInterests = state.selectedInterests && state.selectedInterests.length
+    ? state.selectedInterests
+    : Array.from(document.querySelectorAll('.interest-tag-pill.active')).map((btn) => btn.getAttribute('data-interest-name') || btn.textContent.trim());
+
+  const newDraft = {
+    ...currentDraft,
+    fullName: fullName || currentDraft.fullName || '',
+    age: age || currentDraft.age || '',
+    city: city || currentDraft.city || '',
+    phone: phone || currentDraft.phone || '',
+    bio: bio || currentDraft.bio || '',
+    pastTrips: pastTrips || currentDraft.pastTrips || '',
+    gender: gender || currentDraft.gender || 'Any',
+    travelStyle: travelStyle || currentDraft.travelStyle || 'Solo',
+    budgetRange: budgetRange || currentDraft.budgetRange || '7000-15000',
+    interests: activeInterests.length ? activeInterests : (currentDraft.interests || []),
+    profileImage: profileImage || currentDraft.profileImage || '',
+    savedAt: new Date().toISOString(),
+  };
+
+  localStorage.setItem('tripzenProfileDraft', JSON.stringify(newDraft));
+  if (age) localStorage.setItem('tripzenUserAge', age);
+  if (profileImage) localStorage.setItem('tripzenUserAvatar', profileImage);
+
+  return newDraft;
+}
+
+let autoSaveProfileTimer = null;
+function triggerAutoSaveProfile(delay = 600) {
+  saveProfileDraft();
+  if (!state.user || !state.user.id) return;
+  if (autoSaveProfileTimer) clearTimeout(autoSaveProfileTimer);
+  autoSaveProfileTimer = setTimeout(async () => {
+    const form = document.getElementById('profileCreationForm');
+    if (!form) return;
+    const payload = Object.fromEntries(new FormData(form).entries());
+    const chosenProfileImage =
+      state.pendingProfileImage ||
+      (document.getElementById('profileImageHiddenInput') ? document.getElementById('profileImageHiddenInput').value : '') ||
+      state.user?.profileImage ||
+      localStorage.getItem('tripzenUserAvatar') ||
+      '';
+    const activeInterests = state.selectedInterests && state.selectedInterests.length
+      ? state.selectedInterests
+      : Array.from(document.querySelectorAll('.interest-tag-pill.active')).map((btn) => btn.getAttribute('data-interest-name') || btn.textContent.trim());
+
+    try {
+      const data = await api('/api/profile', 'POST', {
+        ...payload,
+        userId: state.user.id,
+        profileImage: chosenProfileImage,
+        interests: activeInterests,
+      });
+      if (data && data.user) {
+        state.user = data.user;
+        if (data.profile) state.profile = data.profile;
+        if (state.user.profileImage) {
+          localStorage.setItem('tripzenUserAvatar', state.user.profileImage);
+        }
+        if (state.user.age) {
+          localStorage.setItem('tripzenUserAge', state.user.age);
+        }
+      }
+    } catch (err) {
+      console.warn('Auto-save profile draft background error:', err);
+    }
+  }, delay);
+}
+
 async function handleProfileSubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -5743,6 +5947,27 @@ async function handleProfileSubmit(event) {
     ? state.selectedInterests
     : Array.from(document.querySelectorAll('.interest-tag-pill.active')).map((btn) => btn.getAttribute('data-interest-name') || btn.textContent.trim());
 
+  // Save draft locally right away
+  saveProfileDraft();
+  if (chosenProfileImage) {
+    localStorage.setItem('tripzenUserAvatar', chosenProfileImage);
+  }
+  if (payload.age) {
+    localStorage.setItem('tripzenUserAge', payload.age);
+  }
+
+  // If user is not logged in, inform them and route to auth to link changes permanently
+  if (!state.user || !state.user.id) {
+    state.profileStatusType = 'info';
+    state.profileStatus = 'Profile changes saved! Create an account or sign in to activate your profile on the network.';
+    renderApp();
+    setTimeout(() => {
+      state.authMode = 'signup';
+      routeTo('/auth');
+    }, 600);
+    return;
+  }
+
   try {
     const data = await api('/api/profile', 'POST', {
       ...payload,
@@ -5755,6 +5980,9 @@ async function handleProfileSubmit(event) {
     if (data.profile) state.profile = data.profile;
     if (state.user && state.user.profileImage) {
       localStorage.setItem('tripzenUserAvatar', state.user.profileImage);
+    }
+    if (state.user && state.user.age) {
+      localStorage.setItem('tripzenUserAge', state.user.age);
     }
     state.pendingProfileImage = '';
     state.profileStatusType = 'success';
@@ -6809,7 +7037,6 @@ function compressImageFile(file, maxWidth = 380, maxHeight = 380, quality = 0.82
 
 function handleLogout() {
   localStorage.removeItem('tripzenUserId');
-  localStorage.removeItem('tripzenUserAvatar');
   sessionStorage.removeItem('tripzenAdminUnlocked');
   sessionStorage.removeItem('tripzenAdminPassword');
   state.adminUnlocked = false;
@@ -6893,6 +7120,7 @@ function hydrateUI() {
       if (cameraIconPlaceholder) {
         cameraIconPlaceholder.style.display = 'none';
       }
+      saveProfileDraft();
       updateLiveProfileStrength();
 
       // Auto-persist immediately if user is active
@@ -6921,16 +7149,36 @@ function hydrateUI() {
 
   // Preset Avatar Pickers
   document.querySelectorAll('[data-preset-avatar]').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const avatarUrl = btn.getAttribute('data-preset-avatar');
       state.pendingProfileImage = avatarUrl;
+      localStorage.setItem('tripzenUserAvatar', avatarUrl);
       const largePreview = document.getElementById('profileImageLargePreview');
       if (largePreview) largePreview.src = avatarUrl;
       const hiddenInput = document.getElementById('profileImageHiddenInput');
       if (hiddenInput) hiddenInput.value = avatarUrl;
+      document.querySelectorAll('.sidebar-user-avatar').forEach((img) => { img.src = avatarUrl; });
       document.querySelectorAll('[data-preset-avatar]').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
+      saveProfileDraft();
       updateLiveProfileStrength();
+
+      // Auto-persist immediately if user is logged in
+      if (state.user && state.user.id) {
+        state.user.profileImage = avatarUrl;
+        try {
+          const uploadRes = await api('/api/upload-avatar', 'POST', {
+            userId: state.user.id,
+            image: avatarUrl,
+          });
+          if (uploadRes && uploadRes.profileImage) {
+            state.user.profileImage = uploadRes.profileImage;
+            localStorage.setItem('tripzenUserAvatar', uploadRes.profileImage);
+          }
+        } catch (err) {
+          console.error('Preset avatar upload failed:', err);
+        }
+      }
     });
   });
 
@@ -6942,6 +7190,7 @@ function hydrateUI() {
       if (check) check.textContent = btn.classList.contains('active') ? '✓' : '+';
       const activeInterests = Array.from(document.querySelectorAll('.interest-tag-pill.active')).map((b) => b.getAttribute('data-interest-name') || b.textContent.trim());
       state.selectedInterests = activeInterests;
+      triggerAutoSaveProfile(100);
     });
   });
 
@@ -6953,6 +7202,7 @@ function hydrateUI() {
       if (input) input.value = val;
       document.querySelectorAll('[data-profile-gender-val]').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
+      triggerAutoSaveProfile(100);
     });
   });
 
@@ -6966,6 +7216,7 @@ function hydrateUI() {
       card.classList.add('active');
       const previewStyle = document.getElementById('previewTrekkerStyle');
       if (previewStyle) previewStyle.textContent = '🥾 ' + val;
+      triggerAutoSaveProfile(100);
     });
   });
 
@@ -6977,6 +7228,7 @@ function hydrateUI() {
       if (input) input.value = val;
       document.querySelectorAll('[data-profile-budget-val]').forEach((c) => c.classList.remove('active'));
       card.classList.add('active');
+      triggerAutoSaveProfile(100);
     });
   });
 
@@ -7026,7 +7278,7 @@ function hydrateUI() {
     }
   }
 
-  // Live Trekker Passport Card Preview updates
+  // Live Trekker Passport Card Preview updates & Auto-Save
   const profileFullNameInput = document.querySelector('input[name="fullName"]');
   if (profileFullNameInput) {
     profileFullNameInput.addEventListener('input', (e) => {
@@ -7034,7 +7286,20 @@ function hydrateUI() {
       const previewName = document.getElementById('previewTrekkerName');
       if (previewName) previewName.textContent = val || 'Your Name';
       updateLiveProfileStrength();
+      triggerAutoSaveProfile(500);
     });
+    profileFullNameInput.addEventListener('blur', () => triggerAutoSaveProfile(0));
+  }
+
+  const profileAgeInput = document.querySelector('input[name="age"]');
+  if (profileAgeInput) {
+    profileAgeInput.addEventListener('input', (e) => {
+      const val = e.target.value.trim();
+      if (val) localStorage.setItem('tripzenUserAge', val);
+      updateLiveProfileStrength();
+      triggerAutoSaveProfile(500);
+    });
+    profileAgeInput.addEventListener('blur', () => triggerAutoSaveProfile(0));
   }
 
   const profileCityInput = document.querySelector('input[name="city"]');
@@ -7044,28 +7309,36 @@ function hydrateUI() {
       const previewCity = document.getElementById('previewTrekkerCity');
       if (previewCity) previewCity.textContent = '📍 ' + (val || 'Base City');
       updateLiveProfileStrength();
+      triggerAutoSaveProfile(500);
     });
+    profileCityInput.addEventListener('blur', () => triggerAutoSaveProfile(0));
   }
 
   const profilePhoneInput = document.querySelector('input[name="phone"]');
   if (profilePhoneInput) {
     profilePhoneInput.addEventListener('input', () => {
       updateLiveProfileStrength();
+      triggerAutoSaveProfile(500);
     });
+    profilePhoneInput.addEventListener('blur', () => triggerAutoSaveProfile(0));
   }
 
   const profileBioInput = document.querySelector('textarea[name="bio"]');
   if (profileBioInput) {
     profileBioInput.addEventListener('input', () => {
       updateLiveProfileStrength();
+      triggerAutoSaveProfile(500);
     });
+    profileBioInput.addEventListener('blur', () => triggerAutoSaveProfile(0));
   }
 
   const profilePastTripsInput = document.querySelector('input[name="pastTrips"]');
   if (profilePastTripsInput) {
     profilePastTripsInput.addEventListener('input', () => {
       updateLiveProfileStrength();
+      triggerAutoSaveProfile(500);
     });
+    profilePastTripsInput.addEventListener('blur', () => triggerAutoSaveProfile(0));
   }
 
   // Quick Bio Suggestions
@@ -7080,6 +7353,7 @@ function hydrateUI() {
           bioTextarea.value = text + '.';
         }
         updateLiveProfileStrength();
+        triggerAutoSaveProfile(100);
       }
     });
   });
@@ -7097,6 +7371,7 @@ function hydrateUI() {
           trekInput.value = text;
         }
         updateLiveProfileStrength();
+        triggerAutoSaveProfile(100);
       }
     });
   });

@@ -284,7 +284,7 @@ function ensureAdminAndSeedData() {
       password: 'abhi@8080',
       role: 'admin',
       city: 'noida',
-      age: '26',
+      age: '21',
       gender: 'Male',
       travelStyle: 'Solo',
       interests: [
@@ -871,7 +871,7 @@ function compatibilityScore(base, candidate) {
 
 
 function sanitizeUser(user) {
-  const profileImg = user.profileImageData || user.profileImage || avatarForUser(user);
+  const profileImg = user.profileImage || user.profileImageData || avatarForUser(user);
   return {
     id: user.id,
     fullName: user.fullName,
@@ -896,7 +896,7 @@ function sanitizeUser(user) {
 function sanitizeProfile(profile) {
   if (!profile) return null;
   const user = (db.users || []).find((u) => u.id === profile.userId);
-  const userImg = (user && (user.profileImageData || user.profileImage)) || '';
+  const userImg = (user && (user.profileImage || user.profileImageData)) || '';
 
   return {
     id: profile.id,
@@ -2038,15 +2038,19 @@ app.post('/api/preferences', (req, res) => {
 
   db.profiles = db.profiles.filter((item) => item.userId !== userId);
   db.profiles.push(profile);
-  const savedProfileImage = persistProfileImage(profileImage, user.id);
-  if (savedProfileImage) {
-    user.profileImage = savedProfileImage;
-    if (profileImage && profileImage.startsWith('data:')) {
-      user.profileImageData = profileImage;
+  if (profileImage) {
+    const rawImage = String(profileImage).trim();
+    if (rawImage.startsWith('data:')) {
+      const savedProfileImage = persistProfileImage(rawImage, user.id);
+      user.profileImage = savedProfileImage;
+      user.profileImageData = rawImage;
+    } else {
+      user.profileImage = rawImage;
+      user.profileImageData = '';
     }
   }
-  if (user.profileImageData || user.profileImage) {
-    profile.profileImage = user.profileImageData || user.profileImage;
+  if (user.profileImage) {
+    profile.profileImage = user.profileImage;
   }
   if (bio !== undefined && normalizeText(bio)) {
     user.bio = normalizeText(bio);
@@ -2085,7 +2089,7 @@ app.post('/api/profile', (req, res) => {
   }
 
   if (normalizeText(fullName)) user.fullName = normalizeText(fullName);
-  if (normalizeText(age)) user.age = normalizeText(age);
+  if (age !== undefined && normalizeText(age)) user.age = normalizeText(age);
   if (normalizeText(gender)) user.gender = normalizeText(gender);
   if (normalizeText(city)) user.city = normalizeText(city);
   if (normalizeText(travelStyle)) user.travelStyle = normalizeText(travelStyle);
@@ -2096,24 +2100,14 @@ app.post('/api/profile', (req, res) => {
   if (phone !== undefined && normalizeText(phone)) user.phone = normalizeText(phone);
 
   if (profileImage) {
-    if (profileImage.startsWith('data:')) {
-      user.profileImageData = profileImage;
-      const savedUrl = persistProfileImage(profileImage, user.id);
-      user.profileImage = user.profileImageData || savedUrl;
-    } else if (profileImage.startsWith('/uploads/')) {
-      user.profileImage = profileImage;
-      if (!user.profileImageData) {
-        const localFileName = path.basename(profileImage);
-        const localFilePath = path.join(UPLOADS_DIR, localFileName);
-        if (fs.existsSync(localFilePath)) {
-          try {
-            const buf = fs.readFileSync(localFilePath);
-            const ext = path.extname(localFileName).toLowerCase();
-            const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
-            user.profileImageData = `data:${mime};base64,` + buf.toString('base64');
-          } catch (e) {}
-        }
-      }
+    const rawImage = String(profileImage).trim();
+    if (rawImage.startsWith('data:')) {
+      const savedUrl = persistProfileImage(rawImage, user.id);
+      user.profileImage = savedUrl;
+      user.profileImageData = rawImage;
+    } else {
+      user.profileImage = rawImage;
+      user.profileImageData = '';
     }
   }
 
@@ -2125,7 +2119,7 @@ app.post('/api/profile', (req, res) => {
     if (travelStyle) profile.travelStyle = normalizeText(travelStyle);
     if (pastTrips) profile.pastTrips = normalizeText(pastTrips);
     if (budgetRange) profile.budgetRange = normalizeText(budgetRange);
-    profile.profileImage = user.profileImageData || user.profileImage || profile.profileImage;
+    if (user.profileImage) profile.profileImage = user.profileImage;
     profile.updatedAt = new Date().toISOString();
   } else {
     profile = {
@@ -2133,15 +2127,15 @@ app.post('/api/profile', (req, res) => {
       userId: user.id,
       fullName: user.fullName,
       destination: 'Chopta Tungnath',
-      startDate: '2026-10-15',
-      endDate: '2026-10-20',
+      startDate: new Date().toISOString().slice(0, 10),
+      endDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
       travelStyle: user.travelStyle || 'Solo',
       budgetRange: user.budgetRange || '5000-9000',
       genderPreference: 'Any',
       interests: user.interests || ['trekking'],
       bio: user.bio || '',
       pastTrips: user.pastTrips || '',
-      profileImage: user.profileImageData || user.profileImage || '',
+      profileImage: user.profileImage || '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -2176,15 +2170,19 @@ app.post('/api/upload-avatar', (req, res) => {
     });
   }
 
-  if (image.startsWith('data:')) {
-    user.profileImageData = image;
+  const rawImage = String(image).trim();
+  if (rawImage.startsWith('data:')) {
+    const savedUrl = persistProfileImage(rawImage, user.id);
+    user.profileImage = savedUrl;
+    user.profileImageData = rawImage;
+  } else {
+    user.profileImage = rawImage;
+    user.profileImageData = '';
   }
-  const savedUrl = persistProfileImage(image, user.id);
-  user.profileImage = user.profileImageData || savedUrl;
 
   let profile = latestProfilesPerUser().find((item) => item.userId === user.id);
   if (profile) {
-    profile.profileImage = user.profileImageData || savedUrl;
+    profile.profileImage = user.profileImage;
     profile.updatedAt = new Date().toISOString();
   } else {
     profile = {
@@ -2192,15 +2190,15 @@ app.post('/api/upload-avatar', (req, res) => {
       userId: user.id,
       fullName: user.fullName,
       destination: 'Chopta Tungnath',
-      startDate: '2026-10-15',
-      endDate: '2026-10-20',
+      startDate: new Date().toISOString().slice(0, 10),
+      endDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
       travelStyle: user.travelStyle || 'Solo',
       budgetRange: user.budgetRange || '5000-9000',
       genderPreference: 'Any',
       interests: user.interests && user.interests.length ? user.interests : ['trekking', 'photography'],
       bio: user.bio || '',
       pastTrips: user.pastTrips || '',
-      profileImage: user.profileImageData || savedUrl,
+      profileImage: user.profileImage,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -2212,7 +2210,7 @@ app.post('/api/upload-avatar', (req, res) => {
   return res.json({
     success: true,
     message: 'Profile photo updated.',
-    profileImage: user.profileImageData || savedUrl,
+    profileImage: user.profileImage,
     user: sanitizeUser(user),
   });
 });
