@@ -9586,9 +9586,11 @@ video {
    ========================================================================== */
 
 .planner-wrapper {
-  max-width: 1040px;
+  max-width: 1080px;
   margin: 0 auto;
-  padding: 24px 20px 80px;
+  padding: 0 0 60px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Hero Banner with Full Kareri Lake Image across 100% width, no dark sides */
@@ -10734,19 +10736,25 @@ video {
 }
 
 @media (max-width: 768px) {
-  /* 1. Header compression */
+  /* 1. Header compression & Mobile Side Padding Equalization (matches & chat alignment) */
   .planner-wrapper {
-    padding: 12px 10px 48px !important;
+    padding: 0 0 24px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .planner-hero-header {
     flex-direction: column !important;
     align-items: flex-start !important;
-    padding: 14px 14px 12px !important;
+    padding: 16px 14px !important;
     min-height: auto !important;
-    border-radius: 14px !important;
+    border-radius: 16px !important;
     margin-bottom: 12px !important;
     gap: 6px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .planner-hero-content {
@@ -10796,9 +10804,11 @@ video {
 
   /* 2. Step 1 Dates Mobile Optimization */
   .step-box-dates-pro {
-    padding: 14px 12px !important;
+    padding: 16px 14px !important;
     border-radius: 16px !important;
     margin-bottom: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .dates-pro-header {
@@ -10892,9 +10902,11 @@ video {
 
   /* 3. Destination Section */
   .step-box-destination {
-    padding: 12px 10px !important;
-    border-radius: 14px !important;
+    padding: 16px 14px !important;
+    border-radius: 16px !important;
     margin-bottom: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .step-box-destination .step-box-header {
@@ -11066,12 +11078,14 @@ video {
 
   /* Bottom Submit Action Card */
   .planner-bottom-action-card {
-    padding: 12px 14px !important;
-    border-radius: 12px !important;
+    padding: 14px 16px !important;
+    border-radius: 16px !important;
     flex-direction: column !important;
     gap: 10px !important;
     text-align: center !important;
     margin-top: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .action-dest-pill {
