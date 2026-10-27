@@ -1679,6 +1679,9 @@ function routeTo(path) {
     window.location.hash = target;
   }
   if (target === '/chat') {
+    if (state.user && (!state.conversations || state.conversations.length === 0)) {
+      loadConversations().catch(() => {});
+    }
     startFastChatPoll();
   } else {
     stopChatPoll();
@@ -1830,12 +1833,14 @@ function maybeNotifyAboutIncomingMessages(previousConversations, nextConversatio
     const nextMessageId = conversation.latestMessage ? conversation.latestMessage.id : '';
     const isIncoming =
       conversation.latestMessage &&
-      conversation.latestMessage.senderProfileId !== state.profile.id &&
+      ((state.user && conversation.latestMessage.senderUserId)
+        ? conversation.latestMessage.senderUserId !== state.user.id
+        : (state.profile && conversation.latestMessage.senderProfileId !== state.profile.id)) &&
       nextMessageId &&
       nextMessageId !== previousMessageId;
 
     if (isIncoming) {
-      showIncomingNotification(`New message from ${conversation.partner.fullName}`);
+      showIncomingNotification(`New message from ${conversation.partner?.fullName || 'Travel Buddy'}`);
     }
   });
 }
@@ -3024,7 +3029,10 @@ function preferencesPage() {
           <div class="travel-date-picker-card">
             <div class="date-picker-field">
               <label class="date-field-label" for="planStartDate">
-                <span class="field-kicker-text">START / DEPARTURE DATE *</span>
+                <div class="field-kicker-row">
+                  <span class="field-kicker-text">START / DEPARTURE DATE *</span>
+                  <span class="auto-calc-pill start-pill">DEPART</span>
+                </div>
                 <div class="date-input-box">
                   <span class="date-icon">📅</span>
                   <input
@@ -3300,8 +3308,19 @@ function generateMatchCardsMarkup(filteredMatches) {
         match.traveler?.profileImage ||
         `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(travelerName)}`;
 
+      // Check if current user is already connected and chatting with this companion
+      const existingConv = (state.conversations || []).find((c) => {
+        if (!c) return false;
+        if (c.otherProfile && (c.otherProfile.id === match.matchProfileId || c.otherProfile.userId === match.traveler?.id)) return true;
+        if (c.otherUser && (c.otherUser.id === match.traveler?.id || c.otherUser.fullName === travelerName)) return true;
+        if (c.memberProfileIds && c.memberProfileIds.includes(match.matchProfileId)) return true;
+        if (c.memberUserIds && match.traveler?.id && c.memberUserIds.includes(match.traveler.id)) return true;
+        return false;
+      });
+      const isAlreadyChatting = Boolean(existingConv);
+
       return `
-        <div class="stitch-match-card animate-fade-in" data-open-match="${escapeHtml(match.matchProfileId)}">
+        <div class="stitch-match-card ${isAlreadyChatting ? 'is-chatting' : ''} animate-fade-in" data-open-match="${escapeHtml(match.matchProfileId)}">
           <!-- Card Header Banner: Destination scenic photo + Badges -->
           <div class="match-cover-banner">
             <img class="match-cover-img" src="${escapeHtml(coverUrl)}" alt="${escapeHtml(match.destination)}" loading="lazy" />
@@ -3311,9 +3330,15 @@ function generateMatchCardsMarkup(filteredMatches) {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
                 ${escapeHtml(match.destination)}
               </span>
-              <span class="match-score-badge ${match.score >= 90 ? 'high-score' : ''}">
-                <span class="score-sparkle">⚡</span> ${escapeHtml(match.score)}% Match
-              </span>
+              ${isAlreadyChatting ? `
+                <span class="match-connected-feed-pill" title="You are currently chatting with ${escapeHtml(travelerName)}">
+                  <span class="live-dot-pulse"></span> Chatting Now
+                </span>
+              ` : `
+                <span class="match-score-badge ${match.score >= 90 ? 'high-score' : ''}">
+                  <span class="score-sparkle">⚡</span> ${escapeHtml(match.score)}% Match
+                </span>
+              `}
             </div>
           </div>
 
@@ -3367,15 +3392,27 @@ function generateMatchCardsMarkup(filteredMatches) {
               >
                 Profile
               </button>
-              <button
-                type="button"
-                class="match-action-btn primary-btn match-connect-btn"
-                data-connect-profile="${escapeHtml(match.matchProfileId)}"
-                onclick="event.stopPropagation();"
-              >
-                <span class="btn-text-full">Connect ✉️</span>
-                <span class="btn-text-short">Chat ✉️</span>
-              </button>
+              ${isAlreadyChatting ? `
+                <button
+                  type="button"
+                  class="match-action-btn primary-btn match-open-chat-btn"
+                  data-conversation-id="${escapeHtml(existingConv.id)}"
+                  onclick="event.stopPropagation();"
+                >
+                  <span class="btn-text-full">💬 Chatting</span>
+                  <span class="btn-text-short">💬 Chat</span>
+                </button>
+              ` : `
+                <button
+                  type="button"
+                  class="match-action-btn primary-btn match-connect-btn"
+                  data-connect-profile="${escapeHtml(match.matchProfileId)}"
+                  onclick="event.stopPropagation();"
+                >
+                  <span class="btn-text-full">Connect ✉️</span>
+                  <span class="btn-text-short">Chat ✉️</span>
+                </button>
+              `}
             </div>
           </div>
         </div>
@@ -3529,6 +3566,17 @@ function matchProfilePage() {
     : ['High Altitude Trekking', 'Camping', 'Photography', 'Star Gazing']
   );
 
+  // Check if current user is already connected and chatting with this companion
+  const existingConv = (state.conversations || []).find((c) => {
+    if (!c) return false;
+    if (c.otherProfile && (c.otherProfile.id === match.matchProfileId || c.otherProfile.userId === match.traveler?.id)) return true;
+    if (c.otherUser && (c.otherUser.id === match.traveler?.id || c.otherUser.fullName === travelerName)) return true;
+    if (c.memberProfileIds && c.memberProfileIds.includes(match.matchProfileId)) return true;
+    if (c.memberUserIds && match.traveler?.id && c.memberUserIds.includes(match.traveler.id)) return true;
+    return false;
+  });
+  const isAlreadyChatting = Boolean(existingConv);
+
   return `
     <div class="animate-fade-in match-profile-container">
       <div style="margin-bottom: 20px;">
@@ -3555,13 +3603,23 @@ function matchProfilePage() {
             <span class="detail-online-badge" title="Active on TripZen"></span>
           </div>
           <div class="detail-header-actions">
-            <button
-              type="button"
-              class="primary-btn match-connect-btn detail-quick-connect-btn"
-              data-connect-profile="${escapeHtml(match.matchProfileId)}"
-            >
-              <span>Connect &amp; Chat ✉️</span>
-            </button>
+            ${isAlreadyChatting ? `
+              <button
+                type="button"
+                class="primary-btn match-open-chat-btn detail-quick-connect-btn"
+                data-conversation-id="${escapeHtml(existingConv.id)}"
+              >
+                <span>💬 Chatting • Open Chat</span>
+              </button>
+            ` : `
+              <button
+                type="button"
+                class="primary-btn match-connect-btn detail-quick-connect-btn"
+                data-connect-profile="${escapeHtml(match.matchProfileId)}"
+              >
+                <span>Connect &amp; Chat ✉️</span>
+              </button>
+            `}
           </div>
         </div>
 
@@ -3570,6 +3628,7 @@ function matchProfilePage() {
           <div class="detail-name-row">
             <h1>${escapeHtml(travelerName)}${travelerAge ? `, ${escapeHtml(travelerAge)}` : ''}</h1>
             <span class="detail-verified-badge">✓ Verified Traveler</span>
+            ${isAlreadyChatting ? `<span class="detail-chatting-badge">🟢 Connected &amp; Chatting</span>` : ''}
           </div>
           <p class="detail-subtitle">
             <span>📍 Based in ${escapeHtml(travelerCity)}</span>
@@ -3648,13 +3707,23 @@ function matchProfilePage() {
           </div>
 
           <div class="detail-cta-bar">
-            <button
-              type="button"
-              class="primary-btn wide-btn detail-connect-btn"
-              data-connect-profile="${escapeHtml(match.matchProfileId)}"
-            >
-              <span>Connect & Start Chatting ✉️</span>
-            </button>
+            ${isAlreadyChatting ? `
+              <button
+                type="button"
+                class="primary-btn wide-btn match-open-chat-btn"
+                data-conversation-id="${escapeHtml(existingConv.id)}"
+              >
+                <span>💬 You are connected • Open Conversation</span>
+              </button>
+            ` : `
+              <button
+                type="button"
+                class="primary-btn wide-btn detail-connect-btn"
+                data-connect-profile="${escapeHtml(match.matchProfileId)}"
+              >
+                <span>Connect & Start Chatting ✉️</span>
+              </button>
+            `}
           </div>
         </div>
       </div>
@@ -3679,7 +3748,10 @@ function chatPage() {
         .map((conv) => {
           const isActive = currentConversation && currentConversation.id === conv.id;
           const avatarUrl = conv.partner?.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(conv.partner?.fullName || 'User')}`;
-          const isLastFromMe = conv.latestMessage && state.profile && conv.latestMessage.senderProfileId === state.profile.id;
+          const isLastFromMe = conv.latestMessage && (
+            (state.user && conv.latestMessage.senderUserId && conv.latestMessage.senderUserId === state.user.id) ||
+            (state.profile && conv.latestMessage.senderProfileId === state.profile.id)
+          );
           return `
             <div
               class="conversation-stitch-item ${isActive ? 'active' : ''}"
@@ -3724,7 +3796,9 @@ function chatPage() {
   const messagesMarkup = state.messages.length
     ? state.messages
         .map((msg) => {
-          const isMine = state.profile && msg.senderProfileId === state.profile.id;
+          const isMine =
+            (state.user && msg.senderUserId && msg.senderUserId === state.user.id) ||
+            (state.profile && msg.senderProfileId === state.profile.id);
           return `
             <div class="message-row-wrap ${isMine ? 'outgoing' : 'incoming'} animate-fade-in" id="msg-${msg.id}">
               <div class="message-bubble-stitch">
@@ -5720,11 +5794,13 @@ function adminPanelPage() {
 }
 
 async function markConversationAsRead(conversationId) {
-  if (!conversationId || !state.profile) return;
+  if (!conversationId) return;
+  const currentProfileId = state.profile?.id || (state.user ? `prf-${state.user.id}` : '');
+  if (!currentProfileId) return;
 
   try {
     await api(`/api/conversations/${conversationId}/read`, 'POST', {
-      profileId: state.profile.id,
+      profileId: currentProfileId,
     });
   } catch (error) {
     // Ignore
@@ -5733,7 +5809,7 @@ async function markConversationAsRead(conversationId) {
 
 async function loadConversations(options = {}) {
   const { notify = true } = options;
-  if (!state.user || !state.profile) {
+  if (!state.user) {
     state.conversations = [];
     state.activeConversationId = '';
     state.messages = [];
@@ -5744,6 +5820,9 @@ async function loadConversations(options = {}) {
   try {
     const previousConversations = state.conversations;
     const data = await api(`/api/conversations/${state.user.id}`);
+    if (data.profileId && !state.profile) {
+      state.profile = { id: data.profileId, userId: state.user.id, destination: state.user.destination || '' };
+    }
     state.conversations = data.conversations || [];
     maybeNotifyAboutIncomingMessages(previousConversations, state.conversations);
 
@@ -5789,15 +5868,18 @@ async function loadMessages(conversationId) {
     const previousMessages = state.messages;
     const data = await api(`/api/messages/${conversationId}`);
     state.messages = data.messages || [];
-    if (
-      state.profile &&
-      state.messages.some((message) => message.senderProfileId !== state.profile.id) &&
-      hasMessageListChanged(previousMessages, state.messages)
-    ) {
+    const hasIncomingUnread = state.messages.some((message) => {
+      if (state.user && message.senderUserId) return message.senderUserId !== state.user.id;
+      if (state.profile && message.senderProfileId) return message.senderProfileId !== state.profile.id;
+      return false;
+    });
+    if (hasIncomingUnread && hasMessageListChanged(previousMessages, state.messages)) {
       await markConversationAsRead(conversationId);
-      const dataAfterRead = await api(`/api/conversations/${state.user.id}`);
-      state.conversations = dataAfterRead.conversations || [];
-      updateUnreadCount();
+      if (state.user) {
+        const dataAfterRead = await api(`/api/conversations/${state.user.id}`);
+        state.conversations = dataAfterRead.conversations || [];
+        updateUnreadCount();
+      }
     }
   } catch (error) {
     state.chatStatus = error.message;
@@ -5831,7 +5913,7 @@ function stopChatPoll() {
 
 function startFastChatPoll() {
   stopChatPoll();
-  if (state.route !== '/chat' || !state.activeConversationId || !state.user || !state.profile) {
+  if (state.route !== '/chat' || !state.activeConversationId || !state.user) {
     return;
   }
 
@@ -5853,7 +5935,9 @@ function startFastChatPoll() {
       if (newIncoming.length > 0) {
         newIncoming.forEach((msg) => {
           state.messages.push(msg);
-          const isMine = state.profile && msg.senderProfileId === state.profile.id;
+          const isMine =
+            (state.user && msg.senderUserId && msg.senderUserId === state.user.id) ||
+            (state.profile && msg.senderProfileId === state.profile.id);
           appendChatMessageDOM(msg, isMine);
         });
 
@@ -5973,6 +6057,14 @@ async function handleAuthSubmit(event) {
       state.authStatus = 'Password regenerated successfully! Welcome back.';
       requestBrowserNotificationPermission();
 
+      await Promise.allSettled([
+        loadMatches(),
+        loadTripGroups(),
+        loadBookings(),
+        loadConversations(),
+      ]);
+      startLiveSync();
+
       if (data.hasPreferences || (data.profile && data.profile.destination)) {
         state.route = '/matches';
         window.location.hash = '/matches';
@@ -6087,6 +6179,15 @@ async function handleAuthSubmit(event) {
     state.authStatusType = 'success';
     state.authStatus = 'Logged in successfully! Welcome back.';
     requestBrowserNotificationPermission();
+
+    // Hydrate all user data immediately upon login so conversations, matches, groups, and bookings are 100% loaded
+    await Promise.allSettled([
+      loadMatches(),
+      loadTripGroups(),
+      loadBookings(),
+      loadConversations(),
+    ]);
+    startLiveSync();
 
     // Smart routing based on user state
     if (data.hasPreferences || (data.profile && data.profile.destination)) {
@@ -6328,17 +6429,19 @@ async function handlePreferencesSubmit(event) {
 
 async function handleConnect(profileId) {
   const match = state.matches.find((item) => item.matchProfileId === profileId);
-  if (!match || !state.profile) return;
+  if (!match || !state.user) return;
+  const currentProfileId = state.profile?.id || `prf-${state.user.id}`;
+  const plannedDest = (state.profile && state.profile.destination) || match.destination || 'Himalayan Trek';
 
   try {
     const data = await api('/api/booking', 'POST', {
-      requesterProfileId: state.profile.id,
+      requesterProfileId: currentProfileId,
       targetProfileId: match.matchProfileId,
-      plannedDestination: state.profile.destination,
-      message: `Hi ${match.traveler.fullName}, I am also planning ${state.profile.destination}. Let's chat and plan together!`,
+      plannedDestination: plannedDest,
+      message: `Hi ${match.traveler?.fullName || 'Traveler'}, I am also planning ${plannedDest}. Let's chat and plan together!`,
     });
-    state.connectStatus = `Connected with ${match.traveler.fullName}. Moving to chat!`;
-    state.chatStatus = `You are now connected with ${match.traveler.fullName}.`;
+    state.connectStatus = `Connected with ${match.traveler?.fullName || 'Traveler'}. Moving to chat!`;
+    state.chatStatus = `You are now connected with ${match.traveler?.fullName || 'Traveler'}.`;
     if (data.conversation && data.conversation.id) {
       state.activeConversationId = data.conversation.id;
     }
@@ -6523,7 +6626,8 @@ async function handleChatSubmit(event) {
   const conversationIdInput = form.querySelector('input[name="conversationId"]');
   const conversationId = conversationIdInput ? conversationIdInput.value : (state.activeConversationId || '');
 
-  if (!messageText || !conversationId || !state.profile) {
+  const currentProfileId = state.profile?.id || (state.user ? `prf-${state.user.id}` : '');
+  if (!messageText || !conversationId || !currentProfileId) {
     return;
   }
 
@@ -6540,7 +6644,8 @@ async function handleChatSubmit(event) {
   const optimisticMsg = {
     id: tempId,
     conversationId: conversationId,
-    senderProfileId: state.profile.id,
+    senderProfileId: currentProfileId,
+    senderUserId: state.user?.id || '',
     text: messageText,
     createdAt: nowIso,
     senderName: state.user?.fullName || 'You',
@@ -6560,7 +6665,8 @@ async function handleChatSubmit(event) {
   try {
     const data = await api('/api/messages', 'POST', {
       conversationId: conversationId,
-      senderProfileId: state.profile.id,
+      senderProfileId: currentProfileId,
+      senderUserId: state.user?.id || '',
       text: messageText,
     });
 
@@ -6637,7 +6743,8 @@ function updateConversationSnippetInDOM(conversationId, snippet, timestamp) {
 
 async function sharePackageInChat(packageId) {
   const tripPackage = TRIP_PACKAGES.find((item) => item.id === packageId);
-  if (!tripPackage || !state.profile) return;
+  if (!tripPackage || !state.user) return;
+  const currentProfileId = state.profile?.id || `prf-${state.user.id}`;
 
   if (!state.activeConversationId && state.conversations.length) {
     state.activeConversationId = state.conversations[0].id;
@@ -6652,7 +6759,8 @@ async function sharePackageInChat(packageId) {
   try {
     await api('/api/messages', 'POST', {
       conversationId: state.activeConversationId,
-      senderProfileId: state.profile.id,
+      senderProfileId: currentProfileId,
+      senderUserId: state.user.id,
       text: `Hey, let's review this package: ${tripPackage.packageName} by ${tripPackage.company} (${tripPackage.price} / person, ${tripPackage.duration}). What do you think? 🏔️`,
     });
     state.packageStatus = `${tripPackage.packageName} was shared in chat with your partner!`;
@@ -6666,7 +6774,8 @@ async function sharePackageInChat(packageId) {
 
 async function shortlistPackage(packageId) {
   const tripPackage = TRIP_PACKAGES.find((item) => item.id === packageId);
-  if (!tripPackage || !state.profile) return;
+  if (!tripPackage || !state.user) return;
+  const currentProfileId = state.profile?.id || `prf-${state.user.id}`;
 
   if (!state.activeConversationId && state.conversations.length) {
     state.activeConversationId = state.conversations[0].id;
@@ -7957,9 +8066,20 @@ function hydrateUI() {
       };
     });
 
+    document.querySelectorAll('.match-open-chat-btn, [data-conversation-id]').forEach((button) => {
+      button.onclick = (e) => {
+        e.stopPropagation();
+        const convId = button.getAttribute('data-conversation-id');
+        if (convId) {
+          state.activeConversationId = convId;
+          routeTo('/chat');
+        }
+      };
+    });
+
     document.querySelectorAll('[data-open-match]').forEach((card) => {
       card.onclick = (e) => {
-        if (e && e.target && e.target.closest('[data-connect-profile]')) {
+        if (e && e.target && e.target.closest('[data-connect-profile], [data-conversation-id], .match-open-chat-btn')) {
           return;
         }
         const matchProfileId = card.getAttribute('data-open-match') || '';

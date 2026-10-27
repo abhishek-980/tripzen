@@ -150,6 +150,26 @@
       "profileImage": "https://api.dicebear.com/7.x/adventurer/svg?seed=abhi",
       "createdAt": "2026-04-20T08:51:15.529Z",
       "profileCompleteness": 64
+    },
+    {
+      "id": "usr_1793101349130_0wo00q",
+      "fullName": "Arjun Sharma",
+      "email": "arjun.test@gmail.com",
+      "password": "password123",
+      "phone": "9876500001",
+      "age": "24",
+      "gender": "Female",
+      "city": "",
+      "bio": "",
+      "interests": [],
+      "travelStyle": "Solo",
+      "pastTrips": "",
+      "budgetRange": "7000-15000",
+      "verified": true,
+      "profileCompleteness": 55,
+      "profileImageData": "",
+      "profileImage": "https://api.dicebear.com/7.x/adventurer/svg?seed=Arjun%20Sharma",
+      "createdAt": "2026-10-27T11:42:29.130Z"
     }
   ],
   "profiles": [
@@ -307,6 +327,26 @@
       "profileImage": "https://api.dicebear.com/7.x/adventurer/svg?seed=abhi",
       "createdAt": "2026-10-06T07:00:51.939Z",
       "updatedAt": "2026-10-06T07:00:51.945Z"
+    },
+    {
+      "id": "prf_1793101349130_d1yos0",
+      "userId": "usr_1793101349130_0wo00q",
+      "fullName": "Arjun Sharma",
+      "destination": "Chopta Tungnath",
+      "startDate": "2026-10-15",
+      "endDate": "2026-10-20",
+      "travelStyle": "Solo",
+      "budgetRange": "7000-15000",
+      "genderPreference": "Any",
+      "interests": [
+        "trekking",
+        "photography"
+      ],
+      "bio": "",
+      "pastTrips": "",
+      "profileImage": "https://api.dicebear.com/7.x/adventurer/svg?seed=Arjun%20Sharma",
+      "createdAt": "2026-10-27T11:42:29.130Z",
+      "updatedAt": "2026-10-27T11:42:29.130Z"
     }
   ],
   "bookings": [
@@ -933,6 +973,15 @@
       "message": "Hey! Looking forward to exploring Chopta together.",
       "status": "pending",
       "createdAt": "2026-10-04T10:02:13.440Z"
+    },
+    {
+      "id": "bkg_1793104424223_t736x7",
+      "requesterProfileId": "prf_1793101349130_d1yos0",
+      "targetProfileId": "prf_1791270051938_9wfih1",
+      "plannedDestination": "Chopta Tungnath",
+      "message": "Hi abhi, lets summit together!",
+      "status": "pending",
+      "createdAt": "2026-10-27T12:33:44.223Z"
     }
   ],
   "conversations": [
@@ -1444,6 +1493,19 @@
       },
       "createdAt": "2026-10-04T10:02:13.446Z",
       "updatedAt": "2026-10-04T10:02:13.447Z"
+    },
+    {
+      "id": "cnv_1793104424223_ahijle",
+      "memberProfileIds": [
+        "prf_1793101349130_d1yos0",
+        "prf_1791270051938_9wfih1"
+      ],
+      "destination": "Chopta Tungnath",
+      "lastReadAtByProfileId": {
+        "prf_1793101349130_d1yos0": "2026-10-27T12:33:55.988Z"
+      },
+      "createdAt": "2026-10-27T12:33:44.223Z",
+      "updatedAt": "2026-10-27T12:33:55.988Z"
     }
   ],
   "messages": [
@@ -2195,6 +2257,20 @@
       "senderProfileId": "prf_1776056905026_6q7tca",
       "text": "Hello from instant chat test!",
       "createdAt": "2026-10-05T10:46:58.188Z"
+    },
+    {
+      "id": "msg_1793104424223_jtx25s",
+      "conversationId": "cnv_1793104424223_ahijle",
+      "senderProfileId": "prf_1793101349130_d1yos0",
+      "text": "Hi abhi, lets summit together!",
+      "createdAt": "2026-10-27T12:33:44.223Z"
+    },
+    {
+      "id": "msg_1793104435988_qzhljo",
+      "conversationId": "cnv_1793104424223_ahijle",
+      "senderProfileId": "prf_1793101349130_d1yos0",
+      "text": "Are you carrying a 4-season tent or sleeping bag?",
+      "createdAt": "2026-10-27T12:33:55.988Z"
     }
   ],
   "packageSelections": [

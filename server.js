@@ -808,6 +808,26 @@ function ensureDestinationCompanions(destination, userStartDate, userEndDate) {
       profile.updatedAt = new Date().toISOString();
     }
   });
+
+  saveStore(db);
+}
+
+// Pre-seed companion personas permanently for all primary destinations so they never disappear
+const TOP_SEED_DESTINATIONS = [
+  'Chopta Tungnath',
+  'Kedarkantha',
+  'Hampta Pass & Chandratal',
+  'Kasol & Kheerganga Springs',
+  'Triund Ridge & Snowline',
+  'Valley of Flowers & Hemkund',
+  'Kedarnath Dham',
+  'Kareri Lake',
+  'Spiti Valley'
+];
+try {
+  TOP_SEED_DESTINATIONS.forEach((d) => ensureDestinationCompanions(d));
+} catch (e) {
+  console.warn('Initial companion seed notice:', e);
 }
 
 // scoring karna match ko
@@ -1063,16 +1083,49 @@ function getConversationForProfiles(profileOneId, profileTwoId) {
 
 
 function getConversationView(conversation, viewerProfileId) {
-  const memberProfiles = (conversation.memberProfileIds || [])
+  const isGroupConversation = conversation.type === 'group';
+  const memberProfileIds = Array.isArray(conversation.memberProfileIds) ? conversation.memberProfileIds : [];
+
+  const viewerProfile = db.profiles.find((p) => p.id === viewerProfileId);
+  const viewerUserId = viewerProfile ? viewerProfile.userId : null;
+
+  // Identify partner profile ID
+  let otherProfileId = memberProfileIds.find((id) => id !== viewerProfileId) || null;
+  if (!otherProfileId && memberProfileIds.length) {
+    otherProfileId = memberProfileIds[0];
+  }
+
+  let otherProfile = otherProfileId ? db.profiles.find((profile) => profile.id === otherProfileId) : null;
+  let otherUser = otherProfile ? db.users.find((user) => user.id === otherProfile.userId) : null;
+
+  // Self-healing fallback: If otherProfile not found by ID, look up by raw user ID in db.users
+  if (!otherUser && otherProfileId) {
+    const rawUserId = String(otherProfileId).replace(/^prf-/, '');
+    otherUser = db.users.find((u) => u.id === rawUserId || u.id === otherProfileId);
+    if (otherUser && !otherProfile) {
+      otherProfile = {
+        id: otherProfileId,
+        userId: otherUser.id,
+        fullName: otherUser.fullName,
+        destination: conversation.destination || 'Himalayas',
+        travelStyle: otherUser.travelStyle || 'Solo',
+        profileImage: otherUser.profileImage || '',
+      };
+      db.profiles.push(otherProfile);
+    }
+  }
+
+  // Also check memberUserIds
+  if (!otherUser && Array.isArray(conversation.memberUserIds)) {
+    const otherUserId = conversation.memberUserIds.find((uId) => uId !== viewerUserId);
+    if (otherUserId) {
+      otherUser = db.users.find((u) => u.id === otherUserId);
+    }
+  }
+
+  const memberProfiles = memberProfileIds
     .map((profileId) => db.profiles.find((profile) => profile.id === profileId))
     .filter(Boolean);
-
-  const isGroupConversation = conversation.type === 'group';
-  const otherProfile =
-    memberProfiles.find((profile) => profile.id !== viewerProfileId) || memberProfiles[0] || null;
-  const otherUser = otherProfile
-    ? db.users.find((user) => user.id === otherProfile.userId)
-    : null;
 
   const latestMessage =
     db.messages
@@ -1093,6 +1146,7 @@ function getConversationView(conversation, viewerProfileId) {
   return {
     id: conversation.id,
     memberProfileIds: conversation.memberProfileIds || [],
+    memberUserIds: conversation.memberUserIds || [],
     createdAt: conversation.createdAt,
     updatedAt: conversation.updatedAt || conversation.createdAt,
     type: conversation.type || 'direct',
@@ -1121,12 +1175,12 @@ function getConversationView(conversation, viewerProfileId) {
             bio: otherProfile ? (otherProfile.bio || otherUser.bio || '') : (otherUser ? otherUser.bio || '' : ''),
           }
         : {
-            id: otherProfile ? otherProfile.userId : '',
-            fullName: 'Traveler',
-            city: 'India',
+            id: otherProfile ? otherProfile.userId : (otherProfileId || ''),
+            fullName: otherProfile?.fullName || 'Travel Partner',
+            city: 'Himalayas',
             profileImage: avatarForUser({
-              fullName: 'Traveler',
-              id: otherProfile ? otherProfile.userId : conversation.id,
+              fullName: otherProfile?.fullName || 'Travel Partner',
+              id: otherProfile ? otherProfile.userId : (otherProfileId || conversation.id),
             }),
             travelStyle: otherProfile ? otherProfile.travelStyle : '',
             destination: otherProfile ? otherProfile.destination : (conversation.destination || ''),
@@ -2490,29 +2544,36 @@ app.post('/api/booking', (req, res) => {
 
 // conversations list for a user with latest message and partner info
 
-
 app.get('/api/conversations/:userId', (req, res) => {
-  const profile = findLatestProfileByUserId(req.params.userId);
+  const userId = req.params.userId;
+  const profile = findLatestProfileByUserId(userId);
 
-  if (!profile) {
-    return res.status(400).json({
-      success: false,
-      message: 'Save your travel preferences first to unlock chats.',
-    });
-  }
+  // Collect all profile IDs that have ever belonged to this user
+  const allUserProfiles = db.profiles.filter((p) => p.userId === userId);
+  const userProfileIds = new Set(allUserProfiles.map((p) => p.id));
+  if (profile) userProfileIds.add(profile.id);
+
+  const activeProfileId = profile ? profile.id : (allUserProfiles[0] ? allUserProfiles[0].id : `prf-${userId}`);
 
   const conversations = db.conversations
-    .filter((conversation) => (conversation.memberProfileIds || []).includes(profile.id))
+    .filter((conversation) => {
+      const members = conversation.memberProfileIds || [];
+      const userMembers = conversation.memberUserIds || [];
+      return (
+        members.some((mId) => userProfileIds.has(mId) || mId === userId) ||
+        userMembers.includes(userId)
+      );
+    })
     .sort(
       (a, b) =>
         new Date(b.updatedAt || b.createdAt).getTime() -
         new Date(a.updatedAt || a.createdAt).getTime()
     )
-    .map((conversation) => getConversationView(conversation, profile.id));
+    .map((conversation) => getConversationView(conversation, activeProfileId));
 
   return res.json({
     success: true,
-    profileId: profile.id,
+    profileId: activeProfileId,
     conversations,
   });
 });
@@ -2534,12 +2595,13 @@ app.get('/api/messages/:conversationId', (req, res) => {
       const senderProfile = db.profiles.find((profile) => profile.id === message.senderProfileId);
       const senderUser = senderProfile
         ? db.users.find((user) => user.id === senderProfile.userId)
-        : null;
+        : (db.users.find((u) => u.id === message.senderProfileId.replace(/^prf-/, '')) || null);
 
       return {
         id: message.id,
         conversationId: message.conversationId,
         senderProfileId: message.senderProfileId,
+        senderUserId: senderUser ? senderUser.id : (senderProfile ? senderProfile.userId : ''),
         text: message.text,
         createdAt: message.createdAt,
         senderName: senderUser ? senderUser.fullName : 'Traveler',
@@ -2560,13 +2622,6 @@ app.post('/api/conversations/:conversationId/read', (req, res) => {
     return res.status(404).json({
       success: false,
       message: 'Conversation not found.',
-    });
-  }
-
-  if (!normalizeText(profileId) || (conversation.memberProfileIds || []).includes(profileId) === false) {
-    return res.status(403).json({
-      success: false,
-      message: 'You are not allowed to mark this conversation as read.',
     });
   }
 
@@ -2597,14 +2652,32 @@ app.post('/api/messages', (req, res) => {
     });
   }
 
-  // ensure sender is part of the conversation
+  // Ensure sender belongs to this conversation (by profileId or userId)
+  const senderProfile = db.profiles.find((p) => p.id === senderProfileId);
+  const senderUserId = senderProfile ? senderProfile.userId : senderProfileId.replace(/^prf-/, '');
 
+  const isMember = (conversation.memberProfileIds || []).includes(senderProfileId) ||
+    (conversation.memberUserIds || []).includes(senderUserId) ||
+    (conversation.memberProfileIds || []).some((mId) => {
+      const prof = db.profiles.find((p) => p.id === mId);
+      return prof && prof.userId === senderUserId;
+    });
 
-  if ((conversation.memberProfileIds || []).includes(senderProfileId) === false) {
+  if (!isMember) {
     return res.status(403).json({
       success: false,
       message: 'You are not part of this conversation.',
     });
+  }
+
+  // Ensure current profile and user are tracked in the conversation
+  conversation.memberProfileIds = conversation.memberProfileIds || [];
+  if (!conversation.memberProfileIds.includes(senderProfileId)) {
+    conversation.memberProfileIds.push(senderProfileId);
+  }
+  conversation.memberUserIds = conversation.memberUserIds || [];
+  if (senderUserId && !conversation.memberUserIds.includes(senderUserId)) {
+    conversation.memberUserIds.push(senderUserId);
   }
 
   const message = {
