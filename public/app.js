@@ -1410,6 +1410,13 @@ const state = {
   user: null,
   profile: null,
   authMode: localStorage.getItem('tripzenSavedIdentifier') ? 'login' : 'signup',
+  authMethod: 'otp', // 'otp' | 'password'
+  authOtpStep: 'input', // 'input' | 'verify'
+  authOtpChannel: 'phone', // 'phone' | 'email'
+  authOtpIdentifier: '',
+  authOtpPreview: '',
+  authOtpTimerSeconds: 300,
+  authOtpCooldownSeconds: 0,
   authEmailDraft: localStorage.getItem('tripzenSavedIdentifier') || '',
   authStatus: '',
   authStatusType: '',
@@ -1675,6 +1682,9 @@ function routeTo(path) {
   const target = path || '/';
   state.route = target;
   state.mobileNavOpen = false;
+  if (target !== '/auth') {
+    localStorage.setItem('tripzenLastRoute', target);
+  }
   if (window.location.hash !== `#${target}`) {
     window.location.hash = target;
   }
@@ -1702,6 +1712,13 @@ function normalizedRoute() {
   }
 
   if (state.user && (route === '/' || route === '/auth')) {
+    const savedRoute = localStorage.getItem('tripzenLastRoute');
+    if (savedRoute && savedRoute !== '/' && savedRoute !== '/auth') {
+      return savedRoute;
+    }
+    if (state.conversations && state.conversations.length > 0) {
+      return '/chat';
+    }
     if (state.profile && state.profile.destination) {
       return '/matches';
     }
@@ -4815,6 +4832,7 @@ const AUTH_SVG_EYE = `<svg class="password-toggle-svg" width="18" height="18" vi
 const AUTH_SVG_EYE_OFF = `<svg class="password-toggle-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>`;
 
 function authPage() {
+  const isOtp = state.authMethod !== 'password';
   const isSignup = state.authMode === 'signup';
   const isForgotPassword = state.authMode === 'forgot_password';
   const isLogin = !isSignup && !isForgotPassword;
@@ -4833,15 +4851,10 @@ function authPage() {
   const draftCity = savedDraft.city || '';
   const draftPhone = savedDraft.phone || '';
 
-  let headerTitle = 'Welcome Back';
-  let headerSubtitle = 'Sign in to access your travel matches and group trips';
-  if (isSignup) {
-    headerTitle = 'Create Account';
-    headerSubtitle = 'Connect with verified travel buddies across India';
-  } else if (isForgotPassword) {
-    headerTitle = 'Reset Password';
-    headerSubtitle = 'Enter your phone number or email to set a new password';
-  }
+  let headerTitle = isOtp ? 'Instant 2FA Verification' : (isSignup ? 'Create Account' : (isForgotPassword ? 'Reset Password' : 'Welcome Back'));
+  let headerSubtitle = isOtp
+    ? 'Verify via Phone (SMS/WhatsApp) or Email for secure login'
+    : (isSignup ? 'Connect with verified travel buddies across India' : (isForgotPassword ? 'Enter your details to set a new password' : 'Sign in to access your travel matches and group trips'));
 
   return `
     <div class="auth-hero-wrapper animate-fade-in">
@@ -4940,113 +4953,232 @@ function authPage() {
             <p>${headerSubtitle}</p>
           </div>
 
-          <div class="auth-toggle-pill" role="tablist">
-            <button type="button" class="auth-toggle-btn ${isSignup ? 'active' : ''}" data-auth-mode="signup" role="tab" aria-selected="${isSignup}">Sign Up</button>
-            <button type="button" class="auth-toggle-btn ${isLogin ? 'active' : ''}" data-auth-mode="login" role="tab" aria-selected="${isLogin}">Log In</button>
+          <!-- Top Mode Switcher: 2FA OTP vs Password -->
+          <div class="auth-method-switcher-pill" role="tablist">
+            <button type="button" class="auth-method-btn ${isOtp ? 'active' : ''}" data-auth-method="otp" role="tab" aria-selected="${isOtp}">
+              <span>🔐 Instant OTP (2FA)</span>
+            </button>
+            <button type="button" class="auth-method-btn ${!isOtp ? 'active' : ''}" data-auth-method="password" role="tab" aria-selected="${!isOtp}">
+              <span>🔑 Password</span>
+            </button>
           </div>
 
-          <form id="authForm" class="form-field-group">
-            ${
-              isSignup
-                ? `
-                  <div class="auth-two-col-row responsive-stack">
-                    <label class="field-label">
-                      <span>FULL NAME</span>
-                      <input name="fullName" required placeholder="Aarav Mehta" class="stitch-input" value="${escapeHtml(draftName)}" />
-                    </label>
-
-                    <label class="field-label">
-                      <span>MOBILE NUMBER</span>
-                      <div class="phone-input-group">
-                        <span class="phone-prefix-addon">🇮🇳 +91</span>
-                        <input name="phone" type="tel" autocomplete="tel" placeholder="98765 43210" class="stitch-input phone-input-field" value="${escapeHtml(draftPhone)}" />
-                      </div>
-                    </label>
+          ${
+            isOtp
+              ? `
+                <!-- 2FA OTP FLOW -->
+                <div class="auth-otp-flow-container">
+                  <!-- Channel Selection (Phone SMS/WhatsApp vs Email) -->
+                  <div class="auth-channel-selector-row">
+                    <button type="button" class="auth-channel-pill ${state.authOtpChannel === 'phone' ? 'active' : ''}" data-otp-channel="phone">
+                      <span>📱 Mobile (SMS / WhatsApp)</span>
+                    </button>
+                    <button type="button" class="auth-channel-pill ${state.authOtpChannel === 'email' ? 'active' : ''}" data-otp-channel="email">
+                      <span>✉️ Email Address</span>
+                    </button>
                   </div>
 
-                  <div class="auth-two-col-row responsive-stack">
-                    <label class="field-label">
-                      <span>EMAIL ADDRESS</span>
-                      <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="aarav@example.com" class="stitch-input" />
-                    </label>
+                  ${
+                    state.authOtpStep === 'verify'
+                      ? `
+                        <!-- Step 2: Code Verification Screen -->
+                        <form id="otpVerifyForm" class="form-field-group">
+                          <div class="auth-otp-target-card">
+                            <div class="otp-target-info">
+                              <span class="otp-target-label">VERIFYING ${state.authOtpChannel === 'phone' ? 'MOBILE' : 'EMAIL'}</span>
+                              <strong class="otp-target-val">${escapeHtml(state.authOtpChannel === 'phone' ? '+91 ' + state.authOtpIdentifier : state.authOtpIdentifier)}</strong>
+                            </div>
+                            <button type="button" id="changeOtpTargetBtn" class="otp-change-link">Change</button>
+                          </div>
 
-                    <label class="field-label">
-                      <span>PASSWORD</span>
-                      <div class="password-input-wrap">
-                        <input name="password" type="password" required minlength="4" placeholder="••••••••" class="stitch-input password-input-field" />
-                        <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
-                      </div>
-                    </label>
-                  </div>
+                          <div class="auth-two-col-row" style="margin-top: 10px;">
+                            <label class="field-label">
+                              <span>YOUR FULL NAME</span>
+                              <input id="otpNewFullName" placeholder="e.g. Aarav Mehta" class="stitch-input" value="${escapeHtml(draftName)}" />
+                            </label>
+                            <label class="field-label">
+                              <span>AGE</span>
+                              <input id="otpNewAge" type="number" min="16" max="99" placeholder="24" class="stitch-input" value="${escapeHtml(draftAge || '24')}" />
+                            </label>
+                          </div>
 
-                  <div class="auth-two-col-row">
-                    <label class="field-label">
-                      <span>CURRENT CITY</span>
-                      <input name="city" placeholder="Mumbai / Delhi / Bengaluru" class="stitch-input" value="${escapeHtml(draftCity)}" />
-                    </label>
+                          <label class="field-label" style="margin-top: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                              <span>ENTER 6-DIGIT VERIFICATION CODE</span>
+                              <span class="otp-expiry-badge ${state.authOtpTimerSeconds <= 0 ? 'expired' : ''}" id="otpExpiryTimer">
+                                ${state.authOtpTimerSeconds > 0
+                                  ? `⏱️ Expires in ${String(Math.floor(state.authOtpTimerSeconds / 60)).padStart(2, '0')}:${String(state.authOtpTimerSeconds % 60).padStart(2, '0')}`
+                                  : '⚠️ Expired'}
+                              </span>
+                            </div>
+                            <input id="authOtpCodeInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="• • • • • •" class="stitch-input otp-digit-field" autocomplete="one-time-code" required autofocus />
+                          </label>
 
-                    <label class="field-label">
-                      <span>AGE</span>
-                      <input name="age" type="number" min="16" max="90" placeholder="21" class="stitch-input" value="${escapeHtml(draftAge)}" />
-                    </label>
-                  </div>
+                          ${
+                            state.authOtpPreview
+                              ? `
+                                <div class="otp-preview-chip-wrap">
+                                  <span class="otp-preview-hint">Testing / Preview Code:</span>
+                                  <button type="button" class="otp-preview-chip" id="quickFillOtpBtn" data-otp="${escapeHtml(state.authOtpPreview)}">
+                                    Fill ${escapeHtml(state.authOtpPreview)} ➔
+                                  </button>
+                                </div>
+                              `
+                              : ''
+                          }
 
-                  <input type="hidden" name="gender" id="authGenderInput" value="Female" />
-                  <input type="hidden" name="travelStyle" id="authTravelStyleInput" value="Solo" />
-                `
-                : isForgotPassword
-                ? `
-                  <div class="auth-notice-box" style="margin-bottom: 16px; padding: 12px 14px; background: rgba(35, 89, 70, 0.08); border-radius: 12px; border-left: 3px solid var(--accent); font-size: 0.86rem; color: var(--ink);">
-                    <span>🔑 Enter your registered Mobile Number, Email, or User ID to set your new password.</span>
-                  </div>
-                  <label class="field-label">
-                    <span>PHONE NUMBER, EMAIL, OR USER ID</span>
-                    <input name="identifier" type="text" autocomplete="username" autocapitalize="none" required placeholder="Phone number, email, or User ID" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
-                  </label>
-                  <label class="field-label">
-                    <span>NEW PASSWORD</span>
-                    <div class="password-input-wrap">
-                      <input name="newPassword" type="password" required minlength="4" placeholder="Enter new password (min 4 chars)" class="stitch-input password-input-field" />
-                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
-                    </div>
-                  </label>
-                  <label class="field-label">
-                    <span>CONFIRM NEW PASSWORD</span>
-                    <div class="password-input-wrap">
-                      <input name="confirmPassword" type="password" required minlength="4" placeholder="Re-enter new password" class="stitch-input password-input-field" />
-                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
-                    </div>
-                  </label>
-                `
-                : `
-                  <label class="field-label">
-                    <span>PHONE NUMBER OR EMAIL</span>
-                    <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="10-digit phone, email, or User ID" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
-                  </label>
-                  <div class="field-label">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                      <span style="font-size: 0.76rem; font-weight: 800; color: var(--muted); letter-spacing: 0.05em;">PASSWORD</span>
-                      <button type="button" class="auth-text-link" id="forgotPasswordLink">Forgot Password?</button>
-                    </div>
-                    <div class="password-input-wrap">
-                      <input name="password" type="password" autocomplete="current-password" required placeholder="••••••••" class="stitch-input password-input-field" />
-                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
-                    </div>
-                  </div>
-                `
-            }
+                          <button type="submit" id="verifyOtpBtn" class="primary-btn wide-btn auth-submit-btn" style="margin-top: 14px;">
+                            <span>Verify Code &amp; Continue ➔</span>
+                          </button>
 
-            <button type="submit" class="primary-btn wide-btn auth-submit-btn" style="margin-top: 14px;">
-              <span>${isSignup ? 'Create Account ➔' : (isForgotPassword ? 'Regenerate Password & Sign In ➔' : 'Continue to Matches ➔')}</span>
-            </button>
+                          <div class="otp-resend-row">
+                            <button type="button" id="resendOtpBtn" class="auth-text-link" ${state.authOtpCooldownSeconds > 0 ? 'disabled' : ''}>
+                              ${state.authOtpCooldownSeconds > 0 ? `Resend code in ${state.authOtpCooldownSeconds}s` : 'Resend Verification Code'}
+                            </button>
+                          </div>
+                        </form>
+                      `
+                      : `
+                        <!-- Step 1: Identifier Input Screen -->
+                        <form id="otpSendForm" class="form-field-group">
+                          ${
+                            state.authOtpChannel === 'phone'
+                              ? `
+                                <label class="field-label">
+                                  <span>ENTER YOUR 10-DIGIT MOBILE NUMBER</span>
+                                  <div class="phone-input-group">
+                                    <span class="phone-prefix-addon">🇮🇳 +91</span>
+                                    <input name="identifier" id="authOtpPhoneInput" type="tel" autocomplete="tel" placeholder="98765 43210" class="stitch-input phone-input-field" value="${escapeHtml(state.authOtpIdentifier || state.authEmailDraft || '')}" required autofocus />
+                                  </div>
+                                </label>
+                              `
+                              : `
+                                <label class="field-label">
+                                  <span>ENTER YOUR EMAIL ADDRESS</span>
+                                  <input name="identifier" id="authOtpEmailInput" type="email" autocomplete="email" placeholder="you@example.com" class="stitch-input" value="${escapeHtml(state.authOtpIdentifier || state.authEmailDraft || '')}" required autofocus />
+                                </label>
+                              `
+                          }
 
-            ${isForgotPassword ? `<button type="button" class="auth-back-link" id="backToLoginBtn">← Back to Login</button>` : ''}
-          </form>
+                          <button type="submit" id="sendOtpBtn" class="primary-btn wide-btn auth-submit-btn" style="margin-top: 14px;">
+                            <span>Send 6-Digit Code ➔</span>
+                          </button>
+                        </form>
+                      `
+                  }
+                </div>
+              `
+              : `
+                <!-- STANDARD PASSWORD FLOW -->
+                <div class="auth-toggle-pill" role="tablist">
+                  <button type="button" class="auth-toggle-btn ${isSignup ? 'active' : ''}" data-auth-mode="signup" role="tab" aria-selected="${isSignup}">Sign Up</button>
+                  <button type="button" class="auth-toggle-btn ${isLogin ? 'active' : ''}" data-auth-mode="login" role="tab" aria-selected="${isLogin}">Log In</button>
+                </div>
+
+                <form id="authForm" class="form-field-group">
+                  ${
+                    isSignup
+                      ? `
+                        <div class="auth-two-col-row responsive-stack">
+                          <label class="field-label">
+                            <span>FULL NAME</span>
+                            <input name="fullName" required placeholder="Aarav Mehta" class="stitch-input" value="${escapeHtml(draftName)}" />
+                          </label>
+
+                          <label class="field-label">
+                            <span>MOBILE NUMBER</span>
+                            <div class="phone-input-group">
+                              <span class="phone-prefix-addon">🇮🇳 +91</span>
+                              <input name="phone" type="tel" autocomplete="tel" placeholder="98765 43210" class="stitch-input phone-input-field" value="${escapeHtml(draftPhone)}" />
+                            </div>
+                          </label>
+                        </div>
+
+                        <div class="auth-two-col-row responsive-stack">
+                          <label class="field-label">
+                            <span>EMAIL ADDRESS</span>
+                            <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="aarav@example.com" class="stitch-input" />
+                          </label>
+
+                          <label class="field-label">
+                            <span>PASSWORD</span>
+                            <div class="password-input-wrap">
+                              <input name="password" type="password" required minlength="4" placeholder="••••••••" class="stitch-input password-input-field" />
+                              <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
+                            </div>
+                          </label>
+                        </div>
+
+                        <div class="auth-two-col-row">
+                          <label class="field-label">
+                            <span>CURRENT CITY</span>
+                            <input name="city" placeholder="Mumbai / Delhi / Bengaluru" class="stitch-input" value="${escapeHtml(draftCity)}" />
+                          </label>
+
+                          <label class="field-label">
+                            <span>AGE</span>
+                            <input name="age" type="number" min="16" max="90" placeholder="21" class="stitch-input" value="${escapeHtml(draftAge)}" />
+                          </label>
+                        </div>
+
+                        <input type="hidden" name="gender" id="authGenderInput" value="Female" />
+                        <input type="hidden" name="travelStyle" id="authTravelStyleInput" value="Solo" />
+                      `
+                      : isForgotPassword
+                      ? `
+                        <div class="auth-notice-box" style="margin-bottom: 16px; padding: 12px 14px; background: rgba(35, 89, 70, 0.08); border-radius: 12px; border-left: 3px solid var(--accent); font-size: 0.86rem; color: var(--ink);">
+                          <span>🔑 Enter your registered Mobile Number, Email, or User ID to set your new password.</span>
+                        </div>
+                        <label class="field-label">
+                          <span>PHONE NUMBER, EMAIL, OR USER ID</span>
+                          <input name="identifier" type="text" autocomplete="username" autocapitalize="none" required placeholder="Phone number, email, or User ID" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
+                        </label>
+                        <label class="field-label">
+                          <span>NEW PASSWORD</span>
+                          <div class="password-input-wrap">
+                            <input name="newPassword" type="password" required minlength="4" placeholder="Enter new password (min 4 chars)" class="stitch-input password-input-field" />
+                            <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
+                          </div>
+                        </label>
+                        <label class="field-label">
+                          <span>CONFIRM NEW PASSWORD</span>
+                          <div class="password-input-wrap">
+                            <input name="confirmPassword" type="password" required minlength="4" placeholder="Re-enter new password" class="stitch-input password-input-field" />
+                            <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
+                          </div>
+                        </label>
+                      `
+                      : `
+                        <label class="field-label">
+                          <span>PHONE NUMBER OR EMAIL</span>
+                          <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="10-digit phone, email, or User ID" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
+                        </label>
+                        <div class="field-label">
+                          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span style="font-size: 0.76rem; font-weight: 800; color: var(--muted); letter-spacing: 0.05em;">PASSWORD</span>
+                            <button type="button" class="auth-text-link" id="forgotPasswordLink">Forgot Password?</button>
+                          </div>
+                          <div class="password-input-wrap">
+                            <input name="password" type="password" autocomplete="current-password" required placeholder="••••••••" class="stitch-input password-input-field" />
+                            <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
+                          </div>
+                        </div>
+                      `
+                  }
+
+                  <button type="submit" class="primary-btn wide-btn auth-submit-btn" style="margin-top: 14px;">
+                    <span>${isSignup ? 'Create Account ➔' : (isForgotPassword ? 'Regenerate Password & Sign In ➔' : 'Continue to Matches ➔')}</span>
+                  </button>
+
+                  ${isForgotPassword ? `<button type="button" class="auth-back-link" id="backToLoginBtn">← Back to Login</button>` : ''}
+                </form>
+              `
+          }
 
           <!-- Safe & Encrypted Assurance Footer -->
           <div class="auth-card-security-footer">
             <span class="security-lock-icon">🔒</span>
-            <span>256-bit Encrypted • Zero Spam • 100% Privacy Protected</span>
+            <span>256-bit Encrypted • 5-min OTP Expiry • Zero Spam • 100% Privacy Protected</span>
           </div>
 
           ${statusMarkup(state.authStatus, state.authStatusType)}
@@ -6009,6 +6141,204 @@ function startLiveSync() {
   }, CHAT_POLL_INTERVAL);
 }
 
+let otpCountdownTimer = null;
+function startOtpCountdown(expiresInSeconds = 300, cooldownSeconds = 60) {
+  if (otpCountdownTimer) clearInterval(otpCountdownTimer);
+  state.authOtpTimerSeconds = expiresInSeconds;
+  state.authOtpCooldownSeconds = cooldownSeconds;
+
+  otpCountdownTimer = setInterval(() => {
+    if (state.authOtpTimerSeconds > 0) {
+      state.authOtpTimerSeconds--;
+    }
+    if (state.authOtpCooldownSeconds > 0) {
+      state.authOtpCooldownSeconds--;
+    }
+
+    const timerBadge = document.getElementById('otpExpiryTimer');
+    if (timerBadge) {
+      const mins = Math.floor(state.authOtpTimerSeconds / 60);
+      const secs = state.authOtpTimerSeconds % 60;
+      timerBadge.textContent = state.authOtpTimerSeconds > 0 
+        ? `⏱️ Expires in ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+        : '⚠️ Expired';
+      if (state.authOtpTimerSeconds <= 0) {
+        timerBadge.classList.add('expired');
+      }
+    }
+
+    const resendBtn = document.getElementById('resendOtpBtn');
+    if (resendBtn) {
+      if (state.authOtpCooldownSeconds > 0) {
+        resendBtn.disabled = true;
+        resendBtn.textContent = `Resend code in ${state.authOtpCooldownSeconds}s`;
+      } else {
+        resendBtn.disabled = false;
+        resendBtn.textContent = 'Resend Verification Code';
+      }
+    }
+
+    if (state.authOtpTimerSeconds <= 0 && state.authOtpCooldownSeconds <= 0) {
+      clearInterval(otpCountdownTimer);
+      otpCountdownTimer = null;
+    }
+  }, 1000);
+}
+
+async function handleSendOtp(event) {
+  if (event && event.preventDefault) event.preventDefault();
+  const inputEl = document.getElementById('authOtpPhoneInput') || document.getElementById('authOtpEmailInput') || document.querySelector('input[name="identifier"]');
+  const rawIdentifier = inputEl ? inputEl.value.trim() : (state.authOtpIdentifier || state.authEmailDraft || '');
+  const channel = state.authOtpChannel || 'phone';
+
+  if (!rawIdentifier) {
+    state.authStatusType = 'error';
+    state.authStatus = channel === 'phone'
+      ? 'Please enter your 10-digit mobile number.'
+      : 'Please enter your email address.';
+    renderApp();
+    return;
+  }
+
+  state.authStatusType = 'info';
+  state.authStatus = `Generating 6-digit verification code for ${channel === 'phone' ? '+91 ' + rawIdentifier : rawIdentifier}...`;
+  renderApp();
+
+  try {
+    const data = await api('/api/auth/send-otp', 'POST', {
+      identifier: rawIdentifier,
+      channel: channel,
+    });
+
+    state.authOtpStep = 'verify';
+    state.authOtpIdentifier = data.identifier;
+    state.authOtpChannel = data.channel;
+    state.authOtpPreview = data.otpPreview || '';
+    state.authEmailDraft = data.identifier;
+    localStorage.setItem('tripzenSavedIdentifier', data.identifier);
+    state.authStatusType = 'success';
+    state.authStatus = data.message || 'Verification code dispatched!';
+    startOtpCountdown(data.expiresInSeconds || 300, data.cooldownSeconds || 60);
+    renderApp();
+    setTimeout(() => {
+      const codeInput = document.getElementById('authOtpCodeInput');
+      if (codeInput) codeInput.focus();
+    }, 100);
+  } catch (err) {
+    state.authStatusType = 'error';
+    state.authStatus = err.message || 'Failed to dispatch verification code. Please check your number/email.';
+    renderApp();
+  }
+}
+
+async function handleVerifyOtp(event) {
+  if (event && event.preventDefault) event.preventDefault();
+  const codeInput = document.getElementById('authOtpCodeInput');
+  const otp = codeInput ? codeInput.value.trim() : '';
+
+  const nameInput = document.getElementById('otpNewFullName');
+  const ageInput = document.getElementById('otpNewAge');
+
+  const fullName = nameInput ? nameInput.value.trim() : '';
+  const age = ageInput ? ageInput.value.trim() : '';
+
+  if (!otp || otp.length < 6) {
+    state.authStatusType = 'error';
+    state.authStatus = 'Please enter the 6-digit verification code.';
+    renderApp();
+    return;
+  }
+
+  state.authStatusType = 'info';
+  state.authStatus = 'Verifying code...';
+  renderApp();
+
+  try {
+    const data = await api('/api/auth/verify-otp', 'POST', {
+      identifier: state.authOtpIdentifier,
+      channel: state.authOtpChannel,
+      otp,
+      fullName,
+      age,
+    });
+
+    if (otpCountdownTimer) {
+      clearInterval(otpCountdownTimer);
+      otpCountdownTimer = null;
+    }
+
+    localStorage.setItem('tripzenUserId', data.user.id);
+    localStorage.setItem('tripzenSavedIdentifier', state.authOtpIdentifier || data.user.phone || data.user.email || '');
+    if (data.user && data.user.profileImage) {
+      localStorage.setItem('tripzenUserAvatar', data.user.profileImage);
+    }
+    if (data.user && data.user.age) {
+      localStorage.setItem('tripzenUserAge', data.user.age);
+    }
+    state.user = data.user;
+    state.profile = data.profile || null;
+    localStorage.removeItem('tripzenProfileDraft');
+
+    state.authStatusType = 'success';
+    state.authStatus = data.message || 'Logged in successfully! Welcome to TripZen.';
+    requestBrowserNotificationPermission();
+
+    await Promise.allSettled([
+      loadMatches(),
+      loadTripGroups(),
+      loadBookings(),
+      loadConversations(),
+    ]);
+    startLiveSync();
+
+    const savedRoute = localStorage.getItem('tripzenLastRoute');
+    if (savedRoute && savedRoute !== '/' && savedRoute !== '/auth') {
+      state.route = savedRoute;
+      window.location.hash = savedRoute;
+    } else if (state.conversations && state.conversations.length > 0) {
+      state.route = '/chat';
+      window.location.hash = '/chat';
+    } else if (data.hasPreferences || (data.profile && data.profile.destination)) {
+      state.route = '/matches';
+      window.location.hash = '/matches';
+    } else if (state.user && state.user.fullName && (state.user.profileCompleteness || 0) >= 40) {
+      state.route = '/preferences';
+      window.location.hash = '/preferences';
+    } else {
+      state.route = '/profile';
+      window.location.hash = '/profile';
+    }
+    renderApp();
+  } catch (err) {
+    state.authStatusType = 'error';
+    state.authStatus = err.message || 'Verification failed. Please check the code and try again.';
+    renderApp();
+  }
+}
+
+async function handleResendOtp() {
+  if (state.authOtpCooldownSeconds > 0) return;
+  state.authStatusType = 'info';
+  state.authStatus = 'Resending 6-digit verification code...';
+  renderApp();
+
+  try {
+    const data = await api('/api/auth/send-otp', 'POST', {
+      identifier: state.authOtpIdentifier,
+      channel: state.authOtpChannel,
+    });
+    state.authOtpPreview = data.otpPreview || '';
+    state.authStatusType = 'success';
+    state.authStatus = data.message || 'New verification code sent!';
+    startOtpCountdown(data.expiresInSeconds || 300, data.cooldownSeconds || 60);
+    renderApp();
+  } catch (err) {
+    state.authStatusType = 'error';
+    state.authStatus = err.message || 'Failed to resend code. Please try again later.';
+    renderApp();
+  }
+}
+
 async function handleAuthSubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -6065,9 +6395,16 @@ async function handleAuthSubmit(event) {
       ]);
       startLiveSync();
 
-      if (data.hasPreferences || (data.profile && data.profile.destination)) {
+      const savedRoute = localStorage.getItem('tripzenLastRoute');
+      if (savedRoute && savedRoute !== '/' && savedRoute !== '/auth') {
+        state.route = savedRoute;
+        window.location.hash = savedRoute;
+      } else if (data.hasPreferences || (data.profile && data.profile.destination)) {
         state.route = '/matches';
         window.location.hash = '/matches';
+      } else if (state.conversations && state.conversations.length > 0) {
+        state.route = '/chat';
+        window.location.hash = '/chat';
       } else if (state.user && state.user.fullName && (state.user.profileCompleteness || 0) >= 40) {
         state.route = '/preferences';
         window.location.hash = '/preferences';
@@ -6121,60 +6458,8 @@ async function handleAuthSubmit(event) {
     state.user = data.user;
     state.profile = data.profile || null;
 
-    // Check if user edited their profile before logging in/registering, and sync it to the server
-    const savedDraft = (() => {
-      try {
-        return JSON.parse(localStorage.getItem('tripzenProfileDraft') || '{}');
-      } catch (e) {
-        return {};
-      }
-    })();
-
-    const draftAge = savedDraft.age || localStorage.getItem('tripzenUserAge');
-    const draftAvatar = savedDraft.profileImage || localStorage.getItem('tripzenUserAvatar');
-    const hasPendingEdits = Boolean(
-      (draftAge && draftAge !== data.user.age) ||
-      (draftAvatar && !draftAvatar.includes('seed=Traveler') && draftAvatar !== data.user.profileImage) ||
-      (savedDraft.fullName && savedDraft.fullName !== data.user.fullName) ||
-      (savedDraft.city && savedDraft.city !== data.user.city) ||
-      (savedDraft.bio && savedDraft.bio !== data.user.bio) ||
-      (savedDraft.pastTrips && savedDraft.pastTrips !== data.user.pastTrips)
-    );
-
-    if (hasPendingEdits) {
-      try {
-        const syncRes = await api('/api/profile', 'POST', {
-          userId: data.user.id,
-          fullName: savedDraft.fullName || data.user.fullName,
-          age: draftAge || data.user.age,
-          city: savedDraft.city || data.user.city,
-          phone: savedDraft.phone || data.user.phone,
-          gender: savedDraft.gender || data.user.gender,
-          travelStyle: savedDraft.travelStyle || data.user.travelStyle,
-          interests: (savedDraft.interests && savedDraft.interests.length) ? savedDraft.interests : data.user.interests,
-          bio: savedDraft.bio || data.user.bio,
-          pastTrips: savedDraft.pastTrips || data.user.pastTrips,
-          budgetRange: savedDraft.budgetRange || data.user.budgetRange,
-          profileImage: draftAvatar || data.user.profileImage,
-        });
-        if (syncRes && syncRes.user) {
-          state.user = syncRes.user;
-          data.user = syncRes.user;
-          if (syncRes.profile) {
-            state.profile = syncRes.profile;
-            data.profile = syncRes.profile;
-          }
-          if (state.user.profileImage) {
-            localStorage.setItem('tripzenUserAvatar', state.user.profileImage);
-          }
-          if (state.user.age) {
-            localStorage.setItem('tripzenUserAge', state.user.age);
-          }
-        }
-      } catch (syncErr) {
-        console.warn('Profile draft sync failed after auth:', syncErr);
-      }
-    }
+    // Clean up draft so it never interferes with real account data
+    localStorage.removeItem('tripzenProfileDraft');
 
     state.authStatusType = 'success';
     state.authStatus = 'Logged in successfully! Welcome back.';
@@ -6190,7 +6475,14 @@ async function handleAuthSubmit(event) {
     startLiveSync();
 
     // Smart routing based on user state
-    if (data.hasPreferences || (data.profile && data.profile.destination)) {
+    const savedRoute = localStorage.getItem('tripzenLastRoute');
+    if (savedRoute && savedRoute !== '/' && savedRoute !== '/auth') {
+      state.route = savedRoute;
+      window.location.hash = savedRoute;
+    } else if (state.conversations && state.conversations.length > 0) {
+      state.route = '/chat';
+      window.location.hash = '/chat';
+    } else if (data.hasPreferences || (data.profile && data.profile.destination)) {
       state.route = '/matches';
       window.location.hash = '/matches';
     } else if (state.user && state.user.fullName && (state.user.profileCompleteness || 0) >= 40) {
@@ -6201,15 +6493,9 @@ async function handleAuthSubmit(event) {
       window.location.hash = '/profile';
     }
     renderApp();
-  } catch (error) {
-    if (state.authMode === 'signup' && (error.message.includes('already exists') || error.message.includes('exist'))) {
-      state.authMode = 'login';
-      state.authStatusType = 'info';
-      state.authStatus = 'An account with this email/phone already exists. Please enter your password to log in, or click "Forgot Password".';
-    } else {
-      state.authStatusType = 'error';
-      state.authStatus = error.message;
-    }
+  } catch (err) {
+    state.authStatusType = 'error';
+    state.authStatus = err.message || 'Authentication failed. Please check your credentials.';
     renderApp();
   }
 }
@@ -7423,11 +7709,16 @@ function compressImageFile(file, maxWidth = 380, maxHeight = 380, quality = 0.82
 
 function handleLogout() {
   localStorage.removeItem('tripzenUserId');
+  localStorage.removeItem('tripzenProfileDraft');
+  localStorage.removeItem('tripzenUserAvatar');
+  localStorage.removeItem('tripzenUserAge');
+  localStorage.removeItem('tripzenLastRoute');
   sessionStorage.removeItem('tripzenAdminUnlocked');
   sessionStorage.removeItem('tripzenAdminPassword');
   state.adminUnlocked = false;
   state.user = null;
   state.profile = null;
+  state.pendingProfileImage = '';
   state.matches = [];
   state.connectStatus = '';
   state.chatStatus = '';
@@ -7450,8 +7741,14 @@ function handleLogout() {
   state.groupTitle = '';
   state.groupEstimatedCost = '';
   state.authMode = 'login';
+  state.authMethod = 'otp';
+  state.authOtpStep = 'input';
+  state.authOtpIdentifier = '';
+  state.authOtpPreview = '';
+  state.authOtpCooldownSeconds = 0;
+  state.authOtpTimerSeconds = 300;
   state.authEmailDraft = localStorage.getItem('tripzenSavedIdentifier') || '';
-  state.authStatus = 'You have been safely logged out. Log in with your phone number or email.';
+  state.authStatus = 'You have been safely logged out. Sign in with your phone or email.';
   state.authStatusType = 'info';
   state.preferenceStatus = '';
   state.matchStatus = '';
@@ -7763,6 +8060,75 @@ function hydrateUI() {
   });
 
   updateLiveProfileStrength();
+
+  // Auth Method Toggles (2FA OTP vs Password)
+  document.querySelectorAll('[data-auth-method]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.authMethod = button.getAttribute('data-auth-method') || 'otp';
+      state.authStatus = '';
+      state.authStatusType = '';
+      renderApp();
+    });
+  });
+
+  // OTP Channel Toggles (Phone vs Email)
+  document.querySelectorAll('[data-otp-channel]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.authOtpChannel = button.getAttribute('data-otp-channel') || 'phone';
+      state.authStatus = '';
+      state.authStatusType = '';
+      renderApp();
+    });
+  });
+
+  // OTP Form Submissions & Clicks
+  const otpSendForm = document.getElementById('otpSendForm');
+  if (otpSendForm) {
+    otpSendForm.addEventListener('submit', handleSendOtp);
+  }
+  const sendOtpBtn = document.getElementById('sendOtpBtn');
+  if (sendOtpBtn && !otpSendForm) {
+    sendOtpBtn.addEventListener('click', handleSendOtp);
+  }
+
+  const otpVerifyForm = document.getElementById('otpVerifyForm');
+  if (otpVerifyForm) {
+    otpVerifyForm.addEventListener('submit', handleVerifyOtp);
+  }
+  const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+  if (verifyOtpBtn && !otpVerifyForm) {
+    verifyOtpBtn.addEventListener('click', handleVerifyOtp);
+  }
+
+  const changeOtpTargetBtn = document.getElementById('changeOtpTargetBtn');
+  if (changeOtpTargetBtn) {
+    changeOtpTargetBtn.addEventListener('click', () => {
+      state.authOtpStep = 'input';
+      state.authStatus = '';
+      state.authStatusType = '';
+      renderApp();
+    });
+  }
+
+  const quickFillOtpBtn = document.getElementById('quickFillOtpBtn');
+  if (quickFillOtpBtn) {
+    quickFillOtpBtn.addEventListener('click', () => {
+      const otpVal = quickFillOtpBtn.getAttribute('data-otp');
+      const codeInput = document.getElementById('authOtpCodeInput');
+      if (codeInput && otpVal) {
+        codeInput.value = otpVal;
+        codeInput.focus();
+      }
+    });
+  }
+
+  const resendOtpBtn = document.getElementById('resendOtpBtn');
+  if (resendOtpBtn) {
+    resendOtpBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      handleResendOtp();
+    });
+  }
 
   // Auth Mode Toggles
   document.querySelectorAll('[data-auth-mode]').forEach((button) => {
@@ -9071,9 +9437,24 @@ async function init() {
   }
 
   await loadSession();
-  if (state.user && (state.route === '/' || state.route === '/auth' || !state.route)) {
-    state.route = '/profile';
-    window.location.hash = '/profile';
+  if (state.user) {
+    await loadConversations();
+    const savedRoute = localStorage.getItem('tripzenLastRoute');
+    if (state.route === '/' || state.route === '/auth' || !state.route) {
+      if (savedRoute && savedRoute !== '/' && savedRoute !== '/auth') {
+        state.route = savedRoute;
+        window.location.hash = savedRoute;
+      } else if (state.conversations && state.conversations.length > 0) {
+        state.route = '/chat';
+        window.location.hash = '/chat';
+      } else if (state.profile && state.profile.destination) {
+        state.route = '/matches';
+        window.location.hash = '/matches';
+      } else {
+        state.route = '/profile';
+        window.location.hash = '/profile';
+      }
+    }
   }
   if (routeNeedsTripData()) {
     requestBrowserNotificationPermission();

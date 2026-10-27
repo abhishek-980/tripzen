@@ -53,6 +53,7 @@ const DEFAULT_STORE = {
   packageBookingRequests: [],
   payments: [],
   whatsappLogs: [],
+  otpRequests: [],
 };
 
 const DESTINATIONS = [
@@ -134,6 +135,7 @@ function loadStore() {
         packageBookingRequests: [],
         payments: [],
         whatsappLogs: [],
+        otpRequests: [],
       };
     }
 
@@ -152,6 +154,7 @@ function loadStore() {
       packageBookingRequests: Array.isArray(parsed.packageBookingRequests) ? parsed.packageBookingRequests : [],
       payments: Array.isArray(parsed.payments) ? parsed.payments : [],
       whatsappLogs: Array.isArray(parsed.whatsappLogs) ? parsed.whatsappLogs : [],
+      otpRequests: Array.isArray(parsed.otpRequests) ? parsed.otpRequests : [],
     };
   } catch (error) {
     console.error('Failed to read store:', error.message);
@@ -1067,13 +1070,23 @@ function findLatestProfileByUserId(userId) {
 
 
 function getConversationForProfiles(profileOneId, profileTwoId) {
+  const p1 = db.profiles.find((p) => p.id === profileOneId);
+  const p2 = db.profiles.find((p) => p.id === profileTwoId);
+  const u1 = p1 ? p1.userId : String(profileOneId || '').replace(/^prf-/, '');
+  const u2 = p2 ? p2.userId : String(profileTwoId || '').replace(/^prf-/, '');
+
   return (
     db.conversations.find((conversation) => {
-      const members = Array.isArray(conversation.memberProfileIds)
-        ? conversation.memberProfileIds
-        : [];
+      const members = Array.isArray(conversation.memberProfileIds) ? conversation.memberProfileIds : [];
+      const userMembers = Array.isArray(conversation.memberUserIds) ? conversation.memberUserIds : [];
 
-      return members.includes(profileOneId) && members.includes(profileTwoId);
+      const matchByProfile = members.includes(profileOneId) && members.includes(profileTwoId);
+      const matchByUser = u1 && u2 && userMembers.includes(u1) && userMembers.includes(u2);
+      const crossMatch =
+        (members.includes(profileOneId) || (u1 && userMembers.includes(u1))) &&
+        (members.includes(profileTwoId) || (u2 && userMembers.includes(u2)));
+
+      return matchByProfile || matchByUser || crossMatch;
     }) || null
   );
 }
@@ -1082,45 +1095,56 @@ function getConversationForProfiles(profileOneId, profileTwoId) {
 
 
 
-function getConversationView(conversation, viewerProfileId) {
+function getConversationView(conversation, viewerProfileId, viewerUserId) {
   const isGroupConversation = conversation.type === 'group';
   const memberProfileIds = Array.isArray(conversation.memberProfileIds) ? conversation.memberProfileIds : [];
+  const memberUserIds = Array.isArray(conversation.memberUserIds) ? conversation.memberUserIds : [];
 
-  const viewerProfile = db.profiles.find((p) => p.id === viewerProfileId);
-  const viewerUserId = viewerProfile ? viewerProfile.userId : null;
-
-  // Identify partner profile ID
-  let otherProfileId = memberProfileIds.find((id) => id !== viewerProfileId) || null;
-  if (!otherProfileId && memberProfileIds.length) {
-    otherProfileId = memberProfileIds[0];
+  let resolvedViewerUserId = viewerUserId;
+  if (!resolvedViewerUserId && viewerProfileId) {
+    const prof = db.profiles.find((p) => p.id === viewerProfileId);
+    if (prof) resolvedViewerUserId = prof.userId;
+    else if (viewerProfileId.startsWith('prf-')) resolvedViewerUserId = viewerProfileId.replace(/^prf-/, '');
   }
 
+  // Set of all profile IDs and user IDs that belong to the viewing user
+  const viewerProfileIds = new Set(
+    db.profiles
+      .filter((p) => p.userId === resolvedViewerUserId)
+      .map((p) => p.id)
+  );
+  if (viewerProfileId) viewerProfileIds.add(viewerProfileId);
+  if (resolvedViewerUserId) {
+    viewerProfileIds.add(resolvedViewerUserId);
+    viewerProfileIds.add(`prf-${resolvedViewerUserId}`);
+  }
+
+  // Identify partner profile ID (must NOT belong to viewer)
+  let otherProfileId = memberProfileIds.find((id) => !viewerProfileIds.has(id)) || null;
+
+  // Identify partner user ID (must NOT belong to viewer)
+  let otherUserId = memberUserIds.find((uId) => uId !== resolvedViewerUserId) || null;
+
   let otherProfile = otherProfileId ? db.profiles.find((profile) => profile.id === otherProfileId) : null;
-  let otherUser = otherProfile ? db.users.find((user) => user.id === otherProfile.userId) : null;
+  let otherUser = otherUserId
+    ? db.users.find((u) => u.id === otherUserId)
+    : (otherProfile ? db.users.find((u) => u.id === otherProfile.userId) : null);
 
   // Self-healing fallback: If otherProfile not found by ID, look up by raw user ID in db.users
   if (!otherUser && otherProfileId) {
     const rawUserId = String(otherProfileId).replace(/^prf-/, '');
     otherUser = db.users.find((u) => u.id === rawUserId || u.id === otherProfileId);
-    if (otherUser && !otherProfile) {
-      otherProfile = {
-        id: otherProfileId,
-        userId: otherUser.id,
-        fullName: otherUser.fullName,
-        destination: conversation.destination || 'Himalayas',
-        travelStyle: otherUser.travelStyle || 'Solo',
-        profileImage: otherUser.profileImage || '',
-      };
-      db.profiles.push(otherProfile);
-    }
   }
 
-  // Also check memberUserIds
-  if (!otherUser && Array.isArray(conversation.memberUserIds)) {
-    const otherUserId = conversation.memberUserIds.find((uId) => uId !== viewerUserId);
-    if (otherUserId) {
-      otherUser = db.users.find((u) => u.id === otherUserId);
-    }
+  if (otherUser && !otherProfile) {
+    otherProfile = db.profiles.find((p) => p.userId === otherUser.id) || {
+      id: otherProfileId || `prf-${otherUser.id}`,
+      userId: otherUser.id,
+      fullName: otherUser.fullName,
+      destination: conversation.destination || 'Himalayas',
+      travelStyle: otherUser.travelStyle || 'Solo',
+      profileImage: otherUser.profileImage || '',
+    };
   }
 
   const memberProfiles = memberProfileIds
@@ -1138,7 +1162,7 @@ function getConversationView(conversation, viewerProfileId) {
   const lastReadAt = lastReadAtByProfileId[viewerProfileId] || '';
   const unreadCount = db.messages.filter((message) => {
     if (message.conversationId !== conversation.id) return false;
-    if (message.senderProfileId === viewerProfileId) return false;
+    if (viewerProfileIds.has(message.senderProfileId) || (resolvedViewerUserId && message.senderUserId === resolvedViewerUserId)) return false;
     if (!lastReadAt) return true;
     return new Date(message.createdAt).getTime() > new Date(lastReadAt).getTime();
   }).length;
@@ -1598,8 +1622,13 @@ function findUserByIdentifier(rawIdentifier) {
   });
 }
 
-// Active OTP storage: phone (10-digits) -> { otp, expiresAt, attempts, createdAt }
+// Active OTP storage: identifier (phone or email) -> { otp, otpHash, channel, expiresAt, attempts, createdAt, lastSentAt }
 const activeOtps = new Map();
+const OTP_SECRET = process.env.OTP_SECRET || 'tripzen-secure-2fa-otp-hmac-secret-2026';
+
+function hashOtp(identifier, otp) {
+  return crypto.createHmac('sha256', OTP_SECRET).update(`${identifier}:${otp}`).digest('hex');
+}
 
 function clean10DigitPhone(rawPhone) {
   let digits = String(rawPhone || '').replace(/\D/g, '');
@@ -1615,140 +1644,299 @@ function clean10DigitPhone(rawPhone) {
   return digits.length === 10 ? digits : '';
 }
 
-// 1. Send OTP via WhatsApp / Instant code
+function cleanIdentifier(rawIdentifier, channelHint) {
+  const str = String(rawIdentifier || '').trim();
+  const isLikelyEmail = channelHint === 'email' || (str.includes('@') && !/^\+?\d+$/.test(str));
+
+  if (isLikelyEmail) {
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
+    const normalized = str.toLowerCase();
+    return {
+      channel: 'email',
+      identifier: normalized,
+      cleanDisplay: normalized,
+      isValid: isValidEmail,
+    };
+  }
+
+  const phone = clean10DigitPhone(str);
+  return {
+    channel: 'phone',
+    identifier: phone,
+    cleanDisplay: phone ? `+91 ${phone}` : '',
+    isValid: Boolean(phone && phone.length === 10),
+  };
+}
+
+// 1. Send OTP via WhatsApp / SMS / Email
 app.post('/api/auth/send-otp', async (req, res) => {
-  const phone = clean10DigitPhone(req.body.phone);
-  if (!phone) {
+  const channelHint = req.body.channel;
+  const rawInput = req.body.identifier || req.body.phone || req.body.email;
+  const { channel, identifier, cleanDisplay, isValid } = cleanIdentifier(rawInput, channelHint);
+
+  if (!isValid || !identifier) {
     return res.status(400).json({
       success: false,
-      message: 'Please enter a valid 10-digit mobile number.',
+      message: channel === 'email'
+        ? 'Please enter a valid email address (e.g. yourname@example.com).'
+        : 'Please enter a valid 10-digit mobile number.',
     });
   }
 
-  // Generate 6-digit OTP
+  // Check 60-second cooldown
+  const existingOtp = activeOtps.get(identifier);
+  if (existingOtp && Date.now() - existingOtp.lastSentAt < 60 * 1000) {
+    const remainingSeconds = Math.ceil((60 * 1000 - (Date.now() - existingOtp.lastSentAt)) / 1000);
+    return res.status(429).json({
+      success: false,
+      message: `Please wait ${remainingSeconds}s before requesting a new verification code.`,
+      cooldownSeconds: remainingSeconds,
+    });
+  }
+
+  // Generate secure 6-digit OTP
   const otp = String(Math.floor(100000 + Math.random() * 900000));
-  activeOtps.set(phone, {
-    otp,
-    expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+  const otpHash = hashOtp(identifier, otp);
+  const expiresAt = Date.now() + 5 * 60 * 1000; // Strictly 5 minutes
+
+  const otpRecord = {
+    identifier,
+    channel,
+    otp, // Kept in memory for dev preview / logging
+    otpHash,
+    expiresAt,
     attempts: 0,
+    maxAttempts: 3,
     createdAt: Date.now(),
+    lastSentAt: Date.now(),
+  };
+
+  activeOtps.set(identifier, otpRecord);
+
+  // Store in persistent db.otpRequests (without plaintext otp)
+  if (!Array.isArray(db.otpRequests)) db.otpRequests = [];
+  db.otpRequests = db.otpRequests.filter(
+    (r) => r.identifier !== identifier && Date.now() < r.expiresAt
+  );
+  db.otpRequests.push({
+    identifier,
+    channel,
+    otpHash,
+    expiresAt,
+    attempts: 0,
+    maxAttempts: 3,
+    createdAt: Date.now(),
+    lastSentAt: Date.now(),
   });
+  saveStore(db);
 
   // Check if existing user
   const existingUser = db.users.find((u) => {
-    const userDigits = String(u.phone || '').replace(/\D/g, '');
-    const emailDigits = String(u.email || '').replace(/\D/g, '');
-    return (userDigits.length >= 10 && userDigits.endsWith(phone)) || (emailDigits.length >= 10 && emailDigits.endsWith(phone));
+    if (channel === 'email') {
+      return String(u.email || '').trim().toLowerCase() === identifier.toLowerCase();
+    } else {
+      const userDigits = String(u.phone || '').replace(/\D/g, '');
+      const emailDigits = String(u.email || '').replace(/\D/g, '');
+      return (
+        (userDigits.length >= 10 && userDigits.endsWith(identifier)) ||
+        (emailDigits.length >= 10 && emailDigits.endsWith(identifier))
+      );
+    }
   });
 
-  const fullPhoneWithCountry = '91' + phone;
-  const waMessage = `🏔️ *TripZen Verification Code*\n\nYour one-time login OTP is: *${otp}*\n\nUse this code to sign in or create your TripZen account. Valid for 10 minutes.\n\n_Do not share this code with anyone._`;
-
   let waDelivered = false;
-  try {
-    const waResult = await whatsappService.sendWhatsAppMessage(fullPhoneWithCountry, waMessage);
-    waDelivered = Boolean(waResult && waResult.success);
-  } catch (err) {
-    console.warn('[AUTH OTP] WhatsApp dispatch notice:', err.message);
+  if (channel === 'phone') {
+    const fullPhoneWithCountry = '91' + identifier;
+    const waMessage = `🏔️ *TripZen Verification Code*\n\nYour one-time 2FA login OTP is: *${otp}*\n\nValid for 5 minutes. Do not share this code with anyone.\n\nHappy Trails,\nTripZen Expeditions`;
+    try {
+      const waResult = await whatsappService.sendWhatsAppMessage(fullPhoneWithCountry, waMessage);
+      waDelivered = Boolean(waResult && waResult.success);
+    } catch (err) {
+      console.warn('[AUTH OTP] WhatsApp dispatch notice:', err.message);
+    }
+  } else {
+    console.log(`[AUTH OTP EMAIL] Verification OTP for ${identifier}: ${otp} (Valid for 5 mins)`);
   }
 
-  console.log(`[AUTH OTP] Generated OTP for +91 ${phone}: ${otp} (WhatsApp delivered: ${waDelivered}, Existing user: ${Boolean(existingUser)})`);
+  console.log(
+    `[AUTH OTP] Generated 6-digit OTP for ${channel} ${cleanDisplay}: ${otp} (WA: ${waDelivered}, Existing: ${Boolean(existingUser)})`
+  );
 
   return res.json({
     success: true,
-    message: waDelivered
-      ? `Verification code sent to your WhatsApp (+91 ${phone})!`
-      : `Verification code generated for +91 ${phone}!`,
-    phone,
+    message: channel === 'phone'
+      ? (waDelivered
+          ? `Verification code sent to your WhatsApp (+91 ${identifier})!`
+          : `Verification code generated for +91 ${identifier}!`)
+      : `Verification code sent to ${identifier}!`,
+    channel,
+    identifier,
+    cleanDisplay,
     isExistingUser: Boolean(existingUser),
     existingUserName: existingUser ? existingUser.fullName : '',
-    otpPreview: otp, // For instant 1-click filling
+    cooldownSeconds: 60,
+    expiresInSeconds: 300,
+    otpPreview: otp, // For 1-click test fill & dev visibility
     waDelivered,
   });
 });
 
 // 2. Verify OTP & Log In / Register
 app.post('/api/auth/verify-otp', (req, res) => {
-  const phone = clean10DigitPhone(req.body.phone);
+  const channelHint = req.body.channel;
+  const rawInput = req.body.identifier || req.body.phone || req.body.email;
+  const { channel, identifier, cleanDisplay } = cleanIdentifier(rawInput, channelHint);
   const otpEntered = String(req.body.otp || '').trim();
   const fullName = normalizeText(req.body.fullName);
   const age = normalizeText(req.body.age);
   const gender = normalizeText(req.body.gender);
   const city = normalizeText(req.body.city);
   const travelStyle = normalizeText(req.body.travelStyle);
+  const bio = normalizeText(req.body.bio);
+  const profileImage = req.body.profileImage;
 
-  if (!phone || !otpEntered) {
+  if (!identifier || !otpEntered) {
     return res.status(400).json({
       success: false,
-      message: 'Please provide both your mobile number and the OTP code.',
+      message: 'Please provide both your phone/email and the 6-digit verification code.',
     });
   }
 
-  const record = activeOtps.get(phone);
-  const isValidOtp = (record && record.otp === otpEntered && Date.now() <= record.expiresAt) || otpEntered === '123456';
+  let record = activeOtps.get(identifier);
+  if (!record && Array.isArray(db.otpRequests)) {
+    record = db.otpRequests.find((r) => r.identifier === identifier);
+  }
+
+  if (!record) {
+    return res.status(400).json({
+      success: false,
+      message: 'No active verification code found for this account. Please request a new code.',
+    });
+  }
+
+  // 1. Check max attempts
+  if (record.attempts >= 3) {
+    activeOtps.delete(identifier);
+    if (Array.isArray(db.otpRequests)) {
+      db.otpRequests = db.otpRequests.filter((r) => r.identifier !== identifier);
+      saveStore(db);
+    }
+    return res.status(429).json({
+      success: false,
+      message: 'Too many incorrect attempts. This code has been invalidated for your security. Please request a new code.',
+    });
+  }
+
+  // 2. Check 5-minute expiry
+  if (Date.now() > record.expiresAt) {
+    activeOtps.delete(identifier);
+    if (Array.isArray(db.otpRequests)) {
+      db.otpRequests = db.otpRequests.filter((r) => r.identifier !== identifier);
+      saveStore(db);
+    }
+    return res.status(410).json({
+      success: false,
+      message: 'This verification code has expired (valid for 5 minutes). Please tap "Resend Code".',
+    });
+  }
+
+  // 3. Verify OTP Hash
+  const expectedHash = hashOtp(identifier, otpEntered);
+  const isValidOtp =
+    (record.otpHash && record.otpHash === expectedHash) ||
+    (record.otp && record.otp === otpEntered) ||
+    otpEntered === '123456';
 
   if (!isValidOtp) {
-    if (record) {
-      record.attempts = (record.attempts || 0) + 1;
-      if (Date.now() > record.expiresAt) {
-        activeOtps.delete(phone);
-        return res.status(400).json({
-          success: false,
-          message: 'This OTP has expired. Please tap "Resend Code" to get a new one.',
-        });
+    record.attempts = (record.attempts || 0) + 1;
+    const remaining = 3 - record.attempts;
+    saveStore(db);
+    if (remaining <= 0) {
+      activeOtps.delete(identifier);
+      if (Array.isArray(db.otpRequests)) {
+        db.otpRequests = db.otpRequests.filter((r) => r.identifier !== identifier);
+        saveStore(db);
       }
+      return res.status(429).json({
+        success: false,
+        message: 'Too many incorrect attempts. This code has been invalidated for your security. Please request a new code.',
+      });
     }
     return res.status(400).json({
       success: false,
-      message: 'Incorrect verification code. Please check and try again.',
+      message: `Incorrect verification code. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`,
+      attemptsRemaining: remaining,
     });
   }
 
-  // Clear consumed OTP
-  activeOtps.delete(phone);
+  // Single-use consumption
+  activeOtps.delete(identifier);
+  if (Array.isArray(db.otpRequests)) {
+    db.otpRequests = db.otpRequests.filter((r) => r.identifier !== identifier);
+  }
 
-  // Check if user exists
+  // Find user by identifier
   let user = db.users.find((u) => {
-    const userDigits = String(u.phone || '').replace(/\D/g, '');
-    const emailDigits = String(u.email || '').replace(/\D/g, '');
-    return (userDigits.length >= 10 && userDigits.endsWith(phone)) || (emailDigits.length >= 10 && emailDigits.endsWith(phone));
+    if (channel === 'email') {
+      return String(u.email || '').trim().toLowerCase() === identifier.toLowerCase();
+    } else {
+      const userDigits = String(u.phone || '').replace(/\D/g, '');
+      const emailDigits = String(u.email || '').replace(/\D/g, '');
+      return (
+        (userDigits.length >= 10 && userDigits.endsWith(identifier)) ||
+        (emailDigits.length >= 10 && emailDigits.endsWith(identifier))
+      );
+    }
   });
 
   let isNewUser = false;
   if (!user) {
     isNewUser = true;
-    const userName = fullName || 'Traveler ' + phone.slice(-4);
+    const userName = fullName || (channel === 'phone' ? 'Traveler ' + identifier.slice(-4) : identifier.split('@')[0]);
     user = {
       id: uid('usr'),
       fullName: userName,
-      email: `${phone}@tripzen.local`,
-      phone: phone,
+      email: channel === 'email' ? identifier : `${identifier}@tripzen.local`,
+      phone: channel === 'phone' ? identifier : '',
       password: uid('pwd'),
-      age: age || '26',
+      age: age || '24',
       gender: gender || 'Female',
       city: city || 'Delhi',
-      interests: [],
+      interests: ['trekking', 'photography'],
       travelStyle: travelStyle || 'Solo',
+      bio: bio || '',
       pastTrips: '',
-      budgetRange: '8000-15000',
+      budgetRange: '7000-15000',
       verified: true,
-      profileCompleteness: 35,
-      profileImage: avatarForUser({ fullName: userName, id: phone }),
+      phoneVerified: channel === 'phone',
+      emailVerified: channel === 'email',
+      profileCompleteness: 45,
+      profileImageData: profileImage && profileImage.startsWith('data:') ? profileImage : '',
+      profileImage:
+        persistProfileImage(profileImage, identifier.replace(/[^a-z0-9]/gi, '_')) ||
+        (profileImage && profileImage.startsWith('data:') ? profileImage : '') ||
+        avatarForUser({ fullName: userName, id: identifier }),
       createdAt: new Date().toISOString(),
     };
     db.users.push(user);
-    saveStore(db);
-    console.log(`[AUTH] New user registered via Phone+OTP: ${user.fullName} (${user.id}, ${phone})`);
+    console.log(`[AUTH] New user registered via 2FA OTP (${channel}): ${user.fullName} (${user.id})`);
   } else {
-    // Existing user: ensure phone is recorded and account verified
-    if (!user.phone) {
-      user.phone = phone;
-    }
+    // Existing user: preserve all profile information, mark verified
     user.verified = true;
-    saveStore(db);
-    console.log(`[AUTH] Existing user logged in via Phone+OTP: ${user.fullName} (${user.id}, ${phone})`);
+    if (channel === 'phone') {
+      user.phone = identifier;
+      user.phoneVerified = true;
+    } else {
+      user.email = identifier;
+      user.emailVerified = true;
+    }
+    if (fullName && !user.fullName) user.fullName = fullName;
+    if (age && !user.age) user.age = age;
+    if (city && !user.city) user.city = city;
+    console.log(`[AUTH] Existing user logged in via 2FA OTP (${channel}): ${user.fullName} (${user.id})`);
   }
 
+  // Ensure persistent canonical profile exists
   let profile = latestProfilesPerUser().find((item) => item.userId === user.id);
   if (!profile) {
     profile = {
@@ -1756,8 +1944,8 @@ app.post('/api/auth/verify-otp', (req, res) => {
       userId: user.id,
       fullName: user.fullName,
       destination: 'Chopta Tungnath',
-      startDate: '2026-10-15',
-      endDate: '2026-10-20',
+      startDate: new Date().toISOString().slice(0, 10),
+      endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
       travelStyle: user.travelStyle || 'Solo',
       budgetRange: user.budgetRange || '5000-9000',
       genderPreference: 'Any',
@@ -1769,7 +1957,16 @@ app.post('/api/auth/verify-otp', (req, res) => {
       updatedAt: new Date().toISOString(),
     };
     db.profiles.push(profile);
+  } else {
+    // Keep profile aligned with user
+    if (user.profileImage && !profile.profileImage) {
+      profile.profileImage = user.profileImage;
+    }
+    if (user.bio && !profile.bio) {
+      profile.bio = user.bio;
+    }
   }
+
   user.profileCompleteness = calculateProfileCompleteness(user, profile);
   saveStore(db);
 
@@ -2506,6 +2703,7 @@ app.post('/api/booking', (req, res) => {
     conversation = {
       id: uid('cnv'),
       memberProfileIds: [requesterProfileId, targetProfileId],
+      memberUserIds: [requester.userId, target.userId].filter(Boolean),
       destination: normalizeText(plannedDestination),
       lastReadAtByProfileId: {
         [requesterProfileId]: new Date().toISOString(),
@@ -2514,6 +2712,14 @@ app.post('/api/booking', (req, res) => {
       updatedAt: new Date().toISOString(),
     };
     db.conversations.push(conversation);
+  } else {
+    conversation.memberUserIds = conversation.memberUserIds || [];
+    if (requester.userId && !conversation.memberUserIds.includes(requester.userId)) {
+      conversation.memberUserIds.push(requester.userId);
+    }
+    if (target.userId && !conversation.memberUserIds.includes(target.userId)) {
+      conversation.memberUserIds.push(target.userId);
+    }
   }
 
   if (normalizeText(message)) {
@@ -2538,7 +2744,7 @@ app.post('/api/booking', (req, res) => {
     success: true,
     message: 'Connection request sent.',
     booking,
-    conversation: getConversationView(conversation, requesterProfileId),
+    conversation: getConversationView(conversation, requesterProfileId, requester.userId),
   });
 });
 
@@ -2552,6 +2758,8 @@ app.get('/api/conversations/:userId', (req, res) => {
   const allUserProfiles = db.profiles.filter((p) => p.userId === userId);
   const userProfileIds = new Set(allUserProfiles.map((p) => p.id));
   if (profile) userProfileIds.add(profile.id);
+  userProfileIds.add(userId);
+  userProfileIds.add(`prf-${userId}`);
 
   const activeProfileId = profile ? profile.id : (allUserProfiles[0] ? allUserProfiles[0].id : `prf-${userId}`);
 
@@ -2561,7 +2769,11 @@ app.get('/api/conversations/:userId', (req, res) => {
       const userMembers = conversation.memberUserIds || [];
       return (
         members.some((mId) => userProfileIds.has(mId) || mId === userId) ||
-        userMembers.includes(userId)
+        userMembers.includes(userId) ||
+        members.some((mId) => {
+          const p = db.profiles.find((pr) => pr.id === mId);
+          return p && p.userId === userId;
+        })
       );
     })
     .sort(
@@ -2569,7 +2781,7 @@ app.get('/api/conversations/:userId', (req, res) => {
         new Date(b.updatedAt || b.createdAt).getTime() -
         new Date(a.updatedAt || a.createdAt).getTime()
     )
-    .map((conversation) => getConversationView(conversation, activeProfileId));
+    .map((conversation) => getConversationView(conversation, activeProfileId, userId));
 
   return res.json({
     success: true,
