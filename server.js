@@ -53,7 +53,6 @@ const DEFAULT_STORE = {
   packageBookingRequests: [],
   payments: [],
   whatsappLogs: [],
-  otpRequests: [],
 };
 
 const DESTINATIONS = [
@@ -135,7 +134,6 @@ function loadStore() {
         packageBookingRequests: [],
         payments: [],
         whatsappLogs: [],
-        otpRequests: [],
       };
     }
 
@@ -154,7 +152,6 @@ function loadStore() {
       packageBookingRequests: Array.isArray(parsed.packageBookingRequests) ? parsed.packageBookingRequests : [],
       payments: Array.isArray(parsed.payments) ? parsed.payments : [],
       whatsappLogs: Array.isArray(parsed.whatsappLogs) ? parsed.whatsappLogs : [],
-      otpRequests: Array.isArray(parsed.otpRequests) ? parsed.otpRequests : [],
     };
   } catch (error) {
     console.error('Failed to read store:', error.message);
@@ -1212,6 +1209,15 @@ function getConversationView(conversation, viewerProfileId, viewerUserId) {
             endDate: otherProfile ? otherProfile.endDate : '',
             bio: otherProfile ? otherProfile.bio || '' : '',
           },
+    partnerName: isGroupConversation
+      ? (conversation.title || 'Trip Group')
+      : (otherUser ? otherUser.fullName : (otherProfile?.fullName || 'Travel Partner')),
+    partnerCity: isGroupConversation
+      ? `${memberProfiles.length} travelers`
+      : (otherUser ? (otherUser.city || 'India') : 'Himalayas'),
+    partnerAvatar: isGroupConversation
+      ? avatarForUser({ fullName: conversation.title || 'Trip Group', id: conversation.id })
+      : (otherUser ? (otherUser.profileImage || avatarForUser(otherUser)) : (otherProfile?.profileImage || '')),
     latestMessage: latestMessage
       ? {
           id: latestMessage.id,
@@ -1622,365 +1628,9 @@ function findUserByIdentifier(rawIdentifier) {
   });
 }
 
-// Active OTP storage: identifier (phone or email) -> { otp, otpHash, channel, expiresAt, attempts, createdAt, lastSentAt }
-const activeOtps = new Map();
-const OTP_SECRET = process.env.OTP_SECRET || 'tripzen-secure-2fa-otp-hmac-secret-2026';
 
-function hashOtp(identifier, otp) {
-  return crypto.createHmac('sha256', OTP_SECRET).update(`${identifier}:${otp}`).digest('hex');
-}
 
-function clean10DigitPhone(rawPhone) {
-  let digits = String(rawPhone || '').replace(/\D/g, '');
-  if (digits.length === 12 && digits.startsWith('91')) {
-    digits = digits.slice(2);
-  }
-  if (digits.length > 10 && digits.startsWith('0')) {
-    digits = digits.replace(/^0+/, '');
-  }
-  if (digits.length > 10) {
-    digits = digits.slice(-10);
-  }
-  return digits.length === 10 ? digits : '';
-}
 
-function cleanIdentifier(rawIdentifier, channelHint) {
-  const str = String(rawIdentifier || '').trim();
-  const isLikelyEmail = channelHint === 'email' || (str.includes('@') && !/^\+?\d+$/.test(str));
-
-  if (isLikelyEmail) {
-    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
-    const normalized = str.toLowerCase();
-    return {
-      channel: 'email',
-      identifier: normalized,
-      cleanDisplay: normalized,
-      isValid: isValidEmail,
-    };
-  }
-
-  const phone = clean10DigitPhone(str);
-  return {
-    channel: 'phone',
-    identifier: phone,
-    cleanDisplay: phone ? `+91 ${phone}` : '',
-    isValid: Boolean(phone && phone.length === 10),
-  };
-}
-
-// 1. Send OTP via WhatsApp / SMS / Email
-app.post('/api/auth/send-otp', async (req, res) => {
-  const channelHint = req.body.channel;
-  const rawInput = req.body.identifier || req.body.phone || req.body.email;
-  const { channel, identifier, cleanDisplay, isValid } = cleanIdentifier(rawInput, channelHint);
-
-  if (!isValid || !identifier) {
-    return res.status(400).json({
-      success: false,
-      message: channel === 'email'
-        ? 'Please enter a valid email address (e.g. yourname@example.com).'
-        : 'Please enter a valid 10-digit mobile number.',
-    });
-  }
-
-  // Check 60-second cooldown
-  const existingOtp = activeOtps.get(identifier);
-  if (existingOtp && Date.now() - existingOtp.lastSentAt < 60 * 1000) {
-    const remainingSeconds = Math.ceil((60 * 1000 - (Date.now() - existingOtp.lastSentAt)) / 1000);
-    return res.status(429).json({
-      success: false,
-      message: `Please wait ${remainingSeconds}s before requesting a new verification code.`,
-      cooldownSeconds: remainingSeconds,
-    });
-  }
-
-  // Generate secure 6-digit OTP
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
-  const otpHash = hashOtp(identifier, otp);
-  const expiresAt = Date.now() + 5 * 60 * 1000; // Strictly 5 minutes
-
-  const otpRecord = {
-    identifier,
-    channel,
-    otp, // Kept in memory for dev preview / logging
-    otpHash,
-    expiresAt,
-    attempts: 0,
-    maxAttempts: 3,
-    createdAt: Date.now(),
-    lastSentAt: Date.now(),
-  };
-
-  activeOtps.set(identifier, otpRecord);
-
-  // Store in persistent db.otpRequests (without plaintext otp)
-  if (!Array.isArray(db.otpRequests)) db.otpRequests = [];
-  db.otpRequests = db.otpRequests.filter(
-    (r) => r.identifier !== identifier && Date.now() < r.expiresAt
-  );
-  db.otpRequests.push({
-    identifier,
-    channel,
-    otpHash,
-    expiresAt,
-    attempts: 0,
-    maxAttempts: 3,
-    createdAt: Date.now(),
-    lastSentAt: Date.now(),
-  });
-  saveStore(db);
-
-  // Check if existing user
-  const existingUser = db.users.find((u) => {
-    if (channel === 'email') {
-      return String(u.email || '').trim().toLowerCase() === identifier.toLowerCase();
-    } else {
-      const userDigits = String(u.phone || '').replace(/\D/g, '');
-      const emailDigits = String(u.email || '').replace(/\D/g, '');
-      return (
-        (userDigits.length >= 10 && userDigits.endsWith(identifier)) ||
-        (emailDigits.length >= 10 && emailDigits.endsWith(identifier))
-      );
-    }
-  });
-
-  let waDelivered = false;
-  if (channel === 'phone') {
-    const fullPhoneWithCountry = '91' + identifier;
-    const waMessage = `🏔️ *TripZen Verification Code*\n\nYour one-time 2FA login OTP is: *${otp}*\n\nValid for 5 minutes. Do not share this code with anyone.\n\nHappy Trails,\nTripZen Expeditions`;
-    try {
-      const waResult = await whatsappService.sendWhatsAppMessage(fullPhoneWithCountry, waMessage);
-      waDelivered = Boolean(waResult && waResult.success);
-    } catch (err) {
-      console.warn('[AUTH OTP] WhatsApp dispatch notice:', err.message);
-    }
-  } else {
-    console.log(`[AUTH OTP EMAIL] Verification OTP for ${identifier}: ${otp} (Valid for 5 mins)`);
-  }
-
-  console.log(
-    `[AUTH OTP] Generated 6-digit OTP for ${channel} ${cleanDisplay}: ${otp} (WA: ${waDelivered}, Existing: ${Boolean(existingUser)})`
-  );
-
-  return res.json({
-    success: true,
-    message: channel === 'phone'
-      ? (waDelivered
-          ? `Verification code sent to your WhatsApp (+91 ${identifier})!`
-          : `Verification code generated for +91 ${identifier}!`)
-      : `Verification code sent to ${identifier}!`,
-    channel,
-    identifier,
-    cleanDisplay,
-    isExistingUser: Boolean(existingUser),
-    existingUserName: existingUser ? existingUser.fullName : '',
-    cooldownSeconds: 60,
-    expiresInSeconds: 300,
-    otpPreview: otp, // For 1-click test fill & dev visibility
-    waDelivered,
-  });
-});
-
-// 2. Verify OTP & Log In / Register
-app.post('/api/auth/verify-otp', (req, res) => {
-  const channelHint = req.body.channel;
-  const rawInput = req.body.identifier || req.body.phone || req.body.email;
-  const { channel, identifier, cleanDisplay } = cleanIdentifier(rawInput, channelHint);
-  const otpEntered = String(req.body.otp || '').trim();
-  const fullName = normalizeText(req.body.fullName);
-  const age = normalizeText(req.body.age);
-  const gender = normalizeText(req.body.gender);
-  const city = normalizeText(req.body.city);
-  const travelStyle = normalizeText(req.body.travelStyle);
-  const bio = normalizeText(req.body.bio);
-  const profileImage = req.body.profileImage;
-
-  if (!identifier || !otpEntered) {
-    return res.status(400).json({
-      success: false,
-      message: 'Please provide both your phone/email and the 6-digit verification code.',
-    });
-  }
-
-  let record = activeOtps.get(identifier);
-  if (!record && Array.isArray(db.otpRequests)) {
-    record = db.otpRequests.find((r) => r.identifier === identifier);
-  }
-
-  if (!record) {
-    return res.status(400).json({
-      success: false,
-      message: 'No active verification code found for this account. Please request a new code.',
-    });
-  }
-
-  // 1. Check max attempts
-  if (record.attempts >= 3) {
-    activeOtps.delete(identifier);
-    if (Array.isArray(db.otpRequests)) {
-      db.otpRequests = db.otpRequests.filter((r) => r.identifier !== identifier);
-      saveStore(db);
-    }
-    return res.status(429).json({
-      success: false,
-      message: 'Too many incorrect attempts. This code has been invalidated for your security. Please request a new code.',
-    });
-  }
-
-  // 2. Check 5-minute expiry
-  if (Date.now() > record.expiresAt) {
-    activeOtps.delete(identifier);
-    if (Array.isArray(db.otpRequests)) {
-      db.otpRequests = db.otpRequests.filter((r) => r.identifier !== identifier);
-      saveStore(db);
-    }
-    return res.status(410).json({
-      success: false,
-      message: 'This verification code has expired (valid for 5 minutes). Please tap "Resend Code".',
-    });
-  }
-
-  // 3. Verify OTP Hash
-  const expectedHash = hashOtp(identifier, otpEntered);
-  const isValidOtp =
-    (record.otpHash && record.otpHash === expectedHash) ||
-    (record.otp && record.otp === otpEntered) ||
-    otpEntered === '123456';
-
-  if (!isValidOtp) {
-    record.attempts = (record.attempts || 0) + 1;
-    const remaining = 3 - record.attempts;
-    saveStore(db);
-    if (remaining <= 0) {
-      activeOtps.delete(identifier);
-      if (Array.isArray(db.otpRequests)) {
-        db.otpRequests = db.otpRequests.filter((r) => r.identifier !== identifier);
-        saveStore(db);
-      }
-      return res.status(429).json({
-        success: false,
-        message: 'Too many incorrect attempts. This code has been invalidated for your security. Please request a new code.',
-      });
-    }
-    return res.status(400).json({
-      success: false,
-      message: `Incorrect verification code. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`,
-      attemptsRemaining: remaining,
-    });
-  }
-
-  // Single-use consumption
-  activeOtps.delete(identifier);
-  if (Array.isArray(db.otpRequests)) {
-    db.otpRequests = db.otpRequests.filter((r) => r.identifier !== identifier);
-  }
-
-  // Find user by identifier
-  let user = db.users.find((u) => {
-    if (channel === 'email') {
-      return String(u.email || '').trim().toLowerCase() === identifier.toLowerCase();
-    } else {
-      const userDigits = String(u.phone || '').replace(/\D/g, '');
-      const emailDigits = String(u.email || '').replace(/\D/g, '');
-      return (
-        (userDigits.length >= 10 && userDigits.endsWith(identifier)) ||
-        (emailDigits.length >= 10 && emailDigits.endsWith(identifier))
-      );
-    }
-  });
-
-  let isNewUser = false;
-  if (!user) {
-    isNewUser = true;
-    const userName = fullName || (channel === 'phone' ? 'Traveler ' + identifier.slice(-4) : identifier.split('@')[0]);
-    user = {
-      id: uid('usr'),
-      fullName: userName,
-      email: channel === 'email' ? identifier : `${identifier}@tripzen.local`,
-      phone: channel === 'phone' ? identifier : '',
-      password: uid('pwd'),
-      age: age || '24',
-      gender: gender || 'Female',
-      city: city || 'Delhi',
-      interests: ['trekking', 'photography'],
-      travelStyle: travelStyle || 'Solo',
-      bio: bio || '',
-      pastTrips: '',
-      budgetRange: '7000-15000',
-      verified: true,
-      phoneVerified: channel === 'phone',
-      emailVerified: channel === 'email',
-      profileCompleteness: 45,
-      profileImageData: profileImage && profileImage.startsWith('data:') ? profileImage : '',
-      profileImage:
-        persistProfileImage(profileImage, identifier.replace(/[^a-z0-9]/gi, '_')) ||
-        (profileImage && profileImage.startsWith('data:') ? profileImage : '') ||
-        avatarForUser({ fullName: userName, id: identifier }),
-      createdAt: new Date().toISOString(),
-    };
-    db.users.push(user);
-    console.log(`[AUTH] New user registered via 2FA OTP (${channel}): ${user.fullName} (${user.id})`);
-  } else {
-    // Existing user: preserve all profile information, mark verified
-    user.verified = true;
-    if (channel === 'phone') {
-      user.phone = identifier;
-      user.phoneVerified = true;
-    } else {
-      user.email = identifier;
-      user.emailVerified = true;
-    }
-    if (fullName && !user.fullName) user.fullName = fullName;
-    if (age && !user.age) user.age = age;
-    if (city && !user.city) user.city = city;
-    console.log(`[AUTH] Existing user logged in via 2FA OTP (${channel}): ${user.fullName} (${user.id})`);
-  }
-
-  // Ensure persistent canonical profile exists
-  let profile = latestProfilesPerUser().find((item) => item.userId === user.id);
-  if (!profile) {
-    profile = {
-      id: uid('prf'),
-      userId: user.id,
-      fullName: user.fullName,
-      destination: 'Chopta Tungnath',
-      startDate: new Date().toISOString().slice(0, 10),
-      endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-      travelStyle: user.travelStyle || 'Solo',
-      budgetRange: user.budgetRange || '5000-9000',
-      genderPreference: 'Any',
-      interests: user.interests && user.interests.length ? user.interests : ['trekking', 'photography'],
-      bio: user.bio || '',
-      pastTrips: user.pastTrips || '',
-      profileImage: user.profileImageData || user.profileImage || '',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    db.profiles.push(profile);
-  } else {
-    // Keep profile aligned with user
-    if (user.profileImage && !profile.profileImage) {
-      profile.profileImage = user.profileImage;
-    }
-    if (user.bio && !profile.bio) {
-      profile.bio = user.bio;
-    }
-  }
-
-  user.profileCompleteness = calculateProfileCompleteness(user, profile);
-  saveStore(db);
-
-  return res.json({
-    success: true,
-    message: isNewUser
-      ? 'Welcome to TripZen! Your account has been verified and created.'
-      : `Welcome back, ${user.fullName.split(' ')[0]}!`,
-    isNewUser,
-    user: sanitizeUser(user),
-    profile: sanitizeProfile(profile),
-    hasPreferences: Boolean(profile && profile.destination),
-  });
-});
 
 app.post('/api/register', (req, res) => {
   const { fullName, email, password, age, gender, interests, city, travelStyle, pastTrips, budgetRange, profileImage, phone, bio } = req.body;
