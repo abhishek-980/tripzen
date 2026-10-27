@@ -1,0 +1,49 @@
+{
+  "name": "TripZen | Himalayan Trek & Companion Matchmaking",
+  "short_name": "TripZen",
+  "description": "Find verified travel companions, join mountain expeditions, and coordinate Himalayan treks.",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0c201a",
+  "theme_color": "#14382d",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./assets/tripzen-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/tripzen-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "social", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Find Travel Buddies",
+      "short_name": "Matches",
+      "description": "Discover compatible companions heading to your summit",
+      "url": "./#/matches",
+      "icons": [{ "src": "./assets/tripzen-logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Companion Chats",
+      "short_name": "Chats",
+      "description": "Coordinate logistics, taxis and stays",
+      "url": "./#/chat",
+      "icons": [{ "src": "./assets/tripzen-logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Plan New Expedition",
+      "short_name": "Plan",
+      "description": "Set dates and destination",
+      "url": "./#/preferences",
+      "icons": [{ "src": "./assets/tripzen-logo.png", "sizes": "192x192" }]
+    }
+  ]
+}

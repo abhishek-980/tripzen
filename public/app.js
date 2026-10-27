@@ -1484,8 +1484,14 @@ const state = {
   mobileShowConversationList: false,
   globalStatus: '',
   globalStatusType: '',
+  pwaDismissed: localStorage.getItem('tripzenPwaDismissed') === 'true',
+  pwaInstalled: false,
+  canInstallPwa: false,
+  showIosInstallModal: false,
+  selectedTrailPeakId: 'kedarkantha',
 };
 
+let deferredPwaPrompt = null;
 let apiBase = '';
 let liveSyncTimer = null;
 let pollInFlight = false;
@@ -1906,6 +1912,10 @@ function userDropdownMenuHtml(avatarUrl) {
           <span class="item-label">RAW Data DB</span>
         </a>
       ` : ''}
+      <button type="button" class="user-dropdown-item action-pwa-install-trigger" style="color: var(--accent); font-weight: 600;">
+        <span class="item-icon">📲</span>
+        <span class="item-label">Install App to Home Screen</span>
+      </button>
       <div class="user-dropdown-divider"></div>
       <button type="button" class="user-dropdown-item logout-item action-logout-btn">
         <span class="item-icon">🚪</span>
@@ -2006,6 +2016,9 @@ function topbar() {
           <a href="#/about" class="mobile-nav-item ${current === '/about' ? 'active' : ''}">
             <span class="mobile-nav-icon">ℹ️</span> <span>About TripZen</span>
           </a>
+          <button type="button" class="mobile-nav-item action-pwa-install-trigger" style="background: none; border: none; width: 100%; text-align: left; cursor: pointer; color: var(--accent); font-weight: 700;">
+            <span class="mobile-nav-icon">📲</span> <span>Install App to Home Screen</span>
+          </button>
           ${isAdminUser() ? `
             <a href="/admin.html" target="_blank" class="mobile-nav-item" style="color: var(--accent); font-weight: 700;">
               <span class="mobile-nav-icon">🗄️</span> <span>RAW Data DB</span>
@@ -2085,6 +2098,10 @@ function dashboardSidebar() {
           <span class="sidebar-nav-icon">ℹ️</span>
           <span class="sidebar-nav-label">About</span>
         </a>
+        <button type="button" class="sidebar-nav-link action-pwa-install-trigger desktop-only" style="background: none; border: none; width: 100%; text-align: left; cursor: pointer; color: var(--accent); font-weight: 700;" title="Install App to Home Screen">
+          <span class="sidebar-nav-icon">📲</span>
+          <span class="sidebar-nav-label">Install App</span>
+        </button>
         ${isAdminUser() ? `
           <a href="/admin.html" target="_blank" class="sidebar-nav-link admin-nav-link desktop-only" style="color: var(--accent); font-weight: 700;" title="RAW Data DB">
             <span class="sidebar-nav-icon">🗄️</span>
@@ -2155,6 +2172,260 @@ function dashboardShell(contentMarkup) {
       </div>
     </div>
   `;
+}
+
+/* ==========================================================================
+   PWA & HIMALAYAN TRAIL RETENTION SUITE
+   ========================================================================== */
+
+function isIosDevice() {
+  const ua = window.navigator.userAgent || '';
+  const isIos = /iPhone|iPad|iPod/i.test(ua);
+  const isIpadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  return isIos || isIpadOS;
+}
+
+function isStandalonePwa() {
+  return window.matchMedia('(display-mode: standalone)').matches ||
+         window.navigator.standalone === true ||
+         localStorage.getItem('tripzenPwaInstalled') === 'true';
+}
+
+const HIMALAYAN_TRAIL_STATUSES = [
+  {
+    id: 'kedarkantha',
+    peak: 'Kedarkantha Summit',
+    altitude: '12,500 ft',
+    temp: '-2°C to 8°C',
+    weather: 'Clear Skies ☀️',
+    condition: 'Open & Snowline Active',
+    statusClass: 'good',
+    desc: 'Summit route is clear with fresh powder above Juda Ka Talab. Microspikes & gaiters recommended for final ridge ascent.',
+    route: 'Sankri Base → Juda Ka Talab → KK Base → Summit',
+    searchKey: 'Kedarkantha',
+  },
+  {
+    id: 'tungnath',
+    peak: 'Chopta Tungnath & Chandrashila',
+    altitude: '13,100 ft',
+    temp: '1°C to 11°C',
+    weather: 'Sunny / Crisp 🏔️',
+    condition: 'Optimal Trekking Conditions',
+    statusClass: 'good',
+    desc: 'Paved trail up to world’s highest Shiva temple is open and dry. Sunrise panoramic 360° view of Nanda Devi & Trishul is crystal clear.',
+    route: 'Chopta → Tungnath Temple → Chandrashila Peak',
+    searchKey: 'Chopta',
+  },
+  {
+    id: 'hampta',
+    peak: 'Hampta Pass & Chandratal',
+    altitude: '14,065 ft',
+    temp: '-4°C to 5°C',
+    weather: 'Windy / Cold ❄️',
+    condition: 'Pass Open (Crampons Advised)',
+    statusClass: 'caution',
+    desc: 'Crossover from lush green Kullu to dramatic cold desert Spiti. High wind chills near pass top; verified guides required.',
+    route: 'Jobra → Jwara → Balu Ka Ghera → Hampta Pass → Shea Goru',
+    searchKey: 'Hampta',
+  },
+  {
+    id: 'triund',
+    peak: 'Triund Ridge & Snowline',
+    altitude: '9,350 ft',
+    temp: '6°C to 16°C',
+    weather: 'Pleasant & Clear 🌤️',
+    condition: 'Open & Camp Ready',
+    statusClass: 'good',
+    desc: 'Spectacular front-row views of Dhauladhar range. Forest checkpoint permits are smooth; ideal for weekend group treks.',
+    route: 'Bhagsunag / Dharamkot → Magic View Cafe → Triund Ridge',
+    searchKey: 'Triund',
+  },
+  {
+    id: 'valley-of-flowers',
+    peak: 'Valley of Flowers & Hemkund',
+    altitude: '14,400 ft',
+    temp: '2°C to 12°C',
+    weather: 'Cool Breeze 🌸',
+    condition: 'Clear Trail & Shrine Accessible',
+    statusClass: 'good',
+    desc: 'Hemkund Sahib holy lake and high-altitude alpine meadows. Stable weather windows in morning hours.',
+    route: 'Govindghat → Ghangaria → Hemkund Sahib / Valley',
+    searchKey: 'Valley',
+  },
+  {
+    id: 'kasol-kheerganga',
+    peak: 'Kasol & Kheerganga Springs',
+    altitude: '9,711 ft',
+    temp: '7°C to 15°C',
+    weather: 'Clear / Cozy ♨️',
+    condition: 'Thermal Pools Active',
+    statusClass: 'good',
+    desc: 'Parvati Valley route via Barshaini and Nakthan is open. Natural sulfur hot springs operating with great mountain campsite vibes.',
+    route: 'Barshaini → Nakthan Village → Rudranag → Kheerganga',
+    searchKey: 'Kasol',
+  },
+];
+
+function renderTrailStatusWidget() {
+  const selectedPeak = HIMALAYAN_TRAIL_STATUSES.find((p) => p.id === state.selectedTrailPeakId) || HIMALAYAN_TRAIL_STATUSES[0];
+
+  return `
+    <section class="himalayan-trail-widget" aria-label="Live Himalayan Trail and Route Conditions">
+      <div class="trail-widget-top">
+        <div class="trail-widget-title-group">
+          <span class="trail-widget-icon" aria-hidden="true">🏔️</span>
+          <h3>Live Himalayan Trail &amp; Weather Watch</h3>
+          <span class="trail-live-pulse-badge">
+            <span class="live-pulse-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+            LIVE CONDITIONS
+          </span>
+        </div>
+        <span style="font-size: 0.74rem; color: #64748b; font-weight: 600;">Updated Today • Field Reports</span>
+      </div>
+
+      <div class="trail-cards-scroll" role="tablist" aria-label="Trek destinations">
+        ${HIMALAYAN_TRAIL_STATUSES.map((t) => {
+          const isActive = t.id === selectedPeak.id;
+          return `
+            <div class="trail-status-card ${isActive ? 'active' : ''} action-select-trail-peak" data-peak-id="${t.id}" role="tab" aria-selected="${isActive ? 'true' : 'false'}" tabindex="0">
+              <div class="trail-card-head">
+                <span class="trail-card-peak-name" title="${escapeHtml(t.peak)}">${escapeHtml(t.peak)}</span>
+                <span class="trail-card-alt">${escapeHtml(t.altitude)}</span>
+              </div>
+              <div class="trail-card-weather-line">
+                <span class="trail-card-weather-text">${escapeHtml(t.weather)}</span>
+                <span class="trail-card-temp">${escapeHtml(t.temp)}</span>
+              </div>
+              <div class="trail-card-status-badge ${t.statusClass}">
+                ● ${escapeHtml(t.condition)}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <div class="trail-expanded-details">
+        <div class="trail-expanded-info">
+          <p class="trail-expanded-desc"><strong>${escapeHtml(selectedPeak.peak)} (${escapeHtml(selectedPeak.altitude)}):</strong> ${escapeHtml(selectedPeak.desc)}</p>
+          <span class="trail-expanded-route">📍 Route: ${escapeHtml(selectedPeak.route)}</span>
+        </div>
+        <button type="button" class="trail-find-matches-btn action-filter-trail-companions" data-search-key="${escapeHtml(selectedPeak.searchKey)}">
+          Find Companions for ${escapeHtml(selectedPeak.searchKey)} ➔
+        </button>
+      </div>
+    </section>
+  `;
+}
+
+function renderPwaInstallBanner() {
+  if (isStandalonePwa() || state.pwaDismissed) {
+    return '';
+  }
+
+  if (!state.canInstallPwa && !isIosDevice()) {
+    return '';
+  }
+
+  return `
+    <div class="pwa-install-banner" id="pwaInstallBanner" role="region" aria-label="Install TripZen Application">
+      <div class="pwa-banner-left">
+        <div class="pwa-banner-icon-box">
+          <img src="./assets/tripzen-logo.png" alt="TripZen" class="pwa-banner-logo" />
+        </div>
+        <div class="pwa-banner-text">
+          <strong>Install TripZen App</strong>
+          <span>1-tap home screen access &amp; trail alerts</span>
+        </div>
+      </div>
+      <div class="pwa-banner-actions">
+        <button type="button" class="pwa-install-btn action-pwa-install-trigger" id="pwaInstallActionBtn">
+          <span>📲 Add</span>
+        </button>
+        <button type="button" class="pwa-dismiss-btn" id="pwaDismissBannerBtn" aria-label="Dismiss banner">✕</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderIosInstallModal() {
+  if (!state.showIosInstallModal) return '';
+
+  return `
+    <div class="pwa-ios-modal-backdrop" id="pwaIosModalBackdrop">
+      <div class="pwa-ios-modal-card" role="dialog" aria-modal="true" aria-labelledby="pwaIosTitle">
+        <div class="pwa-ios-handle"></div>
+        <div class="pwa-ios-header">
+          <img src="./assets/tripzen-logo.png" alt="TripZen App" class="pwa-ios-app-icon" />
+          <div class="pwa-ios-header-text">
+            <h3 id="pwaIosTitle">Install TripZen on iPhone</h3>
+            <p>Fast full-screen access from your Home Screen</p>
+          </div>
+          <button type="button" class="pwa-ios-close-btn" id="pwaIosCloseModalBtn" aria-label="Close modal">✕</button>
+        </div>
+        <div class="pwa-ios-steps">
+          <div class="pwa-ios-step-item">
+            <span class="pwa-step-badge">1</span>
+            <div class="pwa-step-desc">
+              Tap the <strong>Share</strong> button <span class="ios-inline-icon">⎋ / ⬆️</span> in Safari's bottom toolbar.
+            </div>
+          </div>
+          <div class="pwa-ios-step-item">
+            <span class="pwa-step-badge">2</span>
+            <div class="pwa-step-desc">
+              Scroll down and tap <span class="ios-inline-icon">➕ Add to Home Screen</span>.
+            </div>
+          </div>
+          <div class="pwa-ios-step-item">
+            <span class="pwa-step-badge">3</span>
+            <div class="pwa-step-desc">
+              Tap <strong>Add</strong> in the top-right corner to finish. Done!
+            </div>
+          </div>
+        </div>
+        <button type="button" class="pwa-ios-confirm-btn" id="pwaIosGotItActionBtn">Got It, Thanks!</button>
+      </div>
+    </div>
+  `;
+}
+
+async function triggerPwaInstall() {
+  if (isStandalonePwa()) {
+    setGlobalStatus('TripZen is already installed on your device!', 'info');
+    return;
+  }
+
+  if (isIosDevice()) {
+    state.showIosInstallModal = true;
+    renderApp();
+    return;
+  }
+
+  if (deferredPwaPrompt) {
+    try {
+      deferredPwaPrompt.prompt();
+      const choiceResult = await deferredPwaPrompt.userChoice;
+      if (choiceResult && choiceResult.outcome === 'accepted') {
+        state.pwaInstalled = true;
+        state.canInstallPwa = false;
+        localStorage.setItem('tripzenPwaInstalled', 'true');
+        setGlobalStatus('TripZen added to your Home Screen!', 'success');
+      }
+      deferredPwaPrompt = null;
+      renderApp();
+    } catch (err) {
+      console.warn('PWA install prompt error:', err);
+    }
+    return;
+  }
+
+  // Fallback for browsers where prompt hasn't triggered automatically
+  setGlobalStatus('To install TripZen, tap your browser menu (⋮) and choose "Install app" or "Add to Home screen".', 'info');
+}
+
+function dismissPwaBanner() {
+  state.pwaDismissed = true;
+  localStorage.setItem('tripzenPwaDismissed', 'true');
+  renderApp();
 }
 
 function destinationCards(selected) {
@@ -3142,6 +3413,8 @@ function matchesPage() {
       </div>
 
       ${statusMarkup(state.connectStatus, 'success')}
+
+      ${renderTrailStatusWidget()}
 
       <div class="matches-layout-grid">
         <!-- Modern Left Filters Panel -->
@@ -4999,6 +5272,8 @@ function renderApp() {
     ${mainHtml}
     ${renderCheckoutModal()}
     ${renderItineraryModal()}
+    ${renderPwaInstallBanner()}
+    ${renderIosInstallModal()}
   `;
 
   hydrateUI();
@@ -8574,6 +8849,77 @@ function hydrateAdminUI() {
       }
     });
   });
+
+  // PWA Install Triggers (Works across User Menu, Topbar, Sidebar, and Banner)
+  document.querySelectorAll('.action-pwa-install-trigger').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      triggerPwaInstall();
+    });
+  });
+
+  const pwaDismissBannerBtn = document.getElementById('pwaDismissBannerBtn');
+  if (pwaDismissBannerBtn) {
+    pwaDismissBannerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dismissPwaBanner();
+    });
+  }
+
+  // iOS Install Bottom Sheet Modal Event Handlers
+  const pwaIosCloseModalBtn = document.getElementById('pwaIosCloseModalBtn');
+  if (pwaIosCloseModalBtn) {
+    pwaIosCloseModalBtn.addEventListener('click', () => {
+      state.showIosInstallModal = false;
+      renderApp();
+    });
+  }
+
+  const pwaIosGotItActionBtn = document.getElementById('pwaIosGotItActionBtn');
+  if (pwaIosGotItActionBtn) {
+    pwaIosGotItActionBtn.addEventListener('click', () => {
+      state.showIosInstallModal = false;
+      renderApp();
+    });
+  }
+
+  const pwaIosModalBackdrop = document.getElementById('pwaIosModalBackdrop');
+  if (pwaIosModalBackdrop) {
+    pwaIosModalBackdrop.addEventListener('click', (e) => {
+      if (e.target === pwaIosModalBackdrop) {
+        state.showIosInstallModal = false;
+        renderApp();
+      }
+    });
+  }
+
+  // Live Himalayan Trail Status Peak Tab clicks
+  document.querySelectorAll('.action-select-trail-peak').forEach((card) => {
+    card.addEventListener('click', () => {
+      const peakId = card.getAttribute('data-peak-id');
+      if (peakId && state.selectedTrailPeakId !== peakId) {
+        state.selectedTrailPeakId = peakId;
+        renderApp();
+      }
+    });
+  });
+
+  // Himalayan Trail "Find Companions for this Peak" filter button
+  document.querySelectorAll('.action-filter-trail-companions').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const searchKey = btn.getAttribute('data-search-key') || '';
+      state.matchSearchQuery = searchKey;
+      const searchInput = document.getElementById('matchSearchInput');
+      if (searchInput) {
+        searchInput.value = searchKey;
+      }
+      renderApp();
+      const grid = document.querySelector('.matches-layout-grid');
+      if (grid) {
+        grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
 }
 
 window.addEventListener('hashchange', async () => {
@@ -8624,3 +8970,33 @@ async function init() {
 }
 
 init();
+
+// PWA Lifecycle & Service Worker Registration
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPwaPrompt = e;
+  state.canInstallPwa = true;
+  renderApp();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPwaPrompt = null;
+  state.pwaInstalled = true;
+  state.canInstallPwa = false;
+  localStorage.setItem('tripzenPwaInstalled', 'true');
+  setGlobalStatus('TripZen installed successfully! Open anytime directly from your Home Screen.', 'success');
+  renderApp();
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then((reg) => {
+        // Service worker registered
+      })
+      .catch((err) => {
+        console.warn('TripZen Service Worker registration notice:', err);
+      });
+  });
+}
+
