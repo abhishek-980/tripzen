@@ -2053,26 +2053,36 @@ video {
   align-items: center;
   gap: 12px;
   min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .chat-partner-text-wrap {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .chat-partner-name-row {
   display: flex;
   align-items: center;
   gap: 7px;
-  flex-wrap: wrap;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.chat-partner-name-row strong {
+.chat-partner-name-row strong,
+.chat-partner-title {
   font-size: 1.05rem;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .verified-trekker-badge {
@@ -2085,16 +2095,20 @@ video {
   border-radius: 12px;
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .chat-partner-meta-row {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 6px;
   margin-top: 3px;
   font-size: 0.78rem;
   color: #64748b;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .partner-meta-tag {
@@ -6018,13 +6032,17 @@ video {
     overflow-x: hidden;
   }
 
-  /* Mobile Full-Screen Chat View */
+  /* Mobile Full-Screen Chat View & Clean Phone UI */
   .inbox-stitch-container {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 145px);
+    height: calc(100dvh - 140px);
     min-height: 480px;
-    border-radius: var(--radius-md);
+    border-radius: 16px;
+    margin-bottom: 0 !important;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+    background: #ffffff;
   }
   .inbox-stitch-container.showing-chat .inbox-conversations-column {
     display: none !important;
@@ -6033,6 +6051,7 @@ video {
     display: flex !important;
     width: 100%;
     height: 100%;
+    overflow: hidden;
   }
   .inbox-stitch-container.showing-list .inbox-active-chat-column {
     display: none !important;
@@ -6044,21 +6063,372 @@ video {
     max-height: 100% !important;
     border-right: none;
   }
+
+  /* ----------------------------------------------------
+     CLEAN, EXECUTIVE MOBILE CHAT ROOM HEADER
+     ---------------------------------------------------- */
+  .chat-room-header {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+    min-height: 56px !important;
+    max-height: 58px !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    z-index: 20 !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+  }
+
+  .chat-partner-info {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+  }
+
   .mobile-chat-back-btn {
     display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: rgba(35, 89, 70, 0.08);
-    color: var(--forest);
-    font-size: 1.15rem;
-    font-weight: 800;
-    border: none;
-    cursor: pointer;
-    flex-shrink: 0;
-    margin-right: 6px;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    border-radius: 50% !important;
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    border: 1px solid rgba(203, 213, 225, 0.7) !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transition: all 0.15s ease !important;
+  }
+  .mobile-chat-back-btn:active {
+    background: #e2e8f0 !important;
+    transform: scale(0.92);
+  }
+
+  .avatar-online-wrap {
+    position: relative !important;
+    flex-shrink: 0 !important;
+  }
+
+  .header-avatar {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    border: 1.5px solid #a7f3d0 !important;
+    display: block !important;
+    object-fit: cover !important;
+  }
+
+  .avatar-online-wrap .online-status-dot {
+    width: 9px !important;
+    height: 9px !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    border: 2px solid #ffffff !important;
+  }
+
+  .chat-partner-text-wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+    line-height: 1.25 !important;
+  }
+
+  .chat-partner-name-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .chat-partner-name-row strong,
+  .chat-partner-title {
+    font-size: 0.90rem !important;
+    font-weight: 750 !important;
+    color: #0f172a !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  .verified-trekker-badge {
+    flex-shrink: 0 !important;
+    font-size: 0.60rem !important;
+    padding: 1px 5px !important;
+    font-weight: 800 !important;
+    border-radius: 6px !important;
+    white-space: nowrap !important;
+    background: #ecfdf5 !important;
+    color: #059669 !important;
+    border: 1px solid #a7f3d0 !important;
+    line-height: 1.2 !important;
+  }
+
+  .chat-partner-meta-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    flex-wrap: nowrap !important;
+    margin-top: 1px !important;
+    font-size: 0.70rem !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    color: #64748b !important;
+    min-width: 0 !important;
+  }
+
+  .partner-meta-tag {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 110px !important;
+    font-size: 0.66rem !important;
+    padding: 1px 5px !important;
+    border-radius: 4px !important;
+    background: #f1f5f9 !important;
+    font-weight: 600 !important;
+  }
+
+  .partner-style-tag {
+    display: none !important;
+  }
+
+  .partner-status-tag {
+    flex-shrink: 0 !important;
+    font-size: 0.66rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 3px !important;
+    font-weight: 700 !important;
+    color: #059669 !important;
+  }
+
+  .status-dot-mini {
+    width: 5px !important;
+    height: 5px !important;
+    background: #10b981 !important;
+    border-radius: 50% !important;
+  }
+
+  /* Compact Sleek Action Buttons in Header */
+  .chat-header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .chat-trek-bio-btn {
+    padding: 5px 8px !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    border-radius: 14px !important;
+    background: #f8fafc !important;
+    border: 1px solid rgba(203, 213, 225, 0.8) !important;
+    white-space: nowrap !important;
+    gap: 3px !important;
+    min-height: 30px !important;
+    color: #0f172a !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+
+  .chat-share-pkg-btn {
+    padding: 5px 9px !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    border-radius: 14px !important;
+    white-space: nowrap !important;
+    gap: 3px !important;
+    min-height: 30px !important;
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.2) !important;
+    color: #ffffff !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+
+  /* Slide-Down Bio Drawer on Mobile */
+  #partnerTrekBioDrawer {
+    padding: 12px 14px !important;
+  }
+  .drawer-facts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+  .drawer-fact {
+    padding: 6px 10px !important;
+    border-radius: 8px !important;
+  }
+  .drawer-fact .fact-label {
+    font-size: 0.60rem !important;
+  }
+  .drawer-fact .fact-val {
+    font-size: 0.76rem !important;
+  }
+
+  /* Messages Container & Bubbles */
+  .chat-messages-container {
+    padding: 10px 10px !important;
+    gap: 8px !important;
+  }
+
+  .date-divider-pill {
+    margin: 2px auto 6px !important;
+    padding: 3px 10px !important;
+    font-size: 0.66rem !important;
+  }
+
+  .message-row-wrap {
+    max-width: 86% !important;
+  }
+
+  .message-bubble-stitch {
+    padding: 8px 11px 6px !important;
+    font-size: 0.88rem !important;
+    border-radius: 15px !important;
+    line-height: 1.4 !important;
+  }
+
+  .message-time-inline {
+    font-size: 0.64rem !important;
+  }
+
+  /* Quick Icebreakers Bar on Mobile */
+  .chat-icebreakers-container {
+    padding: 5px 8px !important;
+    gap: 6px !important;
+    background: #ffffff !important;
+    border-top: 1px solid #f1f5f9 !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+  }
+
+  .icebreakers-label {
+    font-size: 0.60rem !important;
+    font-weight: 800 !important;
+    padding: 2px 5px !important;
+    background: #ecfdf5 !important;
+    border-radius: 6px !important;
+    color: #059669 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .icebreakers-scroll-row {
+    gap: 6px !important;
+    padding-bottom: 1px !important;
+  }
+
+  .icebreaker-chip {
+    font-size: 0.72rem !important;
+    padding: 4px 9px !important;
+    border-radius: 12px !important;
+    white-space: nowrap !important;
+    border: 1px solid #bbf7d0 !important;
+  }
+
+  /* Bottom Chat Input Toolbar on Mobile */
+  .chat-input-toolbar {
+    padding: 8px 10px max(10px, env(safe-area-inset-bottom)) !important;
+    gap: 7px !important;
+    background: #ffffff !important;
+    border-top: 1px solid rgba(226, 232, 240, 0.9) !important;
+  }
+
+  .chat-pkg-icon-btn {
+    padding: 6px 8px !important;
+    min-width: 36px !important;
+    height: 38px !important;
+    border-radius: 19px !important;
+    justify-content: center !important;
+  }
+  .chat-pkg-icon-btn .pkg-btn-label {
+    display: none !important;
+  }
+  .pkg-icon-emoji {
+    font-size: 1rem !important;
+  }
+
+  .chat-input-bubble-wrap {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .chat-text-input {
+    width: 100% !important;
+    height: 38px !important;
+    padding: 8px 54px 8px 14px !important;
+    font-size: 0.88rem !important;
+    border-radius: 20px !important;
+    border: 1px solid rgba(203, 213, 225, 0.8) !important;
+    background: #f8fafc !important;
+  }
+  .chat-text-input:focus {
+    background: #ffffff !important;
+  }
+
+  .chat-quick-emojis-row {
+    right: 6px !important;
+    gap: 1px !important;
+  }
+  /* Show only 2 quick emojis on mobile (mountain and thumbs up) */
+  .chat-quick-emojis-row .quick-emoji-btn:nth-child(2),
+  .chat-quick-emojis-row .quick-emoji-btn:nth-child(3) {
+    display: none !important;
+  }
+  .quick-emoji-btn {
+    font-size: 0.95rem !important;
+    padding: 2px !important;
+  }
+
+  .chat-send-fab {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Ultra-compact screens (e.g. iPhone SE / small Androids <= 420px) */
+  @media (max-width: 420px) {
+    .chat-trek-bio-btn .action-btn-text {
+      display: none !important;
+    }
+    .chat-trek-bio-btn {
+      padding: 5px 7px !important;
+      font-size: 0.85rem !important;
+    }
+    .chat-share-pkg-btn .action-btn-text {
+      font-size: 0.70rem !important;
+    }
+  }
+  @media (max-width: 360px) {
+    .chat-share-pkg-btn .action-btn-text {
+      display: none !important;
+    }
+    .chat-share-pkg-btn {
+      padding: 5px 7px !important;
+      font-size: 0.85rem !important;
+    }
   }
 
   /* Mobile Grids, Cards & Filters */

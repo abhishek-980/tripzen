@@ -3528,22 +3528,24 @@ function chatPage() {
                     </div>
                     <div class="chat-partner-text-wrap">
                       <div class="chat-partner-name-row">
-                        <strong>${escapeHtml(currentConversation.partner?.fullName || 'Travel Partner')}</strong>
+                        <strong class="chat-partner-title">${escapeHtml(currentConversation.partner?.fullName || 'Travel Partner')}</strong>
                         <span class="verified-trekker-badge" title="Verified Himalayan Trekker">✓ Verified</span>
                       </div>
                       <div class="chat-partner-meta-row">
                         <span class="partner-meta-tag">📍 ${escapeHtml(currentConversation.destination || currentConversation.partner?.destination || 'Himalayan Summit')}</span>
-                        ${currentConversation.partner?.travelStyle ? `<span class="partner-meta-tag">🎒 ${escapeHtml(currentConversation.partner.travelStyle)}</span>` : ''}
+                        ${currentConversation.partner?.travelStyle ? `<span class="partner-meta-tag partner-style-tag">🎒 ${escapeHtml(currentConversation.partner.travelStyle)}</span>` : ''}
                         <span class="partner-status-tag"><span class="status-dot-mini"></span> Online</span>
                       </div>
                     </div>
                   </div>
                   <div class="chat-header-actions">
                     <button type="button" id="toggleTrekBioBtn" class="chat-trek-bio-btn" title="View Companion Trek Details">
-                      <span>🏔️ Trek Bio</span>
+                      <span class="action-btn-icon">🏔️</span>
+                      <span class="action-btn-text">Trek Bio</span>
                     </button>
                     <a href="#/join-book" class="chat-share-pkg-btn" title="Browse Packages & Itineraries">
-                      <span>📦 Share Packages ➔</span>
+                      <span class="action-btn-icon">📦</span>
+                      <span class="action-btn-text">Packages</span>
                     </a>
                   </div>
                 </div>
@@ -3596,7 +3598,7 @@ function chatPage() {
 
                 <!-- Quick Icebreakers Bar (Always Accessible) -->
                 <div class="chat-icebreakers-container">
-                  <span class="icebreakers-label">⚡ QUICK ICEBREAKERS:</span>
+                  <span class="icebreakers-label">⚡ Suggestions:</span>
                   <div class="icebreakers-scroll-row">
                     <button type="button" class="icebreaker-chip" data-chat-icebreaker="Hey! When are you planning to start the trek?">
                       👋 When are you starting?
@@ -3616,7 +3618,7 @@ function chatPage() {
                 <form id="chatForm" class="chat-input-toolbar">
                   <input type="hidden" name="conversationId" value="${escapeHtml(currentConversation.id)}" />
                   <a href="#/join-book" class="chat-pkg-icon-btn" title="Browse and Share Packages">
-                    <span>📦</span>
+                    <span class="pkg-icon-emoji">📦</span>
                     <span class="pkg-btn-label">Packages</span>
                   </a>
                   <div class="chat-input-bubble-wrap">
@@ -3624,7 +3626,7 @@ function chatPage() {
                       name="text"
                       type="text"
                       class="chat-text-input"
-                      placeholder="Type a message to ${escapeHtml((currentConversation.partner?.fullName || 'Travel Partner').split(' ')[0])}..."
+                      placeholder="Type a message..."
                       value="${escapeHtml(state.chatDraft)}"
                       autocomplete="off"
                       required
