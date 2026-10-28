@@ -1537,24 +1537,42 @@ app.post('/api/whatsapp/logout', async (req, res) => {
 // ==========================================
 const phoneOtpStore = new Map();
 
+function normalizeIndianPhone(phone) {
+  let digits = String(phone || '').replace(/\D/g, '');
+  if (!digits) return '';
+  digits = digits.replace(/^0+/, '');
+  if (digits.length === 10) {
+    return '91' + digits;
+  }
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return digits;
+  }
+  if (digits.length > 10 && digits.startsWith('91')) {
+    return '91' + digits.slice(-10);
+  }
+  if (digits.length > 10) {
+    return '91' + digits.slice(-10);
+  }
+  return digits;
+}
+
 app.post('/api/auth/send-phone-otp', async (req, res) => {
   try {
     const { phone } = req.body || {};
-    const digits = String(phone || '').replace(/\D/g, '');
-    if (!digits || digits.length < 10) {
+    const cleanPhone = normalizeIndianPhone(phone);
+    if (!cleanPhone || cleanPhone.length < 12) {
       return res.status(400).json({
         success: false,
         message: 'Please provide a valid 10-digit mobile number.',
       });
     }
 
-    const cleanPhone = digits.length === 10 ? '91' + digits : digits;
     const nationalNumber = cleanPhone.slice(-10);
 
-    // Rate-limiting: minimum 25s between requests for same number
+    // Rate-limiting: minimum 20s between requests for same number
     const existing = phoneOtpStore.get(cleanPhone);
-    if (existing && existing.sentAt && (Date.now() - existing.sentAt < 25000)) {
-      const waitSec = Math.ceil((25000 - (Date.now() - existing.sentAt)) / 1000);
+    if (existing && existing.sentAt && (Date.now() - existing.sentAt < 20000)) {
+      const waitSec = Math.ceil((20000 - (Date.now() - existing.sentAt)) / 1000);
       return res.status(429).json({
         success: false,
         message: `Please wait ${waitSec}s before requesting a new OTP.`,
@@ -1563,7 +1581,7 @@ app.post('/api/auth/send-phone-otp', async (req, res) => {
 
     // Generate clean 6-digit random code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes validity
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes validity
 
     phoneOtpStore.set(cleanPhone, {
       code,
@@ -1573,7 +1591,7 @@ app.post('/api/auth/send-phone-otp', async (req, res) => {
       attempts: 0,
     });
 
-    const otpMessage = `🏔️ *TRIPZEN AUTHENTICATION CODE*\n\nYour 6-digit verification code is:\n\n*${code}*\n\n⏰ Valid for 5 minutes.\n🔒 Do not share this code with anyone.\n\n— TripZen Expeditions (+91 89206 32874)`;
+    const otpMessage = `🏔️ *TRIPZEN AUTHENTICATION CODE*\n\nYour 6-digit verification code is:\n\n*${code}*\n\n⏰ Valid for 10 minutes.\n🔒 Do not share this code with anyone.\n\n— TripZen Expeditions (+91 89206 32874)`;
 
     // Dispatch via WhatsApp bot (+91 89206 32874)
     const sendResult = await whatsappService.sendWhatsAppMessage(cleanPhone, otpMessage);
@@ -1590,7 +1608,7 @@ app.post('/api/auth/send-phone-otp', async (req, res) => {
     return res.json({
       success: true,
       message: `OTP sent to your WhatsApp number (+91 ${nationalNumber})!`,
-      expiresIn: 300,
+      expiresIn: 600,
       delivered: true,
     });
   } catch (err) {
@@ -1604,15 +1622,14 @@ app.post('/api/auth/send-phone-otp', async (req, res) => {
 
 app.post('/api/auth/verify-phone-otp', (req, res) => {
   const { phone, otp } = req.body || {};
-  const digits = String(phone || '').replace(/\D/g, '');
-  if (!digits || digits.length < 10) {
+  const cleanPhone = normalizeIndianPhone(phone);
+  if (!cleanPhone || cleanPhone.length < 12) {
     return res.status(400).json({
       success: false,
-      message: 'Invalid mobile number format.',
+      message: 'Invalid mobile number format. Please enter a valid 10-digit number.',
     });
   }
 
-  const cleanPhone = digits.length === 10 ? '91' + digits : digits;
   const enteredCode = String(otp || '').trim();
 
   if (!enteredCode) {
@@ -1634,11 +1651,11 @@ app.post('/api/auth/verify-phone-otp', (req, res) => {
     phoneOtpStore.delete(cleanPhone);
     return res.status(400).json({
       success: false,
-      message: 'OTP code has expired. Please request a new code.',
+      message: 'OTP code has expired. Please tap "Send OTP" to request a new code.',
     });
   }
 
-  if (record.attempts >= 5) {
+  if (record.attempts >= 8) {
     phoneOtpStore.delete(cleanPhone);
     return res.status(429).json({
       success: false,
@@ -1650,7 +1667,7 @@ app.post('/api/auth/verify-phone-otp', (req, res) => {
     record.attempts++;
     return res.status(400).json({
       success: false,
-      message: 'Invalid OTP code. Please enter the correct code sent by our WhatsApp number.',
+      message: 'Invalid OTP code. Please enter the correct code sent by our WhatsApp number (+91 89206 32874).',
     });
   }
 
@@ -1960,7 +1977,7 @@ app.post('/api/register', (req, res) => {
     });
   }
 
-  const cleanPhone = phoneDigits.length === 10 ? '91' + phoneDigits : phoneDigits;
+  const cleanPhone = normalizeIndianPhone(phoneDigits);
   const otpRecord = phoneOtpStore.get(cleanPhone);
   const isPhoneVerified = Boolean(otpRecord && otpRecord.verified);
 
@@ -4711,4 +4728,19 @@ app.listen(port, host, () => {
   console.log('Tripzen server running at http://127.0.0.1:' + port);
   whatsappService.initWhatsAppService();
 });
+
+const gracefulShutdown = () => {
+  console.log('[TripZen Server] Clean shutdown signal received. Releasing WhatsApp socket...');
+  try {
+    const s = whatsappService.getSocket();
+    if (s) {
+      try { s.ws?.close(); } catch (e) {}
+      try { s.end(); } catch (e) {}
+    }
+  } catch (e) {}
+  process.exit(0);
+};
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 

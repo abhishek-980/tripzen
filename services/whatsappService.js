@@ -27,9 +27,26 @@ let targetPhoneNumber = process.env.TRIPZEN_OFFICIAL_WHATSAPP || '+91 89206 3287
 let isInitializing = false;
 let reconnectTimeout = null;
 
+let lastDisconnectCode = null;
+let lastDisconnectReason = null;
+let lastDisconnectTime = null;
+
 function getCleanPhone(phone) {
-  const digits = String(phone || '').replace(/\D/g, '');
-  if (digits.length === 10) return '91' + digits;
+  let digits = String(phone || '').replace(/\D/g, '');
+  if (!digits) return '';
+  digits = digits.replace(/^0+/, '');
+  if (digits.length === 10) {
+    return '91' + digits;
+  }
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return digits;
+  }
+  if (digits.length > 10 && digits.startsWith('91')) {
+    return '91' + digits.slice(-10);
+  }
+  if (digits.length > 10) {
+    return '91' + digits.slice(-10);
+  }
   return digits;
 }
 
@@ -149,14 +166,14 @@ async function initWhatsAppService(customPhone) {
         keys: makeCacheableSignalKeyStore(state.keys, logger),
       },
       printQRInTerminal: false,
-      browser: Browsers.ubuntu('Chrome'), // Ubuntu Chrome signature is most stable for Node server persistence
+      browser: Browsers.macOS('Chrome'), // Consistent with original Mac registration
       connectTimeoutMs: 60000,
       defaultQueryTimeoutMs: 60000,
-      keepAliveIntervalMs: 30000,
+      keepAliveIntervalMs: 25000,
       retryRequestDelayMs: 2500,
       maxRetries: 5,
       syncFullHistory: false,
-      markOnlineOnConnect: true,
+      markOnlineOnConnect: false,
     });
 
     const persistCreds = async () => {
@@ -197,26 +214,36 @@ async function initWhatsAppService(customPhone) {
         connectionState = 'connected';
         currentPairingCode = '';
         currentQrDataUrl = '';
+        lastDisconnectCode = null;
+        lastDisconnectReason = null;
         const userJid = sock.user?.id || '';
         linkedPhoneNumber = userJid.split(':')[0] || userJid.split('@')[0] || getCleanPhone(targetPhoneNumber);
         console.log(`[WhatsApp Service] 🟢 WhatsApp Bot Connected permanently as +${linkedPhoneNumber}!`);
       } else if (connection === 'close') {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
-        const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+        const errMessage = lastDisconnect?.error?.message || '';
+        const isConflict = statusCode === 440 || statusCode === DisconnectReason.connectionReplaced || errMessage.includes('conflict');
+        const isLoggedOut = statusCode === DisconnectReason.loggedOut;
 
-        console.log(`[WhatsApp Service] Connection closed (code: ${statusCode}). Reconnecting: ${shouldReconnect}`);
+        lastDisconnectCode = statusCode;
+        lastDisconnectReason = errMessage || String(statusCode);
+        lastDisconnectTime = new Date().toISOString();
+
+        console.log(`[WhatsApp Service] Connection closed (code: ${statusCode}, reason: ${errMessage}). Conflict: ${isConflict}, LoggedOut: ${isLoggedOut}`);
         connectionState = 'disconnected';
 
         // NOTE: We NEVER wipe SESSION_DIR on disconnect!
         // Accidental 401, 408, 428, or 440 socket drops should NEVER unlink the bot number.
         // Wipe is ONLY permitted when admin explicitly calls logoutWhatsApp().
 
-        if (shouldReconnect) {
+        if (!isLoggedOut) {
           if (reconnectTimeout) clearTimeout(reconnectTimeout);
+          // If conflict (440 connection replaced), wait 35s to allow competing container to cleanly stop
+          const delayMs = isConflict ? 35000 : 3500;
           reconnectTimeout = setTimeout(() => {
             isInitializing = false;
             initWhatsAppService();
-          }, 4500);
+          }, delayMs);
         }
       }
     });
@@ -314,23 +341,29 @@ async function sendWhatsAppMessage(recipientPhone, messageText) {
     return { success: false, error: 'Invalid recipient phone number' };
   }
 
-  const jid = `${cleanRecipient}@s.whatsapp.net`;
+  // If socket is disconnected, proactively trigger initWhatsAppService() right now!
+  if (!sock || connectionState === 'disconnected') {
+    console.log(`[WhatsApp Service] Socket is ${connectionState}. Triggering active reconnect for outgoing message...`);
+    isInitializing = false;
+    initWhatsAppService().catch(e => console.error('[WhatsApp Service] On-demand reconnect error:', e.message));
+  }
 
-  // If socket is connecting or temporarily reconnecting, wait up to 8 seconds for it to open
+  // Wait up to 10 seconds for open connection
   if (connectionState !== 'connected' || !sock) {
-    console.log(`[WhatsApp Service] Socket is ${connectionState}. Waiting up to 8s for open connection...`);
+    console.log(`[WhatsApp Service] Socket is ${connectionState}. Waiting up to 10s for open connection...`);
     const startWait = Date.now();
-    while (Date.now() - startWait < 8000) {
+    while (Date.now() - startWait < 10000) {
       if (connectionState === 'connected' && sock) {
         break;
       }
-      await delay(500);
+      await delay(400);
     }
   }
 
   if (sock && connectionState === 'connected') {
     try {
-      console.log(`[WhatsApp Service] 🚀 Sending real WhatsApp message to +${cleanRecipient} from official bot...`);
+      const jid = `${cleanRecipient}@s.whatsapp.net`;
+      console.log(`[WhatsApp Service] 🚀 Sending real WhatsApp message to +${cleanRecipient} from official bot (+${linkedPhoneNumber || '918920632874'})...`);
       const sent = await sock.sendMessage(jid, { text: messageText });
       console.log(`[WhatsApp Service] ✅ Message delivered to +${cleanRecipient}! Message ID:`, sent?.key?.id);
       return {
@@ -374,7 +407,14 @@ function getServiceStatus() {
     formattedPairingCode,
     qrCodeDataUrl: currentQrDataUrl,
     isRegistered: registered,
+    lastDisconnectCode,
+    lastDisconnectReason,
+    lastDisconnectTime,
   };
+}
+
+function getSocket() {
+  return sock;
 }
 
 async function logoutWhatsApp() {
@@ -408,6 +448,7 @@ module.exports = {
   requestNewPairingCode,
   sendWhatsAppMessage,
   getServiceStatus,
+  getSocket,
   logoutWhatsApp,
   isSessionRegistered,
 };

@@ -7867,7 +7867,7 @@ function hydrateUI() {
         if (authOtpSignalBadge) {
           authOtpSignalBadge.className = 'otp-signal-badge otp-signal-sent';
           const txt = authOtpSignalBadge.querySelector('.signal-text');
-          if (txt) txt.textContent = '📨 OTP sent to WhatsApp! Enter code & tap Verify';
+          if (txt) txt.textContent = '📨 OTP sent via WhatsApp (+91 89206 32874)! Check your WhatsApp.';
         }
 
         if (authOtpCodeInput) {
@@ -7974,7 +7974,7 @@ function hydrateUI() {
         if (authOtpSignalBadge) {
           authOtpSignalBadge.className = 'otp-signal-badge otp-signal-error';
           const txt = authOtpSignalBadge.querySelector('.signal-text');
-          if (txt) txt.textContent = '🔴 ❌ ' + (err.message || 'Invalid OTP. Try again.');
+          if (txt) txt.textContent = '🔴 ❌ ' + (err.message || 'Invalid OTP. Please enter code from WhatsApp.');
         }
         authOtpCodeInput.classList.remove('otp-verified-border');
         authOtpCodeInput.classList.add('otp-invalid-border');
