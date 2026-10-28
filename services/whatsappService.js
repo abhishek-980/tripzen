@@ -12,6 +12,8 @@ const QRCode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
 
+const supabaseService = require('./supabaseService');
+
 const SESSION_DIR = path.join(__dirname, '..', 'data', 'auth_info_baileys');
 const BACKUP_SESSION_DIR = path.join(__dirname, '..', 'data', 'whatsapp_session_backup');
 
@@ -49,8 +51,8 @@ function isSessionRegistered() {
   return sock?.authState?.creds?.registered === true;
 }
 
-// Ensure session directory and restore from persistent backup if needed
-function ensureSessionDir() {
+// Ensure session directory and restore from persistent backup or Supabase Cloud
+async function ensureSessionCreds() {
   if (!fs.existsSync(SESSION_DIR)) {
     fs.mkdirSync(SESSION_DIR, { recursive: true });
   }
@@ -61,16 +63,37 @@ function ensureSessionDir() {
   const credsPath = path.join(SESSION_DIR, 'creds.json');
   const backupCredsPath = path.join(BACKUP_SESSION_DIR, 'creds.json');
 
-  // Restore creds.json from backup if missing in main session
+  // 1. Restore creds.json from local backup if missing in main session
   if (!fs.existsSync(credsPath) && fs.existsSync(backupCredsPath)) {
     try {
-      console.log('[WhatsApp Service] Restoring WhatsApp credentials from persistent backup...');
+      console.log('[WhatsApp Service] Restoring WhatsApp credentials from persistent local backup...');
       fs.copyFileSync(backupCredsPath, credsPath);
     } catch (e) {
       console.warn('[WhatsApp Service] Could not restore backup creds:', e.message);
     }
-  } else if (fs.existsSync(credsPath) && !fs.existsSync(backupCredsPath)) {
-    // Back up creds.json immediately
+  }
+
+  // 2. Restore from Supabase Storage if missing (for production / Render deployments)
+  if (!fs.existsSync(credsPath)) {
+    try {
+      const client = supabaseService.getAdminClient();
+      if (client) {
+        console.log('[WhatsApp Service] Checking Supabase Storage for saved WhatsApp credentials...');
+        const { data, error } = await client.storage.from('avatars').download('system_config/whatsapp_creds.json');
+        if (!error && data) {
+          const text = await data.text();
+          fs.writeFileSync(credsPath, text, 'utf8');
+          fs.writeFileSync(backupCredsPath, text, 'utf8');
+          console.log('[WhatsApp Service] 🟢 Successfully restored WhatsApp credentials from Supabase Storage!');
+        }
+      }
+    } catch (e) {
+      console.warn('[WhatsApp Service] Supabase cloud creds note:', e.message);
+    }
+  }
+
+  // 3. Back up creds.json locally if it exists
+  if (fs.existsSync(credsPath) && !fs.existsSync(backupCredsPath)) {
     try {
       fs.copyFileSync(credsPath, backupCredsPath);
     } catch (e) {}
@@ -84,7 +107,7 @@ async function initWhatsAppService(customPhone) {
   if (isInitializing) return;
   isInitializing = true;
 
-  ensureSessionDir();
+  await ensureSessionCreds();
 
   // Clean up any stale or half-open socket
   if (sock) {
@@ -126,6 +149,12 @@ async function initWhatsAppService(customPhone) {
         const backupCredsPath = path.join(BACKUP_SESSION_DIR, 'creds.json');
         if (fs.existsSync(credsPath)) {
           fs.copyFileSync(credsPath, backupCredsPath);
+          // Sync to Supabase Storage in background
+          const client = supabaseService.getAdminClient();
+          if (client) {
+            const fileData = fs.readFileSync(credsPath);
+            client.storage.from('avatars').upload('system_config/whatsapp_creds.json', fileData, { upsert: true, contentType: 'application/json' }).catch(() => {});
+          }
         }
       } catch (e) {}
     };
@@ -162,7 +191,7 @@ async function initWhatsAppService(customPhone) {
         connectionState = 'disconnected';
 
         // NOTE: We NEVER wipe SESSION_DIR on disconnect!
-        // Accidental 401, 408, or 428 socket drops should NEVER unlink the bot number.
+        // Accidental 401, 408, 428, or 440 socket drops should NEVER unlink the bot number.
         // Wipe is ONLY permitted when admin explicitly calls logoutWhatsApp().
 
         if (shouldReconnect) {
@@ -270,6 +299,18 @@ async function sendWhatsAppMessage(recipientPhone, messageText) {
 
   const jid = `${cleanRecipient}@s.whatsapp.net`;
 
+  // If socket is connecting or temporarily reconnecting, wait up to 8 seconds for it to open
+  if (connectionState !== 'connected' || !sock) {
+    console.log(`[WhatsApp Service] Socket is ${connectionState}. Waiting up to 8s for open connection...`);
+    const startWait = Date.now();
+    while (Date.now() - startWait < 8000) {
+      if (connectionState === 'connected' && sock) {
+        break;
+      }
+      await delay(500);
+    }
+  }
+
   if (sock && connectionState === 'connected') {
     try {
       console.log(`[WhatsApp Service] 🚀 Sending real WhatsApp message to +${cleanRecipient} from official bot...`);
@@ -294,7 +335,7 @@ async function sendWhatsAppMessage(recipientPhone, messageText) {
 
   return {
     success: false,
-    reason: 'WhatsApp socket not connected yet',
+    reason: `WhatsApp bot is currently ${connectionState}. Please try again in 5 seconds.`,
     connectionState,
     pairingCode: currentPairingCode,
     targetPhoneNumber,

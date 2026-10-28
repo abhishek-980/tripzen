@@ -1577,13 +1577,21 @@ app.post('/api/auth/send-phone-otp', async (req, res) => {
 
     // Dispatch via WhatsApp bot (+91 89206 32874)
     const sendResult = await whatsappService.sendWhatsAppMessage(cleanPhone, otpMessage);
-    console.log(`[WhatsApp OTP] Code ${code} dispatched to +${cleanPhone}. Status:`, sendResult?.success ? 'DELIVERED' : sendResult?.reason || 'QUEUED');
+    console.log(`[WhatsApp OTP] Code ${code} dispatched to +${cleanPhone}. Status:`, sendResult?.success ? 'DELIVERED' : sendResult?.reason || 'FAILED');
+
+    if (!sendResult || !sendResult.success) {
+      console.warn(`[WhatsApp OTP] Delivery failed to +${cleanPhone}:`, sendResult?.error || sendResult?.reason);
+      return res.status(503).json({
+        success: false,
+        message: sendResult?.reason || sendResult?.error || 'WhatsApp bot is connecting. Please wait 5 seconds and tap Send OTP again.',
+      });
+    }
 
     return res.json({
       success: true,
       message: `OTP sent to your WhatsApp number (+91 ${nationalNumber})!`,
       expiresIn: 300,
-      delivered: Boolean(sendResult?.success),
+      delivered: true,
     });
   } catch (err) {
     console.error('[WhatsApp OTP] Error dispatching OTP:', err.message);
