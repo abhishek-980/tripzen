@@ -1,6 +1,7 @@
 .env
 node_modules/
 data/auth_info_baileys/
+data/whatsapp_session_backup/
 scratch/
 *.log
 test_output.log

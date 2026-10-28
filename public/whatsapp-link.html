@@ -300,23 +300,27 @@
           qrImg.style.display = 'none';
           codeVal.textContent = 'CONNECTED';
           codeVal.style.color = '#34d399';
-        } else {
-          badge.className = 'status-badge status-pairing';
-          statusText.innerHTML = `🟡 Ready to Link Number <strong>${data.officialNumber || '+91 89206 32874'}</strong>`;
-
-          if (data.qrCodeDataUrl) {
-            qrImg.src = data.qrCodeDataUrl;
-            qrImg.style.display = 'block';
-            qrLoading.style.display = 'none';
-          }
-
-          if (data.formattedPairingCode || data.pairingCode) {
-            codeVal.textContent = data.formattedPairingCode || data.pairingCode;
+          if (data.isRegistered) {
+            badge.className = 'status-badge status-connected';
+            statusText.innerHTML = `🟢 Official Bot Linked Permanently as <strong>${data.linkedNumber || data.officialNumber}</strong>`;
+            qrLoading.textContent = '✓ Permanent WhatsApp Bot Active! Ready to send OTPs.';
+            qrImg.style.display = 'none';
+            codeVal.textContent = 'CONNECTED';
             codeVal.style.color = '#34d399';
-          } else if (!autoRequestedOnce && !isRequestingCode && data.status !== 'connected') {
-            // Auto-request code on first load once only
-            autoRequestedOnce = true;
-            requestCode();
+          } else {
+            badge.className = 'status-badge status-pairing';
+            statusText.innerHTML = `🟡 Ready to Link Number <strong>${data.officialNumber || '+91 89206 32874'}</strong>`;
+
+            if (data.qrCodeDataUrl) {
+              qrImg.src = data.qrCodeDataUrl;
+              qrImg.style.display = 'block';
+              qrLoading.style.display = 'none';
+            }
+
+            if (data.formattedPairingCode || data.pairingCode) {
+              codeVal.textContent = data.formattedPairingCode || data.pairingCode;
+              codeVal.style.color = '#34d399';
+            }
           }
         }
       } catch (err) {

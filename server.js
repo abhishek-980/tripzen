@@ -1531,6 +1531,131 @@ app.post('/api/whatsapp/logout', async (req, res) => {
   res.json(result);
 });
 
+// ==========================================
+// WHATSAPP PHONE NUMBER OTP AUTHENTICATION
+// Official bot: +91 89206 32874
+// ==========================================
+const phoneOtpStore = new Map();
+
+app.post('/api/auth/send-phone-otp', async (req, res) => {
+  try {
+    const { phone } = req.body || {};
+    const digits = String(phone || '').replace(/\D/g, '');
+    if (!digits || digits.length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid 10-digit mobile number.',
+      });
+    }
+
+    const cleanPhone = digits.length === 10 ? '91' + digits : digits;
+    const nationalNumber = cleanPhone.slice(-10);
+
+    // Rate-limiting: minimum 25s between requests for same number
+    const existing = phoneOtpStore.get(cleanPhone);
+    if (existing && existing.sentAt && (Date.now() - existing.sentAt < 25000)) {
+      const waitSec = Math.ceil((25000 - (Date.now() - existing.sentAt)) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${waitSec}s before requesting a new OTP.`,
+      });
+    }
+
+    // Generate clean 6-digit random code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes validity
+
+    phoneOtpStore.set(cleanPhone, {
+      code,
+      expiresAt,
+      sentAt: Date.now(),
+      verified: false,
+      attempts: 0,
+    });
+
+    const otpMessage = `🏔️ *TRIPZEN AUTHENTICATION CODE*\n\nYour 6-digit verification code is:\n\n*${code}*\n\n⏰ Valid for 5 minutes.\n🔒 Do not share this code with anyone.\n\n— TripZen Expeditions (+91 89206 32874)`;
+
+    // Dispatch via WhatsApp bot (+91 89206 32874)
+    const sendResult = await whatsappService.sendWhatsAppMessage(cleanPhone, otpMessage);
+    console.log(`[WhatsApp OTP] Code ${code} dispatched to +${cleanPhone}. Status:`, sendResult?.success ? 'DELIVERED' : sendResult?.reason || 'QUEUED');
+
+    return res.json({
+      success: true,
+      message: `OTP sent to your WhatsApp number (+91 ${nationalNumber})!`,
+      expiresIn: 300,
+      delivered: Boolean(sendResult?.success),
+    });
+  } catch (err) {
+    console.error('[WhatsApp OTP] Error dispatching OTP:', err.message);
+    return res.status(500).json({
+      success: false,
+      message: err.message || 'Failed to dispatch WhatsApp OTP. Please try again.',
+    });
+  }
+});
+
+app.post('/api/auth/verify-phone-otp', (req, res) => {
+  const { phone, otp } = req.body || {};
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (!digits || digits.length < 10) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid mobile number format.',
+    });
+  }
+
+  const cleanPhone = digits.length === 10 ? '91' + digits : digits;
+  const enteredCode = String(otp || '').trim();
+
+  if (!enteredCode) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please enter the 6-digit OTP code.',
+    });
+  }
+
+  const record = phoneOtpStore.get(cleanPhone);
+  if (!record) {
+    return res.status(400).json({
+      success: false,
+      message: 'No OTP requested for this number or code has expired. Please tap "Send OTP".',
+    });
+  }
+
+  if (Date.now() > record.expiresAt) {
+    phoneOtpStore.delete(cleanPhone);
+    return res.status(400).json({
+      success: false,
+      message: 'OTP code has expired. Please request a new code.',
+    });
+  }
+
+  if (record.attempts >= 5) {
+    phoneOtpStore.delete(cleanPhone);
+    return res.status(429).json({
+      success: false,
+      message: 'Too many incorrect attempts. Please tap "Send OTP" to get a fresh code.',
+    });
+  }
+
+  if (record.code !== enteredCode) {
+    record.attempts++;
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid OTP code. Please enter the correct code sent by our WhatsApp number.',
+    });
+  }
+
+  // OTP verified successfully!
+  record.verified = true;
+  return res.json({
+    success: true,
+    verified: true,
+    message: 'Mobile number verified successfully! Green signal active.',
+  });
+});
+
+
 
 
 function requireAdmin(req, res, next) {
@@ -1827,12 +1952,17 @@ app.post('/api/register', (req, res) => {
     });
   }
 
+  const cleanPhone = phoneDigits.length === 10 ? '91' + phoneDigits : phoneDigits;
+  const otpRecord = phoneOtpStore.get(cleanPhone);
+  const isPhoneVerified = Boolean(otpRecord && otpRecord.verified);
+
   const user = {
     id: uid('usr'),
     fullName: rawName,
     email: normalizedEmail,
     password: rawPassword,
     phone: rawPhone || (phoneDigits.length >= 10 ? phoneDigits.slice(-10) : ''),
+    phoneVerified: isPhoneVerified,
     age: normalizeText(age) || '24',
     gender: normalizeText(gender) || 'Female',
     city: normalizeText(city) || '',

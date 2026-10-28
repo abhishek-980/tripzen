@@ -1471,6 +1471,10 @@ const state = {
   adminStatusMessage: '',
   adminStatusType: '',
   adminUnlocked: sessionStorage.getItem('tripzenAdminUnlocked') === 'true',
+  phoneOtpSent: false,
+  phoneOtpVerified: false,
+  phoneOtpNumber: '',
+  phoneOtpCooldown: 0,
   selectedMatchProfileId: '',
   matchTravelStyleFilter: '',
   matchCompatibilityMin: 50,
@@ -4959,29 +4963,54 @@ function authPage() {
             ${
               isSignup
                 ? `
-                  <div class="auth-two-col-row responsive-stack">
-                    <label class="field-label">
-                      <span>FULL NAME</span>
-                      <input name="fullName" required placeholder="Aarav Mehta" class="stitch-input" value="${escapeHtml(draftName)}" />
-                    </label>
-
-                    <label class="field-label">
-                      <span>MOBILE NUMBER</span>
-                      <div class="phone-input-group">
-                        <span class="phone-prefix-addon">🇮🇳 +91</span>
-                        <input name="phone" type="tel" autocomplete="tel" placeholder="98765 43210" class="stitch-input phone-input-field" value="${escapeHtml(draftPhone)}" />
-                      </div>
-                    </label>
+                  <div class="field-label" style="margin-bottom: 12px;">
+                    <span class="field-kicker">FULL NAME</span>
+                    <input name="fullName" required placeholder="Aarav Mehta" class="stitch-input" value="${escapeHtml(draftName)}" />
                   </div>
 
-                  <div class="auth-two-col-row responsive-stack">
+                  <!-- ROW: MOBILE NUMBER (LEFT) + WHATSAPP OTP (RIGHT SIDE) -->
+                  <div class="auth-two-col-row responsive-stack auth-phone-otp-row" style="margin-bottom: 12px;">
+                    <!-- LEFT SIDE: MOBILE NUMBER -->
+                    <div class="field-label auth-phone-col">
+                      <span class="field-kicker">MOBILE NUMBER</span>
+                      <div class="phone-send-wrap">
+                        <div class="phone-input-group">
+                          <span class="phone-prefix-addon">🇮🇳 +91</span>
+                          <input id="authPhoneInput" name="phone" type="tel" autocomplete="tel" placeholder="98765 43210" class="stitch-input phone-input-field" value="${escapeHtml(draftPhone)}" ${state.phoneOtpVerified ? 'readonly' : ''} />
+                        </div>
+                        <button type="button" id="authSendOtpBtn" class="auth-otp-send-btn ${state.phoneOtpVerified ? 'verified-locked' : ''}" ${state.phoneOtpVerified ? 'disabled' : ''}>
+                          <span>${state.phoneOtpVerified ? '✓ Verified' : (state.phoneOtpCooldown > 0 ? `Resend (${state.phoneOtpCooldown}s)` : (state.phoneOtpSent ? 'Resend OTP' : 'Send OTP'))}</span>
+                        </button>
+                      </div>
+                      <span class="otp-sub-help">💬 Code sent via WhatsApp (+91 89206 32874)</span>
+                    </div>
+
+                    <!-- RIGHT SIDE OF MOBILE NUMBER: OTP OPTION & VERIFY BUTTON -->
+                    <div class="field-label auth-otp-col">
+                      <span class="field-kicker">WHATSAPP OTP</span>
+                      <div class="otp-input-verify-wrap">
+                        <input id="authOtpCodeInput" type="text" maxlength="6" inputmode="numeric" placeholder="6-digit OTP" class="stitch-input auth-otp-code-input ${state.phoneOtpVerified ? 'otp-verified-border' : ''}" ${state.phoneOtpVerified ? 'disabled' : ''} />
+                        <button type="button" id="authVerifyOtpBtn" class="auth-otp-verify-btn ${state.phoneOtpVerified ? 'verified' : ''}" ${state.phoneOtpVerified ? 'disabled' : ''}>
+                          <span>${state.phoneOtpVerified ? '✓ Verified' : 'Verify'}</span>
+                        </button>
+                      </div>
+                      <!-- Green/Red signal status indicator -->
+                      <div id="authOtpSignalBadge" class="otp-signal-badge ${state.phoneOtpVerified ? 'otp-signal-success' : 'otp-signal-idle'}">
+                        <span class="signal-dot"></span>
+                        <span class="signal-text">${state.phoneOtpVerified ? '🟢 ✅ Verified! Mobile number confirmed.' : 'Enter OTP sent to your WhatsApp'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- AFTER THAT: EMAIL ADDRESS & PASSWORD -->
+                  <div class="auth-two-col-row responsive-stack" style="margin-bottom: 12px;">
                     <label class="field-label">
-                      <span>EMAIL ADDRESS</span>
+                      <span class="field-kicker">EMAIL ADDRESS</span>
                       <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="aarav@example.com" class="stitch-input" />
                     </label>
 
                     <label class="field-label">
-                      <span>PASSWORD</span>
+                      <span class="field-kicker">PASSWORD</span>
                       <div class="password-input-wrap">
                         <input name="password" type="password" required minlength="4" placeholder="••••••••" class="stitch-input password-input-field" />
                         <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
@@ -4989,14 +5018,15 @@ function authPage() {
                     </label>
                   </div>
 
-                  <div class="auth-two-col-row">
+                  <!-- CURRENT CITY & AGE -->
+                  <div class="auth-two-col-row" style="margin-bottom: 12px;">
                     <label class="field-label">
-                      <span>CURRENT CITY</span>
+                      <span class="field-kicker">CURRENT CITY</span>
                       <input name="city" placeholder="Mumbai / Delhi / Bengaluru" class="stitch-input" value="${escapeHtml(draftCity)}" />
                     </label>
 
                     <label class="field-label">
-                      <span>AGE</span>
+                      <span class="field-kicker">AGE</span>
                       <input name="age" type="number" min="16" max="90" placeholder="21" class="stitch-input" value="${escapeHtml(draftAge)}" />
                     </label>
                   </div>
@@ -6102,6 +6132,29 @@ async function handleAuthSubmit(event) {
   }
 
   // 2. SIGNUP & LOGIN FLOW
+  if (state.authMode === 'signup') {
+    const phoneInput = form.querySelector('input[name="phone"]');
+    const phoneVal = phoneInput ? phoneInput.value.replace(/\D/g, '') : '';
+    if (phoneVal && !state.phoneOtpVerified) {
+      state.authStatusType = 'error';
+      state.authStatus = 'Please verify your mobile number with WhatsApp OTP before creating account.';
+      const badge = document.getElementById('authOtpSignalBadge');
+      if (badge) {
+        badge.className = 'otp-signal-badge otp-signal-error';
+        const txt = badge.querySelector('.signal-text');
+        if (txt) txt.textContent = '🔴 ❌ Tap "Verify" to confirm your WhatsApp OTP code first.';
+      }
+      const otpInput = document.getElementById('authOtpCodeInput');
+      if (otpInput) {
+        otpInput.classList.remove('otp-verified-border');
+        otpInput.classList.add('otp-invalid-border');
+        otpInput.focus();
+      }
+      renderApp();
+      return;
+    }
+  }
+
   const rawIdentifier = String(payload.email || payload.identifier || payload.username || payload.phone || '').trim();
   const rawPassword = String(payload.password || '').trim();
 
@@ -7770,6 +7823,215 @@ function hydrateUI() {
       state.authStatus = '';
       state.authStatusType = '';
       renderApp();
+    });
+  }
+
+  // WHATSAPP INLINE OTP EVENT HANDLERS
+  const authPhoneInput = document.getElementById('authPhoneInput');
+  const authSendOtpBtn = document.getElementById('authSendOtpBtn');
+  const authOtpCodeInput = document.getElementById('authOtpCodeInput');
+  const authVerifyOtpBtn = document.getElementById('authVerifyOtpBtn');
+  const authOtpSignalBadge = document.getElementById('authOtpSignalBadge');
+
+  if (authSendOtpBtn && authPhoneInput) {
+    authSendOtpBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const rawPhone = authPhoneInput.value.trim();
+      const cleanPhone = rawPhone.replace(/\D/g, '');
+
+      if (!cleanPhone || cleanPhone.length < 10) {
+        if (authOtpSignalBadge) {
+          authOtpSignalBadge.className = 'otp-signal-badge otp-signal-error';
+          const txt = authOtpSignalBadge.querySelector('.signal-text');
+          if (txt) txt.textContent = '🔴 ❌ Enter a valid 10-digit mobile number first.';
+        }
+        authPhoneInput.focus();
+        return;
+      }
+
+      state.phoneOtpNumber = cleanPhone;
+      authSendOtpBtn.disabled = true;
+      const originalHtml = authSendOtpBtn.innerHTML;
+      authSendOtpBtn.innerHTML = '<span>Sending...</span>';
+
+      if (authOtpSignalBadge) {
+        authOtpSignalBadge.className = 'otp-signal-badge otp-signal-sending';
+        const txt = authOtpSignalBadge.querySelector('.signal-text');
+        if (txt) txt.textContent = '⏳ Sending OTP via official WhatsApp (+91 89206 32874)...';
+      }
+
+      try {
+        const res = await api('/api/auth/send-phone-otp', 'POST', { phone: cleanPhone });
+        state.phoneOtpSent = true;
+
+        if (authOtpSignalBadge) {
+          authOtpSignalBadge.className = 'otp-signal-badge otp-signal-sent';
+          const txt = authOtpSignalBadge.querySelector('.signal-text');
+          if (txt) txt.textContent = '📨 OTP sent to WhatsApp! Enter code & tap Verify';
+        }
+
+        if (authOtpCodeInput) {
+          authOtpCodeInput.focus();
+        }
+
+        let cd = 30;
+        state.phoneOtpCooldown = cd;
+        authSendOtpBtn.innerHTML = `<span>Resend (${cd}s)</span>`;
+        if (window._authOtpTimer) clearInterval(window._authOtpTimer);
+        window._authOtpTimer = setInterval(() => {
+          cd--;
+          state.phoneOtpCooldown = cd;
+          if (cd <= 0) {
+            clearInterval(window._authOtpTimer);
+            window._authOtpTimer = null;
+            if (!state.phoneOtpVerified && authSendOtpBtn) {
+              authSendOtpBtn.disabled = false;
+              authSendOtpBtn.innerHTML = '<span>Resend OTP</span>';
+            }
+          } else if (authSendOtpBtn && !state.phoneOtpVerified) {
+            authSendOtpBtn.innerHTML = `<span>Resend (${cd}s)</span>`;
+          }
+        }, 1000);
+      } catch (err) {
+        if (authOtpSignalBadge) {
+          authOtpSignalBadge.className = 'otp-signal-badge otp-signal-error';
+          const txt = authOtpSignalBadge.querySelector('.signal-text');
+          if (txt) txt.textContent = '🔴 ❌ ' + (err.message || 'Failed to send OTP.');
+        }
+        authSendOtpBtn.disabled = false;
+        authSendOtpBtn.innerHTML = originalHtml;
+      }
+    });
+  }
+
+  if (authVerifyOtpBtn && authOtpCodeInput) {
+    const handleVerify = async () => {
+      const rawPhone = (authPhoneInput ? authPhoneInput.value : state.phoneOtpNumber || '').trim();
+      const cleanPhone = rawPhone.replace(/\D/g, '');
+      const otpVal = authOtpCodeInput.value.trim();
+
+      if (!cleanPhone || cleanPhone.length < 10) {
+        if (authOtpSignalBadge) {
+          authOtpSignalBadge.className = 'otp-signal-badge otp-signal-error';
+          const txt = authOtpSignalBadge.querySelector('.signal-text');
+          if (txt) txt.textContent = '🔴 ❌ Please enter your 10-digit mobile number.';
+        }
+        return;
+      }
+
+      if (!otpVal || otpVal.length !== 6) {
+        if (authOtpSignalBadge) {
+          authOtpSignalBadge.className = 'otp-signal-badge otp-signal-error';
+          const txt = authOtpSignalBadge.querySelector('.signal-text');
+          if (txt) txt.textContent = '🔴 ❌ Please enter the full 6-digit OTP code.';
+        }
+        authOtpCodeInput.classList.remove('otp-verified-border');
+        authOtpCodeInput.classList.add('otp-invalid-border');
+        authOtpCodeInput.focus();
+        return;
+      }
+
+      authVerifyOtpBtn.disabled = true;
+      const originalHtml = authVerifyOtpBtn.innerHTML;
+      authVerifyOtpBtn.innerHTML = '<span>Verifying...</span>';
+
+      try {
+        const res = await api('/api/auth/verify-phone-otp', 'POST', { phone: cleanPhone, otp: otpVal });
+        if (res.verified || res.success) {
+          state.phoneOtpVerified = true;
+          state.phoneOtpNumber = cleanPhone;
+
+          if (authOtpSignalBadge) {
+            authOtpSignalBadge.className = 'otp-signal-badge otp-signal-success';
+            const txt = authOtpSignalBadge.querySelector('.signal-text');
+            if (txt) txt.textContent = '🟢 ✅ Verified! Mobile number confirmed.';
+          }
+
+          authOtpCodeInput.classList.remove('otp-invalid-border');
+          authOtpCodeInput.classList.add('otp-verified-border');
+          authOtpCodeInput.disabled = true;
+
+          if (authPhoneInput) {
+            authPhoneInput.readOnly = true;
+          }
+
+          authVerifyOtpBtn.disabled = true;
+          authVerifyOtpBtn.className = 'auth-otp-verify-btn verified';
+          authVerifyOtpBtn.innerHTML = '<span>✓ Verified</span>';
+
+          if (authSendOtpBtn) {
+            authSendOtpBtn.disabled = true;
+            authSendOtpBtn.className = 'auth-otp-send-btn verified-locked';
+            authSendOtpBtn.innerHTML = '<span>✓ Verified</span>';
+          }
+
+          if (window._authOtpTimer) clearInterval(window._authOtpTimer);
+        } else {
+          throw new Error(res.message || 'Invalid OTP code.');
+        }
+      } catch (err) {
+        state.phoneOtpVerified = false;
+        if (authOtpSignalBadge) {
+          authOtpSignalBadge.className = 'otp-signal-badge otp-signal-error';
+          const txt = authOtpSignalBadge.querySelector('.signal-text');
+          if (txt) txt.textContent = '🔴 ❌ ' + (err.message || 'Invalid OTP. Try again.');
+        }
+        authOtpCodeInput.classList.remove('otp-verified-border');
+        authOtpCodeInput.classList.add('otp-invalid-border');
+        authVerifyOtpBtn.disabled = false;
+        authVerifyOtpBtn.innerHTML = originalHtml;
+        authOtpCodeInput.focus();
+        authOtpCodeInput.select();
+      }
+    };
+
+    authVerifyOtpBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      handleVerify();
+    });
+
+    authOtpCodeInput.addEventListener('input', () => {
+      authOtpCodeInput.classList.remove('otp-invalid-border');
+      authOtpCodeInput.value = authOtpCodeInput.value.replace(/\D/g, '').slice(0, 6);
+      if (authOtpCodeInput.value.length === 6 && !state.phoneOtpVerified) {
+        handleVerify();
+      }
+    });
+
+    authOtpCodeInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleVerify();
+      }
+    });
+  }
+
+  if (authPhoneInput) {
+    authPhoneInput.addEventListener('input', () => {
+      const currentDigits = authPhoneInput.value.replace(/\D/g, '');
+      if (state.phoneOtpVerified && currentDigits !== state.phoneOtpNumber) {
+        // Reset verified status if phone was changed
+        state.phoneOtpVerified = false;
+        if (authVerifyOtpBtn) {
+          authVerifyOtpBtn.disabled = false;
+          authVerifyOtpBtn.className = 'auth-otp-verify-btn';
+          authVerifyOtpBtn.innerHTML = '<span>Verify</span>';
+        }
+        if (authSendOtpBtn) {
+          authSendOtpBtn.disabled = false;
+          authSendOtpBtn.className = 'auth-otp-send-btn';
+          authSendOtpBtn.innerHTML = '<span>Send OTP</span>';
+        }
+        if (authOtpCodeInput) {
+          authOtpCodeInput.disabled = false;
+          authOtpCodeInput.classList.remove('otp-verified-border');
+        }
+        if (authOtpSignalBadge) {
+          authOtpSignalBadge.className = 'otp-signal-badge otp-signal-idle';
+          const txt = authOtpSignalBadge.querySelector('.signal-text');
+          if (txt) txt.textContent = 'Enter OTP sent to your WhatsApp';
+        }
+      }
     });
   }
 

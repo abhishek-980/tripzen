@@ -13,13 +13,14 @@ const path = require('path');
 const fs = require('fs');
 
 const SESSION_DIR = path.join(__dirname, '..', 'data', 'auth_info_baileys');
+const BACKUP_SESSION_DIR = path.join(__dirname, '..', 'data', 'whatsapp_session_backup');
 
 let sock = null;
 let connectionState = 'disconnected'; // 'disconnected' | 'connecting' | 'pairing' | 'connected'
 let currentPairingCode = '';
 let pairingCodeTimestamp = 0;
 let currentQrDataUrl = '';
-let linkedPhoneNumber = '';
+let linkedPhoneNumber = '918920632874';
 let targetPhoneNumber = process.env.TRIPZEN_OFFICIAL_WHATSAPP || '+91 89206 32874';
 let isInitializing = false;
 let reconnectTimeout = null;
@@ -30,6 +31,52 @@ function getCleanPhone(phone) {
   return digits;
 }
 
+function isSessionRegistered() {
+  const credsPath = path.join(SESSION_DIR, 'creds.json');
+  if (fs.existsSync(credsPath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(credsPath, 'utf8'));
+      if (data && data.registered === true) return true;
+    } catch (e) {}
+  }
+  const backupCredsPath = path.join(BACKUP_SESSION_DIR, 'creds.json');
+  if (fs.existsSync(backupCredsPath)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(backupCredsPath, 'utf8'));
+      if (data && data.registered === true) return true;
+    } catch (e) {}
+  }
+  return sock?.authState?.creds?.registered === true;
+}
+
+// Ensure session directory and restore from persistent backup if needed
+function ensureSessionDir() {
+  if (!fs.existsSync(SESSION_DIR)) {
+    fs.mkdirSync(SESSION_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(BACKUP_SESSION_DIR)) {
+    fs.mkdirSync(BACKUP_SESSION_DIR, { recursive: true });
+  }
+
+  const credsPath = path.join(SESSION_DIR, 'creds.json');
+  const backupCredsPath = path.join(BACKUP_SESSION_DIR, 'creds.json');
+
+  // Restore creds.json from backup if missing in main session
+  if (!fs.existsSync(credsPath) && fs.existsSync(backupCredsPath)) {
+    try {
+      console.log('[WhatsApp Service] Restoring WhatsApp credentials from persistent backup...');
+      fs.copyFileSync(backupCredsPath, credsPath);
+    } catch (e) {
+      console.warn('[WhatsApp Service] Could not restore backup creds:', e.message);
+    }
+  } else if (fs.existsSync(credsPath) && !fs.existsSync(backupCredsPath)) {
+    // Back up creds.json immediately
+    try {
+      fs.copyFileSync(credsPath, backupCredsPath);
+    } catch (e) {}
+  }
+}
+
 async function initWhatsAppService(customPhone) {
   if (customPhone) {
     targetPhoneNumber = customPhone;
@@ -37,8 +84,14 @@ async function initWhatsAppService(customPhone) {
   if (isInitializing) return;
   isInitializing = true;
 
-  if (!fs.existsSync(SESSION_DIR)) {
-    fs.mkdirSync(SESSION_DIR, { recursive: true });
+  ensureSessionDir();
+
+  // Clean up any stale or half-open socket
+  if (sock) {
+    try { sock.ev.removeAllListeners(); } catch (e) {}
+    try { sock.ws?.close(); } catch (e) {}
+    try { sock.end(); } catch (e) {}
+    sock = null;
   }
 
   try {
@@ -56,19 +109,33 @@ async function initWhatsAppService(customPhone) {
         keys: makeCacheableSignalKeyStore(state.keys, logger),
       },
       printQRInTerminal: false,
-      browser: Browsers.macOS('Chrome'),
+      browser: Browsers.ubuntu('Chrome'), // Ubuntu Chrome signature is most stable for Node server persistence
       connectTimeoutMs: 60000,
-      keepAliveIntervalMs: 25000,
+      defaultQueryTimeoutMs: 60000,
+      keepAliveIntervalMs: 30000,
+      retryRequestDelayMs: 2500,
+      maxRetries: 5,
       syncFullHistory: false,
       markOnlineOnConnect: true,
     });
 
-    sock.ev.on('creds.update', saveCreds);
+    const persistCreds = async () => {
+      await saveCreds();
+      try {
+        const credsPath = path.join(SESSION_DIR, 'creds.json');
+        const backupCredsPath = path.join(BACKUP_SESSION_DIR, 'creds.json');
+        if (fs.existsSync(credsPath)) {
+          fs.copyFileSync(credsPath, backupCredsPath);
+        }
+      } catch (e) {}
+    };
+
+    sock.ev.on('creds.update', persistCreds);
 
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
-      if (qr) {
+      if (qr && !isSessionRegistered()) {
         try {
           currentQrDataUrl = await QRCode.toDataURL(qr, { width: 320, margin: 2 });
           console.log('[WhatsApp Service] 📷 Fresh QR Code generated for scanning.');
@@ -85,42 +152,37 @@ async function initWhatsAppService(customPhone) {
         currentPairingCode = '';
         currentQrDataUrl = '';
         const userJid = sock.user?.id || '';
-        linkedPhoneNumber = userJid.split(':')[0] || userJid.split('@')[0] || targetPhoneNumber;
-        console.log(`[WhatsApp Service] 🟢 WhatsApp Bot Connected successfully as +${linkedPhoneNumber}!`);
+        linkedPhoneNumber = userJid.split(':')[0] || userJid.split('@')[0] || getCleanPhone(targetPhoneNumber);
+        console.log(`[WhatsApp Service] 🟢 WhatsApp Bot Connected permanently as +${linkedPhoneNumber}!`);
       } else if (connection === 'close') {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
         const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 
-        console.log(`[WhatsApp Service] Connection closed (code: ${statusCode}). Reconnect: ${shouldReconnect}`);
+        console.log(`[WhatsApp Service] Connection closed (code: ${statusCode}). Reconnecting: ${shouldReconnect}`);
         connectionState = 'disconnected';
 
-        if (statusCode === DisconnectReason.loggedOut || statusCode === 401 || statusCode === 403) {
-          console.log('[WhatsApp Service] Device unlinked/logged out. Resetting auth...');
-          currentPairingCode = '';
-          currentQrDataUrl = '';
-          try {
-            fs.rmSync(SESSION_DIR, { recursive: true, force: true });
-          } catch (e) {}
-        }
+        // NOTE: We NEVER wipe SESSION_DIR on disconnect!
+        // Accidental 401, 408, or 428 socket drops should NEVER unlink the bot number.
+        // Wipe is ONLY permitted when admin explicitly calls logoutWhatsApp().
 
         if (shouldReconnect) {
           if (reconnectTimeout) clearTimeout(reconnectTimeout);
           reconnectTimeout = setTimeout(() => {
             isInitializing = false;
             initWhatsAppService();
-          }, 3500);
+          }, 4500);
         }
       }
     });
 
-    // If socket is fresh and unregistered, auto-generate initial pairing code once smoothly
-    if (!sock.authState.creds.registered && !currentPairingCode) {
+    // If session is completely fresh (never paired) and has no creds, auto-generate pairing code
+    if (!isSessionRegistered() && !currentPairingCode) {
       connectionState = 'pairing';
       const cleanPhone = getCleanPhone(targetPhoneNumber);
 
       setTimeout(async () => {
         try {
-          if (sock && !sock.authState.creds.registered && !currentPairingCode) {
+          if (sock && !isSessionRegistered() && !currentPairingCode) {
             console.log(`[WhatsApp Service] Requesting fresh Pairing Code for +${cleanPhone}...`);
             const code = await sock.requestPairingCode(cleanPhone);
             currentPairingCode = code;
@@ -130,7 +192,7 @@ async function initWhatsAppService(customPhone) {
         } catch (err) {
           console.warn('[WhatsApp Service] Pairing code request note:', err.message);
         }
-      }, 3000);
+      }, 4000);
     }
   } catch (err) {
     console.error('[WhatsApp Service] Initialization error:', err.message);
@@ -144,8 +206,13 @@ async function requestNewPairingCode(phoneNumber) {
   const phoneToUse = phoneNumber || targetPhoneNumber;
   const cleanPhone = getCleanPhone(phoneToUse);
 
-  if (connectionState === 'connected') {
-    return { success: false, error: 'Already connected as +' + linkedPhoneNumber };
+  if (connectionState === 'connected' || isSessionRegistered()) {
+    return {
+      success: false,
+      error: `WhatsApp Bot is already permanently linked as +${linkedPhoneNumber || cleanPhone}! No need to reconnect.`,
+      isRegistered: true,
+      linkedNumber: linkedPhoneNumber || cleanPhone,
+    };
   }
 
   // If a valid code was generated in the last 45 seconds, return it immediately without breaking socket
@@ -165,7 +232,7 @@ async function requestNewPairingCode(phoneNumber) {
     await delay(2500);
   }
 
-  if (sock && !sock.authState.creds.registered) {
+  if (sock && !isSessionRegistered()) {
     try {
       const code = await sock.requestPairingCode(cleanPhone);
       currentPairingCode = code;
@@ -189,7 +256,7 @@ async function requestNewPairingCode(phoneNumber) {
   } else {
     return {
       success: false,
-      error: 'Socket is initializing or already connected. Please try in a few seconds.',
+      error: 'WhatsApp Bot is already registered or connecting. Please try in a few seconds.',
       qrCodeDataUrl: currentQrDataUrl,
     };
   }
@@ -212,7 +279,7 @@ async function sendWhatsAppMessage(recipientPhone, messageText) {
         success: true,
         channel: 'WhatsApp Web Multi-Device Bot',
         messageId: sent?.key?.id,
-        senderNumber: '+' + linkedPhoneNumber,
+        senderNumber: '+' + (linkedPhoneNumber || '918920632874'),
         recipientNumber: '+' + cleanRecipient,
       };
     } catch (err) {
@@ -239,14 +306,16 @@ function getServiceStatus() {
     ? `${currentPairingCode.slice(0, 4)} - ${currentPairingCode.slice(4)}`
     : currentPairingCode;
 
+  const registered = isSessionRegistered();
+
   return {
     status: connectionState,
     officialNumber: targetPhoneNumber,
-    linkedNumber: linkedPhoneNumber ? '+' + linkedPhoneNumber : null,
+    linkedNumber: linkedPhoneNumber ? '+' + linkedPhoneNumber : (registered ? '+' + getCleanPhone(targetPhoneNumber) : null),
     pairingCode: currentPairingCode,
     formattedPairingCode,
     qrCodeDataUrl: currentQrDataUrl,
-    isRegistered: sock?.authState?.creds?.registered || false,
+    isRegistered: registered,
   };
 }
 
@@ -259,6 +328,9 @@ async function logoutWhatsApp() {
   } catch (e) {}
   try {
     fs.rmSync(SESSION_DIR, { recursive: true, force: true });
+  } catch (e) {}
+  try {
+    fs.rmSync(BACKUP_SESSION_DIR, { recursive: true, force: true });
   } catch (e) {}
   sock = null;
   connectionState = 'disconnected';
@@ -279,4 +351,5 @@ module.exports = {
   sendWhatsAppMessage,
   getServiceStatus,
   logoutWhatsApp,
+  isSessionRegistered,
 };

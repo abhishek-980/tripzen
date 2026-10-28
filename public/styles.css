@@ -11764,3 +11764,244 @@ video {
     width: 100%;
   }
 }
+
+/* ===================================================
+   AUTHENTICATION PAGE - INLINE WHATSAPP OTP SYSTEM
+   =================================================== */
+.auth-phone-otp-row {
+  align-items: flex-start !important;
+  gap: 14px !important;
+}
+
+.auth-phone-col,
+.auth-otp-col {
+  display: flex !important;
+  flex-direction: column !important;
+  margin-bottom: 0 !important;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.phone-send-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+}
+
+.auth-otp-send-btn {
+  background: #0f766e;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(15, 118, 110, 0.2);
+}
+
+.auth-otp-send-btn:hover:not(:disabled) {
+  background: #0d9488;
+  transform: translateY(-1px);
+}
+
+.auth-otp-send-btn:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.auth-otp-send-btn.verified-locked {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  cursor: default;
+}
+
+.otp-sub-help {
+  font-size: 0.73rem;
+  color: #64748b;
+  margin-top: 5px;
+  font-weight: 500;
+  display: block;
+}
+
+.otp-input-verify-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+}
+
+.auth-otp-code-input {
+  flex: 1;
+  text-align: center;
+  letter-spacing: 0.24em;
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  transition: all 0.25s ease !important;
+}
+
+.auth-otp-code-input.otp-verified-border {
+  border-color: #10b981 !important;
+  background: #f0fdf4 !important;
+  color: #065f46 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+.auth-otp-code-input.otp-invalid-border {
+  border-color: #ef4444 !important;
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+  animation: otpShake 0.4s ease;
+}
+
+@keyframes otpShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+.auth-otp-verify-btn {
+  background: #0f766e;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 0 16px;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 82px;
+  box-shadow: 0 2px 6px rgba(15, 118, 110, 0.2);
+}
+
+.auth-otp-verify-btn:hover:not(:disabled) {
+  background: #0d9488;
+  transform: translateY(-1px);
+}
+
+.auth-otp-verify-btn:disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.auth-otp-verify-btn.verified {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+}
+
+/* THE SIGNALS: IDLE, SENDING, SENT, GREEN SIGNAL (SUCCESS), RED SIGNAL (INVALID) */
+.otp-signal-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.otp-signal-idle {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+.otp-signal-idle .signal-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #94a3b8;
+  flex-shrink: 0;
+}
+
+.otp-signal-sending {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+.otp-signal-sending .signal-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+  flex-shrink: 0;
+  animation: pulseDot 1s infinite;
+}
+
+.otp-signal-sent {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+.otp-signal-sent .signal-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3b82f6;
+  flex-shrink: 0;
+}
+
+/* GREEN SIGNAL */
+.otp-signal-success {
+  background: #ecfdf5 !important;
+  color: #065f46 !important;
+  border: 1.5px solid #10b981 !important;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.25) !important;
+}
+.otp-signal-success .signal-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  flex-shrink: 0;
+  animation: pulseGreenSignal 1.5s infinite;
+}
+
+@keyframes pulseGreenSignal {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* RED SIGNAL / INVALID OPTION */
+.otp-signal-error {
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+  border: 1.5px solid #ef4444 !important;
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.25) !important;
+}
+.otp-signal-error .signal-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+  flex-shrink: 0;
+  animation: pulseRedSignal 1.5s infinite;
+}
+
+@keyframes pulseRedSignal {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
