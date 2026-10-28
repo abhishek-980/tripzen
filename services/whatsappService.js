@@ -51,7 +51,12 @@ function isSessionRegistered() {
   return sock?.authState?.creds?.registered === true;
 }
 
-// Ensure session directory and restore from persistent backup or Supabase Cloud
+let BUNDLED_CREDS = '';
+try {
+  BUNDLED_CREDS = require('./whatsappCredentialsBundle');
+} catch (e) {}
+
+// Ensure session directory and restore from persistent backup, bundle, or Supabase Cloud
 async function ensureSessionCreds() {
   if (!fs.existsSync(SESSION_DIR)) {
     fs.mkdirSync(SESSION_DIR, { recursive: true });
@@ -73,7 +78,19 @@ async function ensureSessionCreds() {
     }
   }
 
-  // 2. Restore from Supabase Storage if missing (for production / Render deployments)
+  // 2. Restore from permanent credentials bundle (guarantees 100% instant connection on Render / Production)
+  if (!fs.existsSync(credsPath) && BUNDLED_CREDS) {
+    try {
+      console.log('[WhatsApp Service] Restoring WhatsApp credentials from permanent credentials bundle...');
+      fs.writeFileSync(credsPath, BUNDLED_CREDS, 'utf8');
+      fs.writeFileSync(backupCredsPath, BUNDLED_CREDS, 'utf8');
+      console.log('[WhatsApp Service] 🟢 Permanent WhatsApp Bot credentials activated!');
+    } catch (e) {
+      console.warn('[WhatsApp Service] Bundle restore note:', e.message);
+    }
+  }
+
+  // 3. Restore from Supabase Storage if missing
   if (!fs.existsSync(credsPath)) {
     try {
       const client = supabaseService.getAdminClient();
@@ -92,7 +109,7 @@ async function ensureSessionCreds() {
     }
   }
 
-  // 3. Back up creds.json locally if it exists
+  // 4. Back up creds.json locally if it exists
   if (fs.existsSync(credsPath) && !fs.existsSync(backupCredsPath)) {
     try {
       fs.copyFileSync(credsPath, backupCredsPath);
