@@ -18,6 +18,6 @@ services:
       - key: SUPABASE_URL
         value: https://cumatiemhapifpmsobct.supabase.co
       - key: SUPABASE_ANON_KEY
-        sync: false
+        value: sb_publishable_T79LWCzkC92Te4RgZqihbg_pBNtYyp2
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
