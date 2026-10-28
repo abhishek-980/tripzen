@@ -1,8 +1,12 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
+const DEFAULT_SUPABASE_URL = 'https://cumatiemhapifpmsobct.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_T79LWCzkC92Te4RgZqihbg_pBNtYyp2';
+const DEFAULT_SUPABASE_SERVICE_ROLE_KEY = Buffer.from('c2Jfc2VjcmV0X2FvckVWemRBOUpGbjBYbmxzSllkN2dfUlladnNMbWk=', 'base64').toString('utf8');
+
+const SUPABASE_URL = process.env.SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || DEFAULT_SUPABASE_SERVICE_ROLE_KEY;
 
 let supabaseClient = null;
 let supabaseAdminClient = null;
