@@ -29,6 +29,7 @@ function loadEnvFile() {
 }
 
 loadEnvFile();
+const supabaseService = require('./services/supabaseService');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -1632,6 +1633,164 @@ function findUserByIdentifier(rawIdentifier) {
 
 
 
+// ====================================================================
+// SUPABASE AUTH & DATA INTEGRATION ENDPOINTS
+// ====================================================================
+
+app.get('/api/supabase/status', (req, res) => {
+  return res.json({
+    success: true,
+    configured: supabaseService.isConfigured(),
+    supabaseUrl: process.env.SUPABASE_URL ? process.env.SUPABASE_URL.slice(0, 18) + '...' : null,
+  });
+});
+
+app.post('/api/supabase/send-otp', async (req, res) => {
+  const { identifier, channel } = req.body;
+  if (!identifier) {
+    return res.status(400).json({
+      success: false,
+      message: channel === 'phone' ? 'Mobile number is required.' : 'Email address is required.',
+    });
+  }
+
+  if (!supabaseService.isConfigured()) {
+    return res.status(503).json({
+      success: false,
+      message: 'Supabase is not configured yet. Please add SUPABASE_URL and SUPABASE_ANON_KEY to your .env file.',
+    });
+  }
+
+  try {
+    const isPhone = channel === 'phone' || (!identifier.includes('@') && /^\+?\d{8,15}$/.test(identifier.replace(/[\s-]/g, '')));
+    let result;
+    if (isPhone) {
+      result = await supabaseService.sendPhoneOtp(identifier);
+    } else {
+      result = await supabaseService.sendEmailOtp(identifier);
+    }
+
+    return res.json({
+      success: true,
+      message: isPhone
+        ? `OTP verification code sent via SMS to ${identifier}!`
+        : `OTP verification code sent to ${identifier}!`,
+      channel: isPhone ? 'phone' : 'email',
+      identifier,
+    });
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message || 'Failed to dispatch Supabase OTP.',
+    });
+  }
+});
+
+app.post('/api/supabase/verify-otp', async (req, res) => {
+  const { identifier, channel, token, fullName, age, city } = req.body;
+
+  if (!identifier || !token) {
+    return res.status(400).json({
+      success: false,
+      message: 'Identifier and OTP verification code are required.',
+    });
+  }
+
+  if (!supabaseService.isConfigured()) {
+    return res.status(503).json({
+      success: false,
+      message: 'Supabase is not configured yet. Please add SUPABASE_URL and SUPABASE_ANON_KEY to your .env file.',
+    });
+  }
+
+  try {
+    const isPhone = channel === 'phone' || (!identifier.includes('@') && /^\+?\d{8,15}$/.test(identifier.replace(/[\s-]/g, '')));
+    const authData = await supabaseService.verifyOtp({
+      email: !isPhone ? identifier : undefined,
+      phone: isPhone ? identifier : undefined,
+      token,
+      type: isPhone ? 'sms' : 'email',
+    });
+
+    const user = authData.user;
+    if (!user) {
+      throw new Error('Supabase authentication succeeded but no user object was returned.');
+    }
+
+    // Upsert into Supabase profiles table
+    const profile = await supabaseService.upsertProfile(user.id, {
+      fullName: fullName || user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'Traveler'),
+      email: user.email,
+      phone: user.phone || identifier,
+      age,
+      city,
+    });
+
+    // Mirror to local store so all local matchmaking and chats work seamlessly
+    let localUser = db.users.find((u) => u.id === user.id || (user.email && u.email === user.email) || (user.phone && u.phone === user.phone));
+    if (!localUser) {
+      localUser = {
+        id: user.id,
+        fullName: profile?.full_name || fullName || 'Traveler',
+        email: user.email || `${user.id.slice(0, 8)}@tripzen.local`,
+        phone: user.phone || identifier,
+        password: uid('pwd'),
+        age: age || '24',
+        gender: 'Female',
+        city: city || 'Delhi',
+        interests: ['trekking', 'photography'],
+        travelStyle: 'Solo',
+        verified: true,
+        phoneVerified: Boolean(user.phone),
+        emailVerified: Boolean(user.email),
+        profileImage: profile?.profile_image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400',
+        createdAt: new Date().toISOString(),
+      };
+      db.users.push(localUser);
+    } else {
+      localUser.id = user.id; // Align user IDs
+      if (fullName && !localUser.fullName) localUser.fullName = fullName;
+      localUser.verified = true;
+    }
+
+    // Mirror canonical profile locally
+    let localProfile = latestProfilesPerUser().find((p) => p.userId === user.id);
+    if (!localProfile) {
+      localProfile = {
+        id: uid('prf'),
+        userId: user.id,
+        fullName: localUser.fullName,
+        destination: 'Kedarkantha Summit',
+        startDate: new Date().toISOString().slice(0, 10),
+        endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+        travelStyle: localUser.travelStyle || 'Solo',
+        budgetRange: '5000-9000',
+        genderPreference: 'Any',
+        interests: localUser.interests || ['trekking', 'photography'],
+        bio: '',
+        pastTrips: '',
+        profileImage: localUser.profileImage,
+        createdAt: new Date().toISOString(),
+      };
+      db.profiles.push(localProfile);
+    }
+    saveStore(db);
+
+    return res.json({
+      success: true,
+      message: 'Authenticated successfully with Supabase!',
+      session: authData.session,
+      user: sanitizeUser(localUser),
+      profile: sanitizeProfile(localProfile),
+    });
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      message: err.message || 'OTP verification failed.',
+    });
+  }
+});
+
 app.post('/api/register', (req, res) => {
   const { fullName, email, password, age, gender, interests, city, travelStyle, pastTrips, budgetRange, profileImage, phone, bio } = req.body;
 
@@ -2054,7 +2213,7 @@ app.post('/api/profile', (req, res) => {
   });
 });
 
-app.post('/api/upload-avatar', (req, res) => {
+app.post('/api/upload-avatar', async (req, res) => {
   const { userId, image } = req.body;
   if (!normalizeText(userId) || !normalizeText(image)) {
     return res.status(400).json({
@@ -2072,7 +2231,30 @@ app.post('/api/upload-avatar', (req, res) => {
   }
 
   const rawImage = String(image).trim();
-  if (rawImage.startsWith('data:')) {
+  let uploadedUrl = null;
+
+  // If Supabase Storage is configured, upload to Supabase 'avatars' bucket
+  if (supabaseService.isConfigured() && rawImage.startsWith('data:')) {
+    try {
+      const matches = rawImage.match(/^data:([^;]+);base64,(.+)$/);
+      if (matches) {
+        const mimeType = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        uploadedUrl = await supabaseService.uploadAvatar(user.id, buffer, mimeType);
+        if (uploadedUrl) {
+          console.log(`[Supabase Storage] Avatar uploaded successfully for user ${user.id}: ${uploadedUrl}`);
+          await supabaseService.upsertProfile(user.id, { profileImage: uploadedUrl });
+        }
+      }
+    } catch (e) {
+      console.warn('[Supabase Storage] Avatar upload fallback to local:', e.message);
+    }
+  }
+
+  if (uploadedUrl) {
+    user.profileImage = uploadedUrl;
+    user.profileImageData = '';
+  } else if (rawImage.startsWith('data:')) {
     const savedUrl = persistProfileImage(rawImage, user.id);
     user.profileImage = savedUrl;
     user.profileImageData = rawImage;
@@ -3042,8 +3224,27 @@ app.post('/api/payments/verify', async (req, res) => {
   });
 
   payment.whatsappDispatched = true;
-  payment.whatsappDeliveryId = dispatchResult.deliveryId;
   saveStore(db);
+
+  if (supabaseService.isConfigured()) {
+    supabaseService.saveBooking({
+      userId: payment.userId || null,
+      bookingRef: payment.bookingRef,
+      packageName: payment.packageName,
+      destination: payment.destination,
+      amount: payment.amount,
+      travelerCount: payment.travelerCount,
+      startDate: payment.startDate,
+      company: payment.company,
+      leadName: payment.leadName,
+      leadPhone: payment.leadPhone,
+      leadEmail: payment.leadEmail,
+      razorpayOrderId: payment.razorpayOrderId,
+      razorpayPaymentId: payment.razorpayPaymentId,
+      razorpaySignature: payment.razorpaySignature,
+      status: 'confirmed',
+    }).catch((err) => console.warn('[Supabase Sync] Booking sync notice:', err.message));
+  }
 
   return res.json({
     success: true,

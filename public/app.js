@@ -1409,7 +1409,12 @@ const state = {
   route: window.location.hash.replace('#', '') || '/',
   user: null,
   profile: null,
+  authType: 'otp', // 'otp' (Supabase OTP) or 'password'
   authMode: localStorage.getItem('tripzenSavedIdentifier') ? 'login' : 'signup',
+  supabaseOtpChannel: 'email', // 'email' or 'phone'
+  supabaseOtpStep: 'input', // 'input' or 'verify'
+  supabaseOtpIdentifier: '',
+  supabaseOtpCountdown: 0,
   authEmailDraft: localStorage.getItem('tripzenSavedIdentifier') || '',
   authStatus: '',
   authStatusType: '',
@@ -4845,7 +4850,15 @@ function authPage() {
 
   let headerTitle = 'Welcome Back';
   let headerSubtitle = 'Sign in to access your travel matches and group trips';
-  if (isSignup) {
+  if (state.authType === 'otp') {
+    if (state.supabaseOtpStep === 'verify') {
+      headerTitle = 'Verify Code';
+      headerSubtitle = `Enter the 6-digit OTP code sent to your ${state.supabaseOtpChannel === 'phone' ? 'phone' : 'email'}`;
+    } else {
+      headerTitle = 'Instant Access';
+      headerSubtitle = 'Sign in or register effortlessly with Supabase OTP';
+    }
+  } else if (isSignup) {
     headerTitle = 'Create Account';
     headerSubtitle = 'Connect with verified travel buddies across India';
   } else if (isForgotPassword) {
@@ -4950,113 +4963,202 @@ function authPage() {
             <p>${headerSubtitle}</p>
           </div>
 
-          <div class="auth-toggle-pill" role="tablist">
-            <button type="button" class="auth-toggle-btn ${isSignup ? 'active' : ''}" data-auth-mode="signup" role="tab" aria-selected="${isSignup}">Sign Up</button>
-            <button type="button" class="auth-toggle-btn ${isLogin ? 'active' : ''}" data-auth-mode="login" role="tab" aria-selected="${isLogin}">Log In</button>
+          <!-- Mode Switcher: Supabase OTP vs Password -->
+          <div class="auth-method-pill" role="tablist">
+            <button type="button" class="auth-method-btn ${state.authType === 'otp' ? 'active' : ''}" data-auth-type="otp" role="tab" aria-selected="${state.authType === 'otp'}">⚡ Supabase OTP</button>
+            <button type="button" class="auth-method-btn ${state.authType === 'password' ? 'active' : ''}" data-auth-type="password" role="tab" aria-selected="${state.authType === 'password'}">🔑 Password</button>
           </div>
 
-          <form id="authForm" class="form-field-group">
-            ${
-              isSignup
-                ? `
-                  <div class="auth-two-col-row responsive-stack">
-                    <label class="field-label">
-                      <span>FULL NAME</span>
-                      <input name="fullName" required placeholder="Aarav Mehta" class="stitch-input" value="${escapeHtml(draftName)}" />
-                    </label>
-
-                    <label class="field-label">
-                      <span>MOBILE NUMBER</span>
-                      <div class="phone-input-group">
-                        <span class="phone-prefix-addon">🇮🇳 +91</span>
-                        <input name="phone" type="tel" autocomplete="tel" placeholder="98765 43210" class="stitch-input phone-input-field" value="${escapeHtml(draftPhone)}" />
+          ${
+            state.authType === 'otp'
+              ? (
+                state.supabaseOtpStep === 'verify'
+                  ? `
+                    <div class="auth-otp-target-card">
+                      <div class="otp-target-info">
+                        <span class="otp-target-label">OTP Sent via ${state.supabaseOtpChannel === 'phone' ? 'SMS' : 'Email'}</span>
+                        <span class="otp-target-val">${escapeHtml(state.supabaseOtpIdentifier)}</span>
                       </div>
-                    </label>
-                  </div>
+                      <button type="button" class="otp-change-link" id="changeOtpTargetBtn">Change</button>
+                    </div>
 
-                  <div class="auth-two-col-row responsive-stack">
-                    <label class="field-label">
-                      <span>EMAIL ADDRESS</span>
-                      <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="aarav@example.com" class="stitch-input" />
-                    </label>
+                    <form id="supabaseVerifyOtpForm" class="form-field-group">
+                      <label class="field-label">
+                        <span>6-DIGIT VERIFICATION CODE</span>
+                        <input name="token" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required placeholder="••••••" class="stitch-input otp-digit-field" autofocus />
+                      </label>
 
-                    <label class="field-label">
-                      <span>PASSWORD</span>
-                      <div class="password-input-wrap">
-                        <input name="password" type="password" required minlength="4" placeholder="••••••••" class="stitch-input password-input-field" />
-                        <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
+                      <div class="auth-two-col-row responsive-stack" style="margin-top: 10px;">
+                        <label class="field-label">
+                          <span>YOUR NAME (OPTIONAL)</span>
+                          <input name="fullName" placeholder="Aarav Mehta" class="stitch-input" value="${escapeHtml(draftName)}" />
+                        </label>
+                        <label class="field-label">
+                          <span>AGE</span>
+                          <input name="age" type="number" min="16" max="90" placeholder="21" class="stitch-input" value="${escapeHtml(draftAge)}" />
+                        </label>
                       </div>
-                    </label>
-                  </div>
 
-                  <div class="auth-two-col-row">
-                    <label class="field-label">
-                      <span>CURRENT CITY</span>
-                      <input name="city" placeholder="Mumbai / Delhi / Bengaluru" class="stitch-input" value="${escapeHtml(draftCity)}" />
-                    </label>
+                      <button type="submit" class="primary-btn wide-btn auth-submit-btn" style="margin-top: 14px;" id="verifyOtpSubmitBtn">
+                        <span>Verify Code & Continue ➔</span>
+                      </button>
 
-                    <label class="field-label">
-                      <span>AGE</span>
-                      <input name="age" type="number" min="16" max="90" placeholder="21" class="stitch-input" value="${escapeHtml(draftAge)}" />
-                    </label>
-                  </div>
-
-                  <input type="hidden" name="gender" id="authGenderInput" value="Female" />
-                  <input type="hidden" name="travelStyle" id="authTravelStyleInput" value="Solo" />
-                `
-                : isForgotPassword
-                ? `
-                  <div class="auth-notice-box" style="margin-bottom: 16px; padding: 12px 14px; background: rgba(35, 89, 70, 0.08); border-radius: 12px; border-left: 3px solid var(--accent); font-size: 0.86rem; color: var(--ink);">
-                    <span>🔑 Enter your registered Mobile Number, Email, or User ID to set your new password.</span>
-                  </div>
-                  <label class="field-label">
-                    <span>PHONE NUMBER, EMAIL, OR USER ID</span>
-                    <input name="identifier" type="text" autocomplete="username" autocapitalize="none" required placeholder="Phone number, email, or User ID" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
-                  </label>
-                  <label class="field-label">
-                    <span>NEW PASSWORD</span>
-                    <div class="password-input-wrap">
-                      <input name="newPassword" type="password" required minlength="4" placeholder="Enter new password (min 4 chars)" class="stitch-input password-input-field" />
-                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 0.82rem;">
+                        <button type="button" class="auth-text-link" id="resendOtpBtn" ${state.supabaseOtpCountdown > 0 ? 'disabled style="opacity:0.6; cursor:not-allowed;"' : ''}>
+                          ${state.supabaseOtpCountdown > 0 ? `Resend OTP in ${state.supabaseOtpCountdown}s` : 'Resend OTP Code'}
+                        </button>
+                        <button type="button" class="auth-text-link" id="backToPhoneEmailBtn">
+                          ← Change ${state.supabaseOtpChannel === 'phone' ? 'Phone' : 'Email'}
+                        </button>
+                      </div>
+                    </form>
+                  `
+                  : `
+                    <div class="auth-channel-selector-row">
+                      <button type="button" class="auth-channel-pill ${state.supabaseOtpChannel === 'email' ? 'active' : ''}" data-otp-channel="email">
+                        <span>✉️</span> Email OTP
+                      </button>
+                      <button type="button" class="auth-channel-pill ${state.supabaseOtpChannel === 'phone' ? 'active' : ''}" data-otp-channel="phone">
+                        <span>📱</span> Mobile OTP
+                      </button>
                     </div>
-                  </label>
-                  <label class="field-label">
-                    <span>CONFIRM NEW PASSWORD</span>
-                    <div class="password-input-wrap">
-                      <input name="confirmPassword" type="password" required minlength="4" placeholder="Re-enter new password" class="stitch-input password-input-field" />
-                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
-                    </div>
-                  </label>
-                `
-                : `
-                  <label class="field-label">
-                    <span>PHONE NUMBER OR EMAIL</span>
-                    <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="10-digit phone, email, or User ID" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
-                  </label>
-                  <div class="field-label">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                      <span style="font-size: 0.76rem; font-weight: 800; color: var(--muted); letter-spacing: 0.05em;">PASSWORD</span>
-                      <button type="button" class="auth-text-link" id="forgotPasswordLink">Forgot Password?</button>
-                    </div>
-                    <div class="password-input-wrap">
-                      <input name="password" type="password" autocomplete="current-password" required placeholder="••••••••" class="stitch-input password-input-field" />
-                      <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
-                    </div>
-                  </div>
-                `
-            }
 
-            <button type="submit" class="primary-btn wide-btn auth-submit-btn" style="margin-top: 14px;">
-              <span>${isSignup ? 'Create Account ➔' : (isForgotPassword ? 'Regenerate Password & Sign In ➔' : 'Continue to Matches ➔')}</span>
-            </button>
+                    <form id="supabaseSendOtpForm" class="form-field-group">
+                      ${
+                        state.supabaseOtpChannel === 'phone'
+                          ? `
+                            <label class="field-label">
+                              <span>MOBILE NUMBER</span>
+                              <div class="phone-input-group">
+                                <span class="phone-prefix-addon">🇮🇳 +91</span>
+                                <input name="identifier" type="tel" autocomplete="tel" required placeholder="98765 43210" class="stitch-input phone-input-field" value="${escapeHtml(state.supabaseOtpIdentifier || draftPhone)}" autofocus />
+                              </div>
+                            </label>
+                          `
+                          : `
+                            <label class="field-label">
+                              <span>EMAIL ADDRESS</span>
+                              <input name="identifier" type="email" autocomplete="email" autocapitalize="none" required placeholder="aarav@example.com" class="stitch-input" value="${escapeHtml(state.supabaseOtpIdentifier || '')}" autofocus />
+                            </label>
+                          `
+                      }
 
-            ${isForgotPassword ? `<button type="button" class="auth-back-link" id="backToLoginBtn">← Back to Login</button>` : ''}
-          </form>
+                      <button type="submit" class="primary-btn wide-btn auth-submit-btn" style="margin-top: 14px;" id="sendOtpSubmitBtn">
+                        <span>Send Verification Code ➔</span>
+                      </button>
+                    </form>
+                  `
+              )
+              : `
+                <div class="auth-toggle-pill" role="tablist">
+                  <button type="button" class="auth-toggle-btn ${isSignup ? 'active' : ''}" data-auth-mode="signup" role="tab" aria-selected="${isSignup}">Sign Up</button>
+                  <button type="button" class="auth-toggle-btn ${isLogin ? 'active' : ''}" data-auth-mode="login" role="tab" aria-selected="${isLogin}">Log In</button>
+                </div>
+
+                <form id="authForm" class="form-field-group">
+                  ${
+                    isSignup
+                      ? `
+                        <div class="auth-two-col-row responsive-stack">
+                          <label class="field-label">
+                            <span>FULL NAME</span>
+                            <input name="fullName" required placeholder="Aarav Mehta" class="stitch-input" value="${escapeHtml(draftName)}" />
+                          </label>
+
+                          <label class="field-label">
+                            <span>MOBILE NUMBER</span>
+                            <div class="phone-input-group">
+                              <span class="phone-prefix-addon">🇮🇳 +91</span>
+                              <input name="phone" type="tel" autocomplete="tel" placeholder="98765 43210" class="stitch-input phone-input-field" value="${escapeHtml(draftPhone)}" />
+                            </div>
+                          </label>
+                        </div>
+
+                        <div class="auth-two-col-row responsive-stack">
+                          <label class="field-label">
+                            <span>EMAIL ADDRESS</span>
+                            <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="aarav@example.com" class="stitch-input" />
+                          </label>
+
+                          <label class="field-label">
+                            <span>PASSWORD</span>
+                            <div class="password-input-wrap">
+                              <input name="password" type="password" required minlength="4" placeholder="••••••••" class="stitch-input password-input-field" />
+                              <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
+                            </div>
+                          </label>
+                        </div>
+
+                        <div class="auth-two-col-row">
+                          <label class="field-label">
+                            <span>CURRENT CITY</span>
+                            <input name="city" placeholder="Mumbai / Delhi / Bengaluru" class="stitch-input" value="${escapeHtml(draftCity)}" />
+                          </label>
+
+                          <label class="field-label">
+                            <span>AGE</span>
+                            <input name="age" type="number" min="16" max="90" placeholder="21" class="stitch-input" value="${escapeHtml(draftAge)}" />
+                          </label>
+                        </div>
+
+                        <input type="hidden" name="gender" id="authGenderInput" value="Female" />
+                        <input type="hidden" name="travelStyle" id="authTravelStyleInput" value="Solo" />
+                      `
+                      : isForgotPassword
+                      ? `
+                        <div class="auth-notice-box" style="margin-bottom: 16px; padding: 12px 14px; background: rgba(35, 89, 70, 0.08); border-radius: 12px; border-left: 3px solid var(--accent); font-size: 0.86rem; color: var(--ink);">
+                          <span>🔑 Enter your registered Mobile Number, Email, or User ID to set your new password.</span>
+                        </div>
+                        <label class="field-label">
+                          <span>PHONE NUMBER, EMAIL, OR USER ID</span>
+                          <input name="identifier" type="text" autocomplete="username" autocapitalize="none" required placeholder="Phone number, email, or User ID" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
+                        </label>
+                        <label class="field-label">
+                          <span>NEW PASSWORD</span>
+                          <div class="password-input-wrap">
+                            <input name="newPassword" type="password" required minlength="4" placeholder="Enter new password (min 4 chars)" class="stitch-input password-input-field" />
+                            <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
+                          </div>
+                        </label>
+                        <label class="field-label">
+                          <span>CONFIRM NEW PASSWORD</span>
+                          <div class="password-input-wrap">
+                            <input name="confirmPassword" type="password" required minlength="4" placeholder="Re-enter new password" class="stitch-input password-input-field" />
+                            <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
+                          </div>
+                        </label>
+                      `
+                      : `
+                        <label class="field-label">
+                          <span>PHONE NUMBER OR EMAIL</span>
+                          <input name="email" type="text" autocomplete="username" autocapitalize="none" required placeholder="10-digit phone, email, or User ID" class="stitch-input" value="${escapeHtml(state.authEmailDraft || '')}" />
+                        </label>
+                        <div class="field-label">
+                          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span style="font-size: 0.76rem; font-weight: 800; color: var(--muted); letter-spacing: 0.05em;">PASSWORD</span>
+                            <button type="button" class="auth-text-link" id="forgotPasswordLink">Forgot Password?</button>
+                          </div>
+                          <div class="password-input-wrap">
+                            <input name="password" type="password" autocomplete="current-password" required placeholder="••••••••" class="stitch-input password-input-field" />
+                            <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility">${AUTH_SVG_EYE}</button>
+                          </div>
+                        </div>
+                      `
+                  }
+
+                  <button type="submit" class="primary-btn wide-btn auth-submit-btn" style="margin-top: 14px;">
+                    <span>${isSignup ? 'Create Account ➔' : (isForgotPassword ? 'Regenerate Password & Sign In ➔' : 'Continue to Matches ➔')}</span>
+                  </button>
+
+                  ${isForgotPassword ? `<button type="button" class="auth-back-link" id="backToLoginBtn">← Back to Login</button>` : ''}
+                </form>
+              `
+          }
 
           <!-- Safe & Encrypted Assurance Footer -->
           <div class="auth-card-security-footer">
             <span class="security-lock-icon">🔒</span>
-            <span>256-bit Encrypted • Zero Spam • 100% Privacy Protected</span>
+            <span>256-bit Encrypted • Zero Spam • Supabase Auth Protected</span>
           </div>
 
           ${statusMarkup(state.authStatus, state.authStatusType)}
@@ -6019,6 +6121,147 @@ function startLiveSync() {
   }, CHAT_POLL_INTERVAL);
 }
 
+function startOtpCountdown(seconds = 60) {
+  state.supabaseOtpCountdown = seconds;
+  if (window._supabaseOtpInterval) clearInterval(window._supabaseOtpInterval);
+  window._supabaseOtpInterval = setInterval(() => {
+    state.supabaseOtpCountdown -= 1;
+    if (state.supabaseOtpCountdown <= 0) {
+      clearInterval(window._supabaseOtpInterval);
+      state.supabaseOtpCountdown = 0;
+    }
+    const btn = document.getElementById('resendOtpBtn');
+    if (btn) {
+      if (state.supabaseOtpCountdown > 0) {
+        btn.textContent = `Resend OTP in ${state.supabaseOtpCountdown}s`;
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+      } else {
+        btn.textContent = 'Resend OTP Code';
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+      }
+    }
+  }, 1000);
+}
+
+async function handleSupabaseSendOtp(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+  let identifier = String(formData.get('identifier') || '').trim();
+
+  if (!identifier) {
+    state.authStatusType = 'error';
+    state.authStatus = state.supabaseOtpChannel === 'phone'
+      ? 'Please enter your 10-digit mobile number.'
+      : 'Please enter your email address.';
+    renderApp();
+    return;
+  }
+
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span>⏳ Sending OTP...</span>';
+  }
+
+  try {
+    const res = await api('/api/supabase/send-otp', 'POST', {
+      identifier,
+      channel: state.supabaseOtpChannel,
+    });
+
+    state.supabaseOtpIdentifier = identifier;
+    state.supabaseOtpStep = 'verify';
+    state.authStatusType = 'success';
+    state.authStatus = res.message || 'Verification code sent! Please check your messages.';
+    startOtpCountdown(60);
+    renderApp();
+  } catch (err) {
+    state.authStatusType = 'error';
+    state.authStatus = err.message || 'Failed to dispatch Supabase OTP.';
+    renderApp();
+  }
+}
+
+async function handleSupabaseVerifyOtp(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+  const token = String(formData.get('token') || '').trim();
+  const fullName = String(formData.get('fullName') || '').trim();
+  const age = String(formData.get('age') || '').trim();
+  const city = String(formData.get('city') || '').trim();
+
+  if (!token || token.length < 6) {
+    state.authStatusType = 'error';
+    state.authStatus = 'Please enter the full 6-digit verification code.';
+    renderApp();
+    return;
+  }
+
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span>⏳ Verifying Code...</span>';
+  }
+
+  try {
+    const data = await api('/api/supabase/verify-otp', 'POST', {
+      identifier: state.supabaseOtpIdentifier,
+      channel: state.supabaseOtpChannel,
+      token,
+      fullName,
+      age,
+      city,
+    });
+
+    localStorage.setItem('tripzenUserId', data.user.id);
+    localStorage.setItem('tripzenSavedIdentifier', state.supabaseOtpIdentifier || data.user.email || data.user.phone || '');
+    if (data.user && data.user.profileImage) {
+      localStorage.setItem('tripzenUserAvatar', data.user.profileImage);
+    }
+    if (data.user && data.user.age) {
+      localStorage.setItem('tripzenUserAge', data.user.age);
+    }
+    state.user = data.user;
+    state.profile = data.profile || null;
+    state.authStatusType = 'success';
+    state.authStatus = 'Authenticated successfully with Supabase!';
+    requestBrowserNotificationPermission();
+
+    await Promise.allSettled([
+      loadMatches(),
+      loadTripGroups(),
+      loadBookings(),
+      loadConversations(),
+    ]);
+    startLiveSync();
+
+    const savedRoute = localStorage.getItem('tripzenLastRoute');
+    if (savedRoute && savedRoute !== '/' && savedRoute !== '/auth') {
+      state.route = savedRoute;
+      window.location.hash = savedRoute;
+    } else if (state.conversations && state.conversations.length > 0) {
+      state.route = '/chat';
+      window.location.hash = '/chat';
+    } else if (data.profile && data.profile.destination) {
+      state.route = '/matches';
+      window.location.hash = '/matches';
+    } else {
+      state.route = '/profile';
+      window.location.hash = '/profile';
+    }
+    renderApp();
+  } catch (err) {
+    state.authStatusType = 'error';
+    state.authStatus = err.message || 'OTP verification failed. Please recheck your code.';
+    renderApp();
+  }
+}
 
 async function handleAuthSubmit(event) {
   event.preventDefault();
@@ -7737,7 +7980,69 @@ function hydrateUI() {
   updateLiveProfileStrength();
 
 
-  // Auth Mode Toggles
+  // Supabase Auth Type & Channel Switchers
+  document.querySelectorAll('[data-auth-type]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.authType = button.getAttribute('data-auth-type') || 'otp';
+      state.authStatus = '';
+      state.authStatusType = '';
+      renderApp();
+    });
+  });
+
+  document.querySelectorAll('[data-otp-channel]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.supabaseOtpChannel = button.getAttribute('data-otp-channel') || 'email';
+      state.authStatus = '';
+      state.authStatusType = '';
+      renderApp();
+    });
+  });
+
+  const changeOtpTargetBtn = document.getElementById('changeOtpTargetBtn');
+  if (changeOtpTargetBtn) {
+    changeOtpTargetBtn.addEventListener('click', () => {
+      state.supabaseOtpStep = 'input';
+      state.authStatus = '';
+      state.authStatusType = '';
+      renderApp();
+    });
+  }
+
+  const backToPhoneEmailBtn = document.getElementById('backToPhoneEmailBtn');
+  if (backToPhoneEmailBtn) {
+    backToPhoneEmailBtn.addEventListener('click', () => {
+      state.supabaseOtpStep = 'input';
+      state.authStatus = '';
+      state.authStatusType = '';
+      renderApp();
+    });
+  }
+
+  const resendOtpBtn = document.getElementById('resendOtpBtn');
+  if (resendOtpBtn) {
+    resendOtpBtn.addEventListener('click', async () => {
+      if (state.supabaseOtpCountdown > 0) return;
+      resendOtpBtn.disabled = true;
+      resendOtpBtn.textContent = 'Resending...';
+      try {
+        const res = await api('/api/supabase/send-otp', 'POST', {
+          identifier: state.supabaseOtpIdentifier,
+          channel: state.supabaseOtpChannel,
+        });
+        state.authStatusType = 'success';
+        state.authStatus = res.message || 'New OTP code sent!';
+        startOtpCountdown(60);
+        renderApp();
+      } catch (err) {
+        state.authStatusType = 'error';
+        state.authStatus = err.message || 'Failed to resend OTP.';
+        renderApp();
+      }
+    });
+  }
+
+  // Auth Mode Toggles (Password Sign Up / Log In)
   document.querySelectorAll('[data-auth-mode]').forEach((button) => {
     button.addEventListener('click', () => {
       state.authMode = button.getAttribute('data-auth-mode');
@@ -8546,6 +8851,16 @@ function hydrateUI() {
   });
 
   // Forms
+  const supabaseSendOtpForm = document.getElementById('supabaseSendOtpForm');
+  if (supabaseSendOtpForm) {
+    supabaseSendOtpForm.addEventListener('submit', handleSupabaseSendOtp);
+  }
+
+  const supabaseVerifyOtpForm = document.getElementById('supabaseVerifyOtpForm');
+  if (supabaseVerifyOtpForm) {
+    supabaseVerifyOtpForm.addEventListener('submit', handleSupabaseVerifyOtp);
+  }
+
   const authForm = document.getElementById('authForm');
   if (authForm) {
     authForm.addEventListener('submit', handleAuthSubmit);
