@@ -10717,6 +10717,7 @@ video {
 }
 
 .dates-pro-title {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   font-size: 1.35rem;
   font-weight: 800;
   color: #0f172a;
@@ -11010,15 +11011,16 @@ video {
   }
 
   .dates-pro-title {
-    font-size: clamp(0.85rem, 3.8vw, 1.08rem) !important;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-size: clamp(0.85rem, 3.8vw, 1.05rem) !important;
     font-weight: 800 !important;
     color: #0f172a !important;
     margin: 0 !important;
-    line-height: 1.2 !important;
+    line-height: 1.25 !important;
     white-space: nowrap !important;
     letter-spacing: -0.015em !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
   }
 
   .dates-pro-subtitle {
@@ -11699,6 +11701,7 @@ video {
 
 .trail-heading-line1 {
   display: block;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   font-size: 0.98rem;
   font-weight: 800;
   color: #0f172a;
@@ -11708,6 +11711,7 @@ video {
 
 .trail-heading-line2 {
   display: block;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   font-size: 0.84rem;
   font-weight: 700;
   color: #059669;
@@ -11957,22 +11961,28 @@ video {
 
   .trail-heading-line1 {
     display: block !important;
-    font-size: clamp(0.85rem, 3.6vw, 0.94rem) !important;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-size: clamp(0.82rem, 3.5vw, 0.92rem) !important;
     font-weight: 800 !important;
     color: #0f172a !important;
     white-space: nowrap !important;
     letter-spacing: -0.015em !important;
-    line-height: 1.18 !important;
+    line-height: 1.2 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
   }
 
   .trail-heading-line2 {
     display: block !important;
-    font-size: clamp(0.72rem, 3.0vw, 0.80rem) !important;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-size: clamp(0.70rem, 2.9vw, 0.78rem) !important;
     font-weight: 700 !important;
     color: #059669 !important;
     white-space: nowrap !important;
     letter-spacing: -0.005em !important;
-    line-height: 1.18 !important;
+    line-height: 1.2 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
   }
 
   .trail-live-pulse-badge {

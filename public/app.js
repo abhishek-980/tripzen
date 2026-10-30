@@ -2327,11 +2327,11 @@ function renderTrailStatusWidget() {
               <span class="trail-heading-line2">&amp; Weather Watch</span>
             </h3>
           </div>
-          <span class="trail-live-pulse-badge">
-            <span class="live-pulse-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
-            LIVE CONDITIONS
-          </span>
         </div>
+        <span class="trail-live-pulse-badge">
+          <span class="live-pulse-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+          LIVE CONDITIONS
+        </span>
         <span class="trail-widget-meta-note">Updated Today • Field Reports</span>
       </div>
 
@@ -3077,7 +3077,7 @@ function preferencesPage() {
             <div class="date-picker-field">
               <label class="date-field-label" for="planStartDate">
                 <div class="field-kicker-row">
-                  <span class="field-kicker-text">START / DEPARTURE DATE *</span>
+                  <span class="field-kicker-text">START DATE *</span>
                   <span class="auto-calc-pill start-pill">DEPART</span>
                 </div>
                 <div class="date-input-box">
@@ -3102,7 +3102,7 @@ function preferencesPage() {
             <div class="date-picker-field">
               <label class="date-field-label" for="planEndDate">
                 <div class="field-kicker-row">
-                  <span class="field-kicker-text">RETURN / END DATE</span>
+                  <span class="field-kicker-text">RETURN DATE</span>
                   <span class="auto-calc-pill" id="autoCalcBadge">${initialAutoBadge}</span>
                 </div>
                 <div class="date-input-box">
