@@ -173,11 +173,75 @@ function loadStore() {
 }
 
 function saveStore(store) {
-  fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
-  fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2));
+  try {
+    fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
+    fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2));
+  } catch (e) {
+    console.error('Failed writing local store:', e.message);
+  }
+
+  // Dual-Layer Cloud Persistence: Asynchronously synchronize snapshot to Supabase Cloud Storage
+  if (supabaseService.isConfigured()) {
+    try {
+      supabaseService.saveCloudSnapshot(store);
+    } catch (err) {
+      console.warn('[Cloud Persistence] Sync notice:', err.message);
+    }
+  }
 }
 
 let db = loadStore();
+
+// On server startup: Hydrate state from Supabase Cloud Storage so data survives all container restarts
+(async function hydrateStoreFromCloud() {
+  if (supabaseService.isConfigured()) {
+    try {
+      const cloudStore = await supabaseService.loadCloudSnapshot();
+      if (cloudStore && Array.isArray(cloudStore.users)) {
+        // 1. Users: merge
+        const userMap = new Map();
+        (db.users || []).forEach(u => userMap.set(u.id, u));
+        (cloudStore.users || []).forEach(u => userMap.set(u.id, { ...(userMap.get(u.id) || {}), ...u }));
+        db.users = Array.from(userMap.values());
+
+        // 2. Profiles: merge
+        const profMap = new Map();
+        (db.profiles || []).forEach(p => profMap.set(p.id, p));
+        (cloudStore.profiles || []).forEach(p => profMap.set(p.id, { ...(profMap.get(p.id) || {}), ...p }));
+        db.profiles = Array.from(profMap.values());
+
+        // 3. Payments/Bookings: merge
+        const payMap = new Map();
+        (db.payments || []).forEach(p => payMap.set(p.id || p.bookingRef, p));
+        (cloudStore.payments || []).forEach(p => payMap.set(p.id || p.bookingRef, { ...(payMap.get(p.id || p.bookingRef) || {}), ...p }));
+        db.payments = Array.from(payMap.values());
+
+        // 4. Conversations: merge
+        const convMap = new Map();
+        (db.conversations || []).forEach(c => convMap.set(c.id, c));
+        (cloudStore.conversations || []).forEach(c => convMap.set(c.id, { ...(convMap.get(c.id) || {}), ...c }));
+        db.conversations = Array.from(convMap.values());
+
+        // 5. Messages: merge
+        const msgMap = new Map();
+        (db.messages || []).forEach(m => msgMap.set(m.id, m));
+        (cloudStore.messages || []).forEach(m => msgMap.set(m.id, m));
+        db.messages = Array.from(msgMap.values());
+
+        // 6. Trip Groups: merge
+        const grpMap = new Map();
+        (db.tripGroups || []).forEach(g => grpMap.set(g.id, g));
+        (cloudStore.tripGroups || []).forEach(g => grpMap.set(g.id, { ...(grpMap.get(g.id) || {}), ...g }));
+        db.tripGroups = Array.from(grpMap.values());
+
+        fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
+        console.log(`[Startup Cloud Hydration] 🟢 Permanently restored: ${db.users.length} users, ${db.payments.length} bookings, ${db.conversations.length} chats, ${db.messages.length} messages.`);
+      }
+    } catch (err) {
+      console.warn('[Startup Cloud Hydration] Notice:', err.message);
+    }
+  }
+})();
 
 app.get('/uploads/:filename', (req, res, next) => {
   const filename = req.params.filename;
@@ -2041,7 +2105,7 @@ app.post('/api/register', (req, res) => {
   });
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const rawIdentifier = String(req.body.email || req.body.username || req.body.identifier || req.body.phone || '').trim();
   const rawPassword = String(req.body.password || '').trim();
 
@@ -2104,6 +2168,40 @@ app.post('/api/login', (req, res) => {
       updatedAt: new Date().toISOString(),
     };
     db.profiles.push(profile);
+  }
+
+  // Dual-Layer Cloud Persistence: Hydrate user profile from Supabase Cloud if cloud has richer/saved details
+  if (supabaseService.isConfigured()) {
+    try {
+      const cloudProf = await supabaseService.findProfileByPhoneOrEmail(user.phone, user.email);
+      if (cloudProf) {
+        if (cloudProf.full_name) user.fullName = cloudProf.full_name;
+        if (cloudProf.phone && !user.phone) user.phone = cloudProf.phone;
+        if (cloudProf.email && !user.email) user.email = cloudProf.email;
+        if (cloudProf.age) user.age = String(cloudProf.age);
+        if (cloudProf.gender) user.gender = cloudProf.gender;
+        if (cloudProf.city) user.city = cloudProf.city;
+        if (cloudProf.travel_style) user.travelStyle = cloudProf.travel_style;
+        if (cloudProf.budget_range) user.budgetRange = cloudProf.budget_range;
+        if (cloudProf.bio) user.bio = cloudProf.bio;
+        if (cloudProf.past_trips) user.pastTrips = cloudProf.past_trips;
+        if (cloudProf.interests && Array.isArray(cloudProf.interests) && cloudProf.interests.length) user.interests = cloudProf.interests;
+        if (cloudProf.profile_image) user.profileImage = cloudProf.profile_image;
+
+        if (profile) {
+          if (cloudProf.destination) profile.destination = cloudProf.destination;
+          if (cloudProf.start_date) profile.startDate = cloudProf.start_date;
+          if (cloudProf.end_date) profile.endDate = cloudProf.end_date;
+          if (cloudProf.travel_style) profile.travelStyle = cloudProf.travel_style;
+          if (cloudProf.budget_range) profile.budgetRange = cloudProf.budget_range;
+          if (cloudProf.interests && Array.isArray(cloudProf.interests)) profile.interests = cloudProf.interests;
+          if (cloudProf.profile_image) profile.profileImage = cloudProf.profile_image;
+          if (cloudProf.bio) profile.bio = cloudProf.bio;
+        }
+      }
+    } catch (e) {
+      console.warn('[Supabase Cloud Login] Hydration notice:', e.message);
+    }
   }
 
   user.profileCompleteness = calculateProfileCompleteness(user, profile);
@@ -2256,8 +2354,18 @@ app.post('/api/preferences', (req, res) => {
   if (profileImage) {
     const rawImage = String(profileImage).trim();
     if (rawImage.startsWith('data:')) {
+      if (supabaseService.isConfigured()) {
+        supabaseService.uploadAvatarBase64(user.id, rawImage).then((cloudUrl) => {
+          if (cloudUrl) {
+            user.profileImage = cloudUrl;
+            user.profileImageData = '';
+            profile.profileImage = cloudUrl;
+            saveStore(db);
+          }
+        }).catch(() => {});
+      }
       const savedProfileImage = persistProfileImage(rawImage, user.id);
-      user.profileImage = savedProfileImage;
+      user.profileImage = user.profileImage && user.profileImage.startsWith('http') ? user.profileImage : savedProfileImage;
       user.profileImageData = rawImage;
     } else {
       user.profileImage = rawImage;
@@ -2276,6 +2384,15 @@ app.post('/api/preferences', (req, res) => {
   ensureDestinationCompanions(profile.destination, profile.startDate, profile.endDate);
 
   saveStore(db);
+
+  if (supabaseService.isConfigured()) {
+    supabaseService.upsertProfile(user.id, {
+      ...user,
+      ...profile,
+      phone: user.phone,
+      email: user.email,
+    }).catch(err => console.warn('[Supabase Sync] Preferences upsert notice:', err.message));
+  }
 
   return res.status(201).json({
     success: true,
@@ -2317,8 +2434,19 @@ app.post('/api/profile', (req, res) => {
   if (profileImage) {
     const rawImage = String(profileImage).trim();
     if (rawImage.startsWith('data:')) {
+      if (supabaseService.isConfigured()) {
+        supabaseService.uploadAvatarBase64(user.id, rawImage).then((cloudUrl) => {
+          if (cloudUrl) {
+            user.profileImage = cloudUrl;
+            user.profileImageData = '';
+            const p = db.profiles.find((pr) => pr.userId === user.id);
+            if (p) p.profileImage = cloudUrl;
+            saveStore(db);
+          }
+        }).catch(() => {});
+      }
       const savedUrl = persistProfileImage(rawImage, user.id);
-      user.profileImage = savedUrl;
+      user.profileImage = user.profileImage && user.profileImage.startsWith('http') ? user.profileImage : savedUrl;
       user.profileImageData = rawImage;
     } else {
       user.profileImage = rawImage;
@@ -2359,6 +2487,15 @@ app.post('/api/profile', (req, res) => {
 
   user.profileCompleteness = calculateProfileCompleteness(user, profile);
   saveStore(db);
+
+  if (supabaseService.isConfigured()) {
+    supabaseService.upsertProfile(user.id, {
+      ...user,
+      ...profile,
+      phone: user.phone,
+      email: user.email,
+    }).catch(err => console.warn('[Supabase Sync] Profile upsert notice:', err.message));
+  }
 
   return res.json({
     success: true,
@@ -3550,7 +3687,7 @@ app.get('/api/bookings', (req, res) => {
   });
 });
 
-app.get('/api/bookings/user/:userId', (req, res) => {
+app.get('/api/bookings/user/:userId', async (req, res) => {
   const { userId } = req.params;
   const user = db.users.find((u) => u.id === userId);
   if (!user) {
@@ -3602,6 +3739,50 @@ app.get('/api/bookings/user/:userId', (req, res) => {
     })
     .sort((a, b) => new Date(b.paidAt || b.createdAt) - new Date(a.paidAt || a.createdAt))
     .map(formatBookingRecord(hostUrl));
+
+  // Dual-Layer Cloud Persistence: Also query Supabase PostgreSQL 'bookings' table
+  if (supabaseService.isConfigured()) {
+    try {
+      const cloudBookings = await supabaseService.findBookingsByPhoneOrEmail(cleanUserPhone, userEmailLower, user.id);
+      if (cloudBookings && cloudBookings.length > 0) {
+        cloudBookings.forEach((cb) => {
+          const alreadyExists = userBookings.some((ub) => ub.bookingRef === cb.booking_ref || ub.id === cb.id || ub.razorpayPaymentId === cb.razorpay_payment_id);
+          if (!alreadyExists) {
+            userBookings.push({
+              id: cb.id,
+              bookingRef: cb.booking_ref,
+              userId: user.id,
+              userEmail: cb.lead_email || user.email,
+              packageName: cb.package_name,
+              destination: cb.destination,
+              company: cb.company || 'TripZen Expeditions',
+              facilityType: 'Himalayan Expedition',
+              travelerCount: cb.traveler_count || 1,
+              amount: Number(cb.amount) || 0,
+              currency: 'INR',
+              leadName: cb.lead_name,
+              leadPhone: cb.lead_phone,
+              leadEmail: cb.lead_email || user.email,
+              bookingTime: new Date(cb.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+              paidAt: cb.created_at,
+              createdAt: cb.created_at,
+              status: 'paid',
+              bookingStatus: cb.status || 'confirmed',
+              razorpayPaymentId: cb.razorpay_payment_id,
+              razorpayOrderId: cb.razorpay_order_id,
+              itineraryUrl: `${hostUrl}/itinerary/${encodeURIComponent(cb.destination.toLowerCase().replace(/[^a-z0-9]+/g, '-'))}`,
+              whatsappMessage: '',
+              whatsappDispatched: true,
+              directSendUrl: `https://api.whatsapp.com/send?phone=${cb.lead_phone}&text=${encodeURIComponent('Booking Ref: ' + cb.booking_ref)}`,
+              supportChatUrl: `https://api.whatsapp.com/send?phone=918920632874&text=${encodeURIComponent('Assistance regarding booking ' + cb.booking_ref)}`,
+            });
+          }
+        });
+      }
+    } catch (err) {
+      console.warn('[Supabase Cloud Bookings] Lookup notice:', err.message);
+    }
+  }
 
   return res.json({
     success: true,

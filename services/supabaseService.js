@@ -125,17 +125,28 @@ async function verifyOtp({ email, phone, token, type }) {
 }
 
 /**
+ * Helper to check if string is valid UUID
+ */
+function isUuid(str) {
+  return typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+}
+
+/**
  * Upsert user profile into Supabase PostgreSQL 'profiles' table
+ * Works with phone, email, or user_id (UUID or custom string)
  */
 async function upsertProfile(userId, profileData) {
   const admin = getAdminClient();
   if (!admin) return null;
 
+  const email = profileData.email ? profileData.email.trim().toLowerCase() : null;
+  const rawPhone = String(profileData.phone || '').replace(/\D/g, '');
+  const phone = rawPhone.length >= 10 ? rawPhone.slice(-10) : (rawPhone || null);
+
   const payload = {
-    user_id: userId,
     full_name: profileData.fullName || profileData.name || 'Traveler',
-    email: profileData.email || null,
-    phone: profileData.phone || null,
+    email: email,
+    phone: phone,
     age: profileData.age ? parseInt(profileData.age, 10) : null,
     gender: profileData.gender || 'Female',
     city: profileData.city || 'Delhi',
@@ -152,17 +163,80 @@ async function upsertProfile(userId, profileData) {
     updated_at: new Date().toISOString(),
   };
 
-  const { data, error } = await admin
-    .from('profiles')
-    .upsert(payload, { onConflict: 'user_id' })
-    .select()
-    .single();
+  if (isUuid(userId)) {
+    payload.user_id = userId;
+  }
 
-  if (error) {
-    console.error('[Supabase] Failed to upsert profile:', error.message);
+  try {
+    // 1. Check if profile already exists in Supabase by email or phone
+    let existing = null;
+    if (email) {
+      const { data } = await admin.from('profiles').select('*').eq('email', email).limit(1);
+      if (data && data[0]) existing = data[0];
+    }
+    if (!existing && phone) {
+      const { data } = await admin.from('profiles').select('*').eq('phone', phone).limit(1);
+      if (data && data[0]) existing = data[0];
+    }
+    if (!existing && isUuid(userId)) {
+      const { data } = await admin.from('profiles').select('*').eq('user_id', userId).limit(1);
+      if (data && data[0]) existing = data[0];
+    }
+
+    if (existing && existing.id) {
+      const { data, error } = await admin
+        .from('profiles')
+        .update(payload)
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (error) {
+        console.warn('[Supabase Profile] Update error:', error.message);
+        return null;
+      }
+      return data;
+    } else {
+      const { data, error } = await admin
+        .from('profiles')
+        .insert([payload])
+        .select()
+        .single();
+      if (error) {
+        console.warn('[Supabase Profile] Insert error:', error.message);
+        return null;
+      }
+      return data;
+    }
+  } catch (err) {
+    console.error('[Supabase Profile] Unexpected error:', err.message);
     return null;
   }
-  return data;
+}
+
+/**
+ * Fetch a profile by Phone or Email from Supabase
+ */
+async function findProfileByPhoneOrEmail(phone, email) {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  try {
+    const cleanPhone = String(phone || '').replace(/\D/g, '');
+    const phoneTen = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : '';
+    const cleanEmail = String(email || '').trim().toLowerCase();
+
+    if (cleanEmail) {
+      const { data } = await admin.from('profiles').select('*').eq('email', cleanEmail).limit(1);
+      if (data && data[0]) return data[0];
+    }
+    if (phoneTen) {
+      const { data } = await admin.from('profiles').select('*').eq('phone', phoneTen).limit(1);
+      if (data && data[0]) return data[0];
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
 }
 
 /**
@@ -191,8 +265,9 @@ async function saveBooking(bookingData) {
   const admin = getAdminClient();
   if (!admin) return null;
 
+  const cleanPhone = String(bookingData.leadPhone || '').replace(/\D/g, '');
   const payload = {
-    user_id: bookingData.userId || null,
+    user_id: isUuid(bookingData.userId) ? bookingData.userId : null,
     booking_ref: bookingData.bookingRef,
     package_name: bookingData.packageName,
     destination: bookingData.destination,
@@ -201,8 +276,8 @@ async function saveBooking(bookingData) {
     start_date: bookingData.startDate || null,
     company: bookingData.company || 'TripZen Expeditions',
     lead_name: bookingData.leadName,
-    lead_phone: bookingData.leadPhone,
-    lead_email: bookingData.leadEmail,
+    lead_phone: cleanPhone.length >= 10 ? cleanPhone.slice(-10) : (cleanPhone || bookingData.leadPhone),
+    lead_email: (bookingData.leadEmail || '').trim().toLowerCase(),
     razorpay_order_id: bookingData.razorpayOrderId || null,
     razorpay_payment_id: bookingData.razorpayPaymentId || null,
     razorpay_signature: bookingData.razorpaySignature || null,
@@ -210,43 +285,143 @@ async function saveBooking(bookingData) {
     created_at: new Date().toISOString(),
   };
 
-  const { data, error } = await admin
-    .from('bookings')
-    .insert([payload])
-    .select()
-    .single();
+  try {
+    const { data, error } = await admin
+      .from('bookings')
+      .insert([payload])
+      .select()
+      .single();
 
-  if (error) {
-    console.error('[Supabase] Failed to save booking:', error.message);
+    if (error) {
+      console.error('[Supabase] Failed to save booking:', error.message);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.error('[Supabase] Booking save exception:', err.message);
     return null;
   }
-  return data;
 }
 
 /**
- * Upload Avatar or Trip Image to Supabase Storage bucket
+ * Find bookings for a user by phone or email
+ */
+async function findBookingsByPhoneOrEmail(phone, email, userId) {
+  const admin = getAdminClient();
+  if (!admin) return [];
+
+  try {
+    const cleanPhone = String(phone || '').replace(/\D/g, '');
+    const phoneTen = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : '';
+    const cleanEmail = String(email || '').trim().toLowerCase();
+
+    const orClauses = [];
+    if (cleanEmail) orClauses.push(`lead_email.eq.${cleanEmail}`);
+    if (phoneTen) orClauses.push(`lead_phone.eq.${phoneTen}`);
+    if (isUuid(userId)) orClauses.push(`user_id.eq.${userId}`);
+
+    if (orClauses.length === 0) return [];
+
+    const { data, error } = await admin
+      .from('bookings')
+      .select('*')
+      .or(orClauses.join(','))
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('[Supabase Bookings] Search notice:', error.message);
+      return [];
+    }
+    return data || [];
+  } catch (err) {
+    return [];
+  }
+}
+
+/**
+ * Upload Avatar Buffer to Supabase Storage bucket 'avatars'
  */
 async function uploadAvatar(userId, fileBuffer, mimeType = 'image/jpeg') {
   const admin = getAdminClient();
   if (!admin) return null;
 
-  const fileName = `${userId}_${Date.now()}.jpg`;
-  const filePath = `avatars/${fileName}`;
+  try {
+    const ext = mimeType.includes('png') ? 'png' : mimeType.includes('webp') ? 'webp' : 'jpg';
+    const fileName = `${userId || 'usr'}_${Date.now()}.${ext}`;
+    const filePath = `avatars/${fileName}`;
 
-  const { data, error } = await admin.storage
-    .from('avatars')
-    .upload(filePath, fileBuffer, {
-      contentType: mimeType,
-      upsert: true,
-    });
+    const { data, error } = await admin.storage
+      .from('avatars')
+      .upload(filePath, fileBuffer, {
+        contentType: mimeType,
+        upsert: true,
+      });
 
-  if (error) {
-    console.error('[Supabase Storage] Upload error:', error.message);
+    if (error) {
+      console.error('[Supabase Storage] Upload error:', error.message);
+      return null;
+    }
+
+    const { data: publicUrlData } = admin.storage.from('avatars').getPublicUrl(filePath);
+    return publicUrlData.publicUrl;
+  } catch (err) {
+    console.error('[Supabase Storage] Upload exception:', err.message);
     return null;
   }
+}
 
-  const { data: publicUrlData } = admin.storage.from('avatars').getPublicUrl(filePath);
-  return publicUrlData.publicUrl;
+/**
+ * Upload base64 Data URL to Supabase Storage and return permanent CDN URL
+ */
+async function uploadAvatarBase64(userId, dataUrl) {
+  if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+    return null;
+  }
+  const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) return null;
+  const mimeType = match[1];
+  const buffer = Buffer.from(match[2], 'base64');
+  return uploadAvatar(userId, buffer, mimeType);
+}
+
+/**
+ * Snapshot Backup & Restore:
+ * Persists the entire application store (users, chats, bookings, groups) in Supabase Cloud Storage
+ */
+let backupDebounceTimer = null;
+function saveCloudSnapshot(store) {
+  if (backupDebounceTimer) clearTimeout(backupDebounceTimer);
+  backupDebounceTimer = setTimeout(async () => {
+    try {
+      const admin = getAdminClient();
+      if (!admin) return;
+      const json = JSON.stringify(store);
+      await admin.storage.from('trip-photos').upload('system/store-cloud-backup.json', json, {
+        contentType: 'application/json',
+        upsert: true,
+      });
+      console.log(`[Supabase Cloud] ☁️ Successfully synchronized store to cloud storage (${store.users?.length || 0} users, ${store.conversations?.length || 0} chats, ${store.payments?.length || 0} bookings).`);
+    } catch (err) {
+      console.warn('[Supabase Cloud] Backup notice:', err.message);
+    }
+  }, 2000);
+}
+
+async function loadCloudSnapshot() {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  try {
+    const { data, error } = await admin.storage.from('trip-photos').download('system/store-cloud-backup.json');
+    if (error || !data) return null;
+    const text = await data.text();
+    const parsed = JSON.parse(text);
+    console.log(`[Supabase Cloud] ☁️ Restored state from cloud storage snapshot (${parsed.users?.length || 0} users, ${parsed.conversations?.length || 0} chats, ${parsed.payments?.length || 0} bookings)!`);
+    return parsed;
+  } catch (err) {
+    console.warn('[Supabase Cloud] Cloud snapshot load notice:', err.message);
+    return null;
+  }
 }
 
 /**
@@ -315,10 +490,16 @@ module.exports = {
   sendPhoneOtp,
   verifyOtp,
   upsertProfile,
+  findProfileByPhoneOrEmail,
   getProfileByUserId,
   saveBooking,
+  findBookingsByPhoneOrEmail,
   uploadAvatar,
+  uploadAvatarBase64,
+  saveCloudSnapshot,
+  loadCloudSnapshot,
   listUsers,
   listBookings,
   updateBookingStatus,
 };
+
