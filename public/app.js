@@ -2321,13 +2321,18 @@ function renderTrailStatusWidget() {
       <div class="trail-widget-top">
         <div class="trail-widget-title-group">
           <span class="trail-widget-icon" aria-hidden="true">🏔️</span>
-          <h3>Live Himalayan Trail &amp; Weather Watch</h3>
+          <div class="trail-widget-heading-wrap">
+            <h3 class="trail-widget-heading">
+              <span class="trail-heading-line1">Live Himalayan Trail</span>
+              <span class="trail-heading-line2">&amp; Weather Watch</span>
+            </h3>
+          </div>
           <span class="trail-live-pulse-badge">
             <span class="live-pulse-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
             LIVE CONDITIONS
           </span>
         </div>
-        <span style="font-size: 0.74rem; color: #64748b; font-weight: 600;">Updated Today • Field Reports</span>
+        <span class="trail-widget-meta-note">Updated Today • Field Reports</span>
       </div>
 
       <div class="trail-cards-scroll" role="tablist" aria-label="Trek destinations">
