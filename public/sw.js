@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tripzen-pwa-v20261028_v51';
+const CACHE_NAME = 'tripzen-pwa-v20261030_v53';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,8 @@ const STATIC_ASSETS = [
   './app.js',
   './assets/tripzen-logo.png',
   './assets/tripzen-logo.jpg',
+  './assets/auth-hero-bg.webp',
+  './assets/auth-hero-bg-mobile.webp',
   './assets/mountain-hero-banner.jpg',
   './assets/chopta-tungnath-card.jpg',
   './assets/kedarkantha-card.jpg',

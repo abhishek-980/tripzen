@@ -1405,10 +1405,29 @@ const BUDGET_OPTIONS = [
   { value: '15000-30000', title: '💎 Premium Experience', desc: '₹15,000+ / trip' },
 ];
 
+function loadCachedState(key, fallback) {
+  try {
+    const raw = localStorage.getItem('tripzen_cache_' + key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function saveCachedState(key, data) {
+  try {
+    localStorage.setItem('tripzen_cache_' + key, JSON.stringify(data));
+  } catch (e) {}
+}
+
 const state = {
   route: window.location.hash.replace('#', '') || '/',
-  user: null,
-  profile: null,
+  user: loadCachedState('user', null),
+  profile: loadCachedState('profile', null),
+  matches: loadCachedState('matches', []),
+  tripGroups: loadCachedState('tripGroups', []),
+  bookings: loadCachedState('bookings', []),
+  conversations: loadCachedState('conversations', []),
   authMode: localStorage.getItem('tripzenSavedIdentifier') ? 'login' : 'signup',
   authEmailDraft: localStorage.getItem('tripzenSavedIdentifier') || '',
   authStatus: '',
@@ -1591,6 +1610,10 @@ function getApiBaseCandidates() {
 }
 
 async function detectApiBase() {
+  if (window.location.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1')) {
+    apiBase = '';
+    return true;
+  }
   const candidates = getApiBaseCandidates();
 
   for (const base of candidates) {
@@ -5439,6 +5462,8 @@ async function loadSession() {
     state.user = data.user || null;
     state.profile = data.profile || null;
     if (state.user) {
+      saveCachedState('user', state.user);
+      if (state.profile) saveCachedState('profile', state.profile);
       if (state.user.profileImage) {
         localStorage.setItem('tripzenUserAvatar', state.user.profileImage);
       } else {
@@ -5453,9 +5478,13 @@ async function loadSession() {
       }
     }
   } catch (error) {
-    localStorage.removeItem('tripzenUserId');
-    state.user = null;
-    state.profile = null;
+    if (error.status === 404 || error.status === 401) {
+      localStorage.removeItem('tripzenUserId');
+      localStorage.removeItem('tripzen_cache_user');
+      localStorage.removeItem('tripzen_cache_profile');
+      state.user = null;
+      state.profile = null;
+    }
   } finally {
     state.loading = false;
   }
@@ -5467,6 +5496,7 @@ async function loadMatches() {
   try {
     const data = await api(`/api/matches/${state.user.id}`);
     state.matches = data.matches || [];
+    saveCachedState('matches', state.matches);
     if (state.matches.some((match) => match.matchProfileId === state.selectedMatchProfileId) === false) {
       state.selectedMatchProfileId = state.matches[0] ? state.matches[0].matchProfileId : '';
     }
@@ -5477,11 +5507,14 @@ async function loadMatches() {
     try {
       const fallback = await api('/api/matches');
       state.matches = fallback.matches || [];
+      saveCachedState('matches', state.matches);
       if (state.matches.some((match) => match.matchProfileId === state.selectedMatchProfileId) === false) {
         state.selectedMatchProfileId = state.matches[0] ? state.matches[0].matchProfileId : '';
       }
     } catch (e) {
-      state.matches = [];
+      if (!state.matches || state.matches.length === 0) {
+        state.matches = loadCachedState('matches', []);
+      }
     }
     state.matchStatus = error.message;
   }
@@ -5499,10 +5532,15 @@ async function loadTripGroups(destination = state.groupDestinationFilter) {
     const queryString = params.toString() ? `?${params.toString()}` : '';
     const data = await api(`/api/trip-groups/${userId}${queryString}`);
     state.tripGroups = data.groups || [];
+    if (!destination || destination === 'All') {
+      saveCachedState('tripGroups', state.tripGroups);
+    }
   } catch (error) {
     state.groupStatusType = 'error';
     state.groupStatus = error.message;
-    state.tripGroups = [];
+    if (!state.tripGroups || state.tripGroups.length === 0) {
+      state.tripGroups = loadCachedState('tripGroups', []);
+    }
   }
 }
 
@@ -5516,8 +5554,11 @@ async function loadBookings() {
     }
     const data = await api(`/api/bookings/user/${userId}`);
     state.bookings = (data && data.bookings) ? data.bookings : [];
+    saveCachedState('bookings', state.bookings);
   } catch (error) {
-    state.bookings = [];
+    if (!state.bookings || state.bookings.length === 0) {
+      state.bookings = loadCachedState('bookings', []);
+    }
   } finally {
     state.bookingsLoading = false;
   }
@@ -5866,6 +5907,7 @@ async function loadConversations(options = {}) {
       state.profile = { id: data.profileId, userId: state.user.id, destination: state.user.destination || '' };
     }
     state.conversations = data.conversations || [];
+    saveCachedState('conversations', state.conversations);
     maybeNotifyAboutIncomingMessages(previousConversations, state.conversations);
 
     if (!state.activeConversationId && state.conversations.length) {
@@ -5894,7 +5936,9 @@ async function loadConversations(options = {}) {
     }
   } catch (error) {
     state.chatStatus = error.message;
-    state.conversations = [];
+    if (!state.conversations || state.conversations.length === 0) {
+      state.conversations = loadCachedState('conversations', []);
+    }
     state.messages = [];
     updateUnreadCount();
   }
@@ -7448,6 +7492,12 @@ function handleLogout() {
   localStorage.removeItem('tripzenUserAvatar');
   localStorage.removeItem('tripzenUserAge');
   localStorage.removeItem('tripzenLastRoute');
+  localStorage.removeItem('tripzen_cache_user');
+  localStorage.removeItem('tripzen_cache_profile');
+  localStorage.removeItem('tripzen_cache_matches');
+  localStorage.removeItem('tripzen_cache_tripGroups');
+  localStorage.removeItem('tripzen_cache_bookings');
+  localStorage.removeItem('tripzen_cache_conversations');
   sessionStorage.removeItem('tripzenAdminUnlocked');
   sessionStorage.removeItem('tripzenAdminPassword');
   state.adminUnlocked = false;
@@ -9278,37 +9328,66 @@ function hydrateAdminUI() {
   });
 }
 
-window.addEventListener('hashchange', async () => {
+window.addEventListener('hashchange', () => {
   const rawHash = window.location.hash || '';
   if (rawHash && !rawHash.startsWith('#/')) {
     // In-page hash anchor (e.g. #bannerFindMatchesBtn), do NOT navigate SPA routes
     return;
   }
-  state.route = rawHash.replace('#', '') || '/';
+  const newRoute = rawHash.replace('#', '') || '/';
+  if (state.route === newRoute) return;
+  state.route = newRoute;
+
+  // 1. INSTANT MILLISECOND TAB SWITCH (< 5ms)
+  // Immediately render the view from existing in-memory/cached state
+  renderApp();
+  window.scrollTo({ top: 0, behavior: 'instant' });
+
+  // 2. NON-BLOCKING BACKGROUND DATA REVALIDATION
   if (routeNeedsTripData()) {
-    await loadMatches();
-    await loadTripGroups();
-    await loadBookings();
-    if (state.route === '/admin' && isAdminUser()) {
-      await loadAdminBookings();
-    }
-    await loadConversations();
     startLiveSync();
+    // Only load what this active tab needs, in parallel
+    const loaders = [];
+    if (state.route === '/matches' || state.route.startsWith('/match/')) {
+      loaders.push(loadMatches());
+    } else if (state.route === '/groups') {
+      loaders.push(loadTripGroups());
+    } else if (state.route === '/bookings' || state.route === '/my-bookings') {
+      loaders.push(loadBookings());
+    } else if (state.route === '/chat') {
+      loaders.push(loadConversations());
+    } else if (state.route === '/admin' && isAdminUser()) {
+      loaders.push(loadAdminBookings());
+    }
+
+    if (loaders.length > 0) {
+      Promise.allSettled(loaders).then(() => {
+        renderApp();
+      });
+    }
   } else {
     stopLiveSync();
   }
-  renderApp();
 });
 
 async function init() {
-  const backendFound = await detectApiBase();
-  if (!backendFound) {
-    apiBase = 'http://localhost:3000';
+  // 1. INSTANT 0ms FIRST CONTENTFUL RENDER
+  // Render the interface immediately from memory / cached state
+  renderApp();
+
+  // Fast-path API base detection
+  if (window.location.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1')) {
+    apiBase = '';
+  } else {
+    const backendFound = await detectApiBase();
+    if (!backendFound) {
+      apiBase = 'http://localhost:3000';
+    }
   }
 
+  // 2. Validate session in background
   await loadSession();
   if (state.user) {
-    await loadConversations();
     const savedRoute = localStorage.getItem('tripzenLastRoute');
     if (state.route === '/' || state.route === '/auth' || !state.route) {
       if (savedRoute && savedRoute !== '/' && savedRoute !== '/auth') {
@@ -9326,17 +9405,21 @@ async function init() {
       }
     }
   }
+
+  // 3. Parallel background data synchronization (Non-blocking)
   if (routeNeedsTripData()) {
     requestBrowserNotificationPermission();
-    await loadMatches();
-    await loadTripGroups();
-    await loadBookings();
-    if (state.route === '/admin' && isAdminUser()) {
-      await loadAdminBookings();
-    }
-    await loadConversations();
     startLiveSync();
+    await Promise.allSettled([
+      loadMatches(),
+      loadTripGroups(),
+      loadBookings(),
+      loadConversations(),
+      state.route === '/admin' && isAdminUser() ? loadAdminBookings() : Promise.resolve(),
+    ]);
   }
+
+  // Final synchronization render
   renderApp();
 }
 
