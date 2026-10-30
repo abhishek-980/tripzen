@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#184b3c" />
+      <stop offset="100%" stop-color="#0e2d24" />
+    </linearGradient>
+  </defs>
+
+  <!-- Deep pine green rounded badge -->
+  <rect x="16" y="16" width="480" height="480" rx="118" ry="118" fill="url(#badgeGrad)" />
+
+  <!-- Sunrise Orange Summit Dot -->
+  <circle cx="348" cy="96" r="34" fill="#F36F27" />
+
+  <!-- Continuous Smooth Z Stroke -->
+  <path d="M 136 142
+           L 364 142
+           L 246 256
+           C 220 281 220 307 246 332
+           L 364 446
+           L 136 446"
+        fill="none"
+        stroke="#FBF9F5"
+        stroke-width="58"
+        stroke-linecap="round"
+        stroke-linejoin="round" />
+</svg>

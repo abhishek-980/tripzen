@@ -1970,13 +1970,18 @@ function userDropdownMenuHtml(avatarUrl) {
 function userMenuPillHtml(avatarUrl, displayName, wrapperClass = '', btnId = '') {
   return `
     <div class="user-menu-dropdown-wrapper ${wrapperClass}">
-      <button type="button" class="user-menu-trigger mobile-topbar-menu-trigger" ${btnId ? `id="${btnId}"` : ''} aria-label="Open User Menu" title="Profile & Account">
+      <button type="button" class="user-menu-trigger mobile-topbar-menu-trigger" ${btnId ? `id="${btnId}"` : ''} aria-label="Open User Menu" title="Profile, Bookings & Menu">
         <img src="${escapeHtml(avatarUrl)}" class="user-trigger-avatar mobile-topbar-avatar" alt="Avatar" />
         <span class="user-trigger-name mobile-topbar-name">${escapeHtml(displayName)}</span>
-        <span class="three-lines-icon" aria-hidden="true">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <span class="three-lines-pill" aria-hidden="true">
+          <svg class="hamburger-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+            <line x1="3.5" y1="6" x2="20.5" y2="6"/>
+            <line x1="3.5" y1="12" x2="20.5" y2="12"/>
+            <line x1="3.5" y1="18" x2="20.5" y2="18"/>
+          </svg>
         </span>
       </button>
+      <div class="user-menu-backdrop" aria-hidden="true"></div>
       ${userDropdownMenuHtml(avatarUrl)}
     </div>
   `;
@@ -1991,7 +1996,7 @@ function topbar() {
     <header class="topbar-stitch">
       <div class="topbar-inner">
         <a href="#/" class="stitch-brand">
-          <img src="./assets/tripzen-logo.png" alt="TripZen Logo" class="stitch-brand-logo-img" />
+          <img src="./assets/tripzen-logo.svg" alt="TripZen Logo" class="stitch-brand-logo-img" />
           <span>TripZen</span>
         </a>
 
@@ -2096,7 +2101,7 @@ function dashboardSidebar() {
     <aside class="dashboard-sidebar">
       <div class="sidebar-header">
         <a href="#/" class="stitch-brand">
-          <img src="./assets/tripzen-logo.png" alt="TripZen Logo" class="stitch-brand-logo-img" />
+          <img src="./assets/tripzen-logo.svg" alt="TripZen Logo" class="stitch-brand-logo-img" />
           <span>TripZen</span>
         </a>
         <a href="#/profile" class="sidebar-user-pill" title="View / Edit Profile">
@@ -2181,9 +2186,9 @@ function dashboardShell(contentMarkup) {
     <div class="dashboard-container">
       <!-- Dedicated Sticky Mobile Header with Logo, User Pill, and Log Out dropdown (Mobile Phone Web UI) -->
       <header class="dashboard-mobile-topbar">
-        <a href="#/" class="mobile-topbar-brand">
-          <img src="./assets/tripzen-logo.png" alt="TripZen" class="mobile-topbar-logo" />
-          <span>TripZen</span>
+        <a href="#/" class="mobile-topbar-brand" title="TripZen Home">
+          <img src="./assets/tripzen-logo.svg" alt="TripZen Logo" class="mobile-topbar-logo" />
+          <span class="mobile-topbar-brand-title">TripZen</span>
         </a>
         <div class="mobile-topbar-actions">
           ${userMenuPillHtml(avatarUrl, firstName, 'mobile-menu-wrapper', 'mobileUserMenuToggleBtn')}
@@ -9045,33 +9050,57 @@ function hydrateUI() {
   const userMenuToggles = document.querySelectorAll(
     '.user-menu-trigger, .mobile-topbar-menu-trigger, #mobileUserMenuToggleBtn, #desktopUserMenuToggleBtn, #dashboardDesktopUserMenuToggleBtn'
   );
+
+  function closeAllUserMenus() {
+    document.querySelectorAll('.user-dropdown-menu.open').forEach((m) => m.classList.remove('open'));
+    document.querySelectorAll('.user-menu-backdrop.open').forEach((b) => b.classList.remove('open'));
+  }
+
   userMenuToggles.forEach((btn) => {
-    btn.addEventListener('click', (e) => {
+    const handleToggle = (e) => {
       e.preventDefault();
       e.stopPropagation();
       const wrapper = btn.closest('.user-menu-dropdown-wrapper');
       const menu = wrapper ? wrapper.querySelector('.user-dropdown-menu') : null;
+      const backdrop = wrapper ? wrapper.querySelector('.user-menu-backdrop') : null;
       if (menu) {
         const isOpen = menu.classList.contains('open');
-        document.querySelectorAll('.user-dropdown-menu.open').forEach((m) => m.classList.remove('open'));
+        closeAllUserMenus();
         if (!isOpen) {
           menu.classList.add('open');
+          if (backdrop) backdrop.classList.add('open');
         }
       }
+    };
+
+    btn.addEventListener('click', handleToggle);
+  });
+
+  // Close dropdown menu when clicking or tapping the backdrop
+  document.querySelectorAll('.user-menu-backdrop').forEach((backdrop) => {
+    backdrop.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeAllUserMenus();
     });
+    backdrop.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeAllUserMenus();
+    }, { passive: false });
   });
 
   // Close dropdown menu when clicking anywhere else
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.user-menu-dropdown-wrapper')) {
-      document.querySelectorAll('.user-dropdown-menu.open').forEach((m) => m.classList.remove('open'));
+      closeAllUserMenus();
     }
   });
 
   // Close dropdown menu when clicking any dropdown item
   document.querySelectorAll('.user-dropdown-item').forEach((item) => {
     item.addEventListener('click', () => {
-      document.querySelectorAll('.user-dropdown-menu.open').forEach((m) => m.classList.remove('open'));
+      closeAllUserMenus();
     });
   });
 
