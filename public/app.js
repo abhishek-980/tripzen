@@ -4859,11 +4859,13 @@ function authPage() {
 
   return `
     <div class="auth-hero-wrapper animate-fade-in">
-      <!-- Original Hero Video Background (Crisp & Unblurred) -->
-      <video class="auth-hero-bg-video" autoplay muted loop playsinline>
-        <source src="./assets/hero-bg.mov" type="video/quicktime" />
-        <source src="./assets/hero-bg.mov" type="video/mp4" />
-      </video>
+      <!-- Optimized Hero Background Image (Crisp Himalayan Video Screenshot) -->
+      <picture class="auth-hero-bg-picture">
+        <source media="(max-width: 768px)" srcset="./assets/auth-hero-bg-mobile.webp" type="image/webp" />
+        <source media="(max-width: 768px)" srcset="./assets/auth-hero-bg-mobile.jpg" type="image/jpeg" />
+        <source srcset="./assets/auth-hero-bg.webp" type="image/webp" />
+        <img src="./assets/auth-hero-bg.jpg" alt="TripZen Himalayas" class="auth-hero-bg-image" fetchpriority="high" loading="eager" decoding="async" />
+      </picture>
       <div class="auth-hero-video-overlay"></div>
 
       <div class="auth-hero-container">
