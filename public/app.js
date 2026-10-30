@@ -1996,7 +1996,7 @@ function topbar() {
     <header class="topbar-stitch">
       <div class="topbar-inner">
         <a href="#/" class="stitch-brand">
-          <img src="./assets/tripzen-logo.svg" alt="TripZen Logo" class="stitch-brand-logo-img" />
+          <img src="./assets/tripzen-logo.png" alt="TripZen Logo" class="stitch-brand-logo-img" />
           <span>TripZen</span>
         </a>
 
@@ -2101,7 +2101,7 @@ function dashboardSidebar() {
     <aside class="dashboard-sidebar">
       <div class="sidebar-header">
         <a href="#/" class="stitch-brand">
-          <img src="./assets/tripzen-logo.svg" alt="TripZen Logo" class="stitch-brand-logo-img" />
+          <img src="./assets/tripzen-logo.png" alt="TripZen Logo" class="stitch-brand-logo-img" />
           <span>TripZen</span>
         </a>
         <a href="#/profile" class="sidebar-user-pill" title="View / Edit Profile">
@@ -2187,7 +2187,7 @@ function dashboardShell(contentMarkup) {
       <!-- Dedicated Sticky Mobile Header with Logo, User Pill, and Log Out dropdown (Mobile Phone Web UI) -->
       <header class="dashboard-mobile-topbar">
         <a href="#/" class="mobile-topbar-brand" title="TripZen Home">
-          <img src="./assets/tripzen-logo.svg" alt="TripZen Logo" class="mobile-topbar-logo" />
+          <img src="./assets/tripzen-logo.png" alt="TripZen Logo" class="mobile-topbar-logo" />
           <span class="mobile-topbar-brand-title">TripZen</span>
         </a>
         <div class="mobile-topbar-actions">

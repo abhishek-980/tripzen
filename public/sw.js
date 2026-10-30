@@ -1,11 +1,10 @@
-const CACHE_NAME = 'tripzen-pwa-v20261031_v54';
+const CACHE_NAME = 'tripzen-pwa-v20261031_v55';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './styles.css',
   './app.js',
-  './assets/tripzen-logo.svg',
   './assets/tripzen-logo.png',
   './assets/tripzen-logo.jpg',
   './assets/auth-hero-bg.webp',
