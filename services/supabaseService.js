@@ -259,7 +259,7 @@ async function getProfileByUserId(userId) {
 }
 
 /**
- * Save a confirmed Razorpay booking into Supabase PostgreSQL 'bookings' table
+ * Save or update a booking into Supabase PostgreSQL 'bookings' table
  */
 async function saveBooking(bookingData) {
   const admin = getAdminClient();
@@ -271,21 +271,43 @@ async function saveBooking(bookingData) {
     booking_ref: bookingData.bookingRef,
     package_name: bookingData.packageName,
     destination: bookingData.destination,
-    amount: bookingData.amount,
-    traveler_count: bookingData.travelerCount || 1,
+    amount: Number(bookingData.amount) || 0,
+    traveler_count: Number(bookingData.travelerCount) || 1,
     start_date: bookingData.startDate || null,
     company: bookingData.company || 'TripZen Expeditions',
     lead_name: bookingData.leadName,
     lead_phone: cleanPhone.length >= 10 ? cleanPhone.slice(-10) : (cleanPhone || bookingData.leadPhone),
-    lead_email: (bookingData.leadEmail || '').trim().toLowerCase(),
+    lead_email: (bookingData.leadEmail || bookingData.userEmail || '').trim().toLowerCase(),
     razorpay_order_id: bookingData.razorpayOrderId || null,
     razorpay_payment_id: bookingData.razorpayPaymentId || null,
     razorpay_signature: bookingData.razorpaySignature || null,
     status: bookingData.status || 'confirmed',
-    created_at: new Date().toISOString(),
+    created_at: bookingData.createdAt || bookingData.paidAt || new Date().toISOString(),
   };
 
   try {
+    if (bookingData.bookingRef) {
+      const { data: existing } = await admin
+        .from('bookings')
+        .select('*')
+        .eq('booking_ref', bookingData.bookingRef)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        const { data, error } = await admin
+          .from('bookings')
+          .update(payload)
+          .eq('id', existing[0].id)
+          .select()
+          .single();
+        if (error) {
+          console.error('[Supabase] Failed to update booking:', error.message);
+          return null;
+        }
+        return data;
+      }
+    }
+
     const { data, error } = await admin
       .from('bookings')
       .insert([payload])

@@ -205,6 +205,7 @@ function ensureCloudHydrated() {
     cloudHydrationPromise = (async function hydrateStoreFromCloud() {
       if (supabaseService.isConfigured()) {
         try {
+          // 1. Snapshot Hydration: Restore from Supabase Storage JSON backup
           const cloudStore = await supabaseService.loadCloudSnapshot();
           if (cloudStore && Array.isArray(cloudStore.users)) {
             // 1. Users: merge
@@ -248,10 +249,126 @@ function ensureCloudHydrated() {
             (db.tripGroups || []).forEach(g => grpMap.set(g.id, g));
             (cloudStore.tripGroups || []).forEach(g => grpMap.set(g.id, { ...(grpMap.get(g.id) || {}), ...g }));
             db.tripGroups = Array.from(grpMap.values());
-
-            fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
-            console.log(`[Startup Cloud Hydration] 🟢 Permanently restored: ${db.users.length} users, ${db.payments.length} bookings, ${db.conversations.length} chats, ${db.messages.length} messages.`);
           }
+
+          // 2. Direct PostgreSQL Profiles Sync: Reconcile all user records from Supabase PostgreSQL
+          try {
+            const pgProfiles = await supabaseService.listUsers();
+            if (Array.isArray(pgProfiles) && pgProfiles.length > 0) {
+              pgProfiles.forEach((pgp) => {
+                const cleanPhone = String(pgp.phone || '').replace(/\D/g, '');
+                const cleanEmail = String(pgp.email || '').toLowerCase().trim();
+
+                let u = db.users.find((usr) =>
+                  (pgp.user_id && usr.id === pgp.user_id) ||
+                  (cleanEmail && usr.email && usr.email.toLowerCase().trim() === cleanEmail) ||
+                  (cleanPhone && usr.phone && String(usr.phone).replace(/\D/g, '').endsWith(cleanPhone))
+                );
+
+                if (u) {
+                  if (pgp.profile_image && (!u.profileImage || u.profileImage.startsWith('/uploads/'))) {
+                    u.profileImage = pgp.profile_image;
+                  }
+                  if (pgp.full_name && !u.fullName) u.fullName = pgp.full_name;
+                  if (pgp.phone && !u.phone) u.phone = pgp.phone;
+                  if (pgp.email && !u.email) u.email = pgp.email;
+                  if (pgp.destination && !u.destination) u.destination = pgp.destination;
+                } else {
+                  const newUid = pgp.user_id || uid('usr');
+                  u = {
+                    id: newUid,
+                    fullName: pgp.full_name || 'Traveler',
+                    email: pgp.email || `${newUid.slice(0, 8)}@tripzen.local`,
+                    phone: pgp.phone || '',
+                    age: String(pgp.age || '24'),
+                    gender: pgp.gender || 'Female',
+                    city: pgp.city || 'Delhi',
+                    interests: pgp.interests || ['trekking', 'photography'],
+                    travelStyle: pgp.travel_style || 'Solo',
+                    destination: pgp.destination || 'Kedarkantha Summit',
+                    bio: pgp.bio || '',
+                    pastTrips: pgp.past_trips || '',
+                    budgetRange: pgp.budget_range || '7000-15000',
+                    verified: true,
+                    profileCompleteness: pgp.profile_completeness || 70,
+                    profileImage: pgp.profile_image || avatarForUser({ fullName: pgp.full_name, id: newUid }),
+                    profileImageData: '',
+                    createdAt: pgp.created_at || new Date().toISOString(),
+                  };
+                  db.users.push(u);
+                }
+
+                let prf = db.profiles.find((p) => p.userId === u.id);
+                if (!prf) {
+                  prf = {
+                    id: uid('prf'),
+                    userId: u.id,
+                    fullName: u.fullName,
+                    destination: pgp.destination || u.destination || 'Kedarkantha Summit',
+                    startDate: pgp.start_date || new Date().toISOString().slice(0, 10),
+                    endDate: pgp.end_date || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                    travelStyle: u.travelStyle || 'Solo',
+                    budgetRange: u.budgetRange || '5000-9000',
+                    genderPreference: 'Any',
+                    interests: u.interests || ['trekking'],
+                    bio: u.bio || '',
+                    pastTrips: u.pastTrips || '',
+                    profileImage: u.profileImage,
+                    createdAt: pgp.created_at || new Date().toISOString(),
+                    updatedAt: pgp.updated_at || new Date().toISOString(),
+                  };
+                  db.profiles.push(prf);
+                } else {
+                  if (pgp.profile_image) prf.profileImage = pgp.profile_image;
+                  if (pgp.destination) prf.destination = pgp.destination;
+                }
+              });
+            }
+          } catch (pgErr) {
+            console.warn('[Startup Cloud Hydration] Supabase PostgreSQL profiles sync notice:', pgErr.message);
+          }
+
+          // 3. Direct PostgreSQL Bookings Sync: Reconcile all bookings from Supabase PostgreSQL
+          try {
+            const pgBookings = await supabaseService.listBookings();
+            if (Array.isArray(pgBookings) && pgBookings.length > 0) {
+              pgBookings.forEach((pgb) => {
+                const existing = (db.payments || []).find((p) =>
+                  (p.bookingRef && p.bookingRef === pgb.booking_ref) ||
+                  (p.id && p.id === pgb.id)
+                );
+                if (!existing) {
+                  db.payments.push({
+                    id: pgb.id || uid('pay'),
+                    bookingRef: pgb.booking_ref,
+                    userId: pgb.user_id || '',
+                    packageName: pgb.package_name,
+                    destination: pgb.destination,
+                    amount: pgb.amount,
+                    travelerCount: pgb.traveler_count || 1,
+                    startDate: pgb.start_date,
+                    company: pgb.company || 'TripZen Expeditions',
+                    leadName: pgb.lead_name,
+                    leadPhone: pgb.lead_phone,
+                    leadEmail: pgb.lead_email,
+                    status: pgb.status || 'paid',
+                    bookingStatus: 'confirmed',
+                    razorpayOrderId: pgb.razorpay_order_id,
+                    razorpayPaymentId: pgb.razorpay_payment_id,
+                    razorpaySignature: pgb.razorpay_signature,
+                    paidAt: pgb.created_at || new Date().toISOString(),
+                    createdAt: pgb.created_at || new Date().toISOString(),
+                  });
+                }
+              });
+            }
+          } catch (pgbErr) {
+            console.warn('[Startup Cloud Hydration] Supabase PostgreSQL bookings sync notice:', pgbErr.message);
+          }
+
+          migrateAndLinkBookings();
+          fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
+          console.log(`[Startup Cloud Hydration] 🟢 Permanently reconciled with Supabase: ${db.users.length} users, ${db.payments.length} bookings, ${db.conversations.length} chats, ${db.messages.length} messages.`);
         } catch (err) {
           console.warn('[Startup Cloud Hydration] Notice:', err.message);
         }
@@ -395,10 +512,10 @@ function ensureAdminAndSeedData() {
         '🏡 remote homestays',
       ],
       budgetRange: '7000-15000',
-      phone: '9876543210',
-      profileImage: '/uploads/usr_1775814622426_lafooo_1791113672717_80tri7.jpg',
+      phone: '8920632874',
+      profileImage: 'https://cumatiemhapifpmsobct.supabase.co/storage/v1/object/public/avatars/avatars/usr_1775814622426_lafooo.jpg',
       createdAt: '2026-04-10T09:50:22.426Z',
-      profileCompleteness: 82,
+      profileCompleteness: 100,
     };
     db.users.push(admin);
     console.log('[Tripzen] Verified admin account initialized: ' + adminEmail);
@@ -411,6 +528,14 @@ function ensureAdminAndSeedData() {
     }
     if (!admin.password) {
       admin.password = 'abhi@8080';
+      updated = true;
+    }
+    if (!admin.phone || admin.phone === '9876543210') {
+      admin.phone = '8920632874';
+      updated = true;
+    }
+    if (!admin.profileImage || admin.profileImage.startsWith('/uploads/')) {
+      admin.profileImage = 'https://cumatiemhapifpmsobct.supabase.co/storage/v1/object/public/avatars/avatars/usr_1775814622426_lafooo.jpg';
       updated = true;
     }
     if (!admin.bio) {
@@ -538,6 +663,62 @@ function uid(prefix) {
 
 function normalizeText(value) {
   return String(value || '').trim();
+}
+
+/**
+ * Robust User Avatar Persistence:
+ * Uploads base64 or local images directly to Supabase Storage 'avatars' CDN
+ * Returns permanent CDN URL for lifetime data preservation
+ */
+async function persistUserAvatar(userId, imageString) {
+  if (!imageString || typeof imageString !== 'string') return '';
+  const text = imageString.trim();
+  if (!text) return '';
+
+  // 1. If it's already a Supabase Storage CDN URL or valid external https URL, keep it
+  if (text.startsWith('https://cumatiemhapifpmsobct.supabase.co') ||
+      (text.startsWith('https://images.unsplash.com') && !text.includes('placeholder'))) {
+    return text;
+  }
+
+  // 2. If it's base64 data, upload to Supabase Storage 'avatars' bucket first
+  if (text.startsWith('data:')) {
+    if (supabaseService.isConfigured()) {
+      try {
+        const cloudUrl = await supabaseService.uploadAvatarBase64(userId, text);
+        if (cloudUrl) {
+          console.log(`[Supabase Avatar CDN] 🚀 Uploaded avatar for ${userId}: ${cloudUrl}`);
+          return cloudUrl;
+        }
+      } catch (err) {
+        console.warn('[Supabase Avatar CDN] Upload failed, falling back:', err.message);
+      }
+    }
+    // Fallback to local uploads
+    return persistProfileImage(text, userId);
+  }
+
+  // 3. If it's a local upload path (/uploads/filename)
+  if (text.startsWith('/uploads/')) {
+    const filename = path.basename(text);
+    const localPath = path.join(UPLOADS_DIR, filename);
+    if (fs.existsSync(localPath) && supabaseService.isConfigured()) {
+      try {
+        const buffer = fs.readFileSync(localPath);
+        const ext = path.extname(filename).toLowerCase();
+        const mimeType = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
+        const cloudUrl = await supabaseService.uploadAvatar(userId, buffer, mimeType);
+        if (cloudUrl) {
+          console.log(`[Supabase Avatar CDN] 🚀 Migrated local upload to Supabase for ${userId}: ${cloudUrl}`);
+          return cloudUrl;
+        }
+      } catch (err) {
+        console.warn('[Supabase Avatar CDN] Migration notice:', err.message);
+      }
+    }
+  }
+
+  return text;
 }
 
 function persistProfileImage(value, seed = 'tripzen-user') {
@@ -1884,10 +2065,20 @@ function requireAdmin(req, res, next) {
 
   if (userId) {
     const user = db.users.find((u) => u.id === userId);
-    if (user && (user.email === 'abhisheksharma39232@gmail.com' || user.role === 'admin' || user.isAdmin)) {
-      req.isAdmin = true;
-      req.adminUser = user;
-      return next();
+    if (user) {
+      const linked = getLinkedUserAccounts(user);
+      const isAbhishekAdmin =
+        linked.emails.includes('abhisheksharma39232@gmail.com') ||
+        linked.phones.includes('8920632874') ||
+        user.email === 'abhisheksharma39232@gmail.com' ||
+        user.phone === '8920632874' ||
+        linked.users.some((u) => u.role === 'admin' || u.isAdmin);
+
+      if (isAbhishekAdmin) {
+        req.isAdmin = true;
+        req.adminUser = user;
+        return next();
+      }
     }
   }
 
@@ -2131,7 +2322,7 @@ app.post('/api/supabase/verify-otp', async (req, res) => {
   }
 });
 
-app.post('/api/register', (req, res) => {
+app.post('/api/register', async (req, res) => {
   const { fullName, email, password, age, gender, interests, city, travelStyle, pastTrips, budgetRange, profileImage, phone, bio } = req.body;
 
   const rawName = normalizeText(fullName);
@@ -2170,9 +2361,18 @@ app.post('/api/register', (req, res) => {
   const cleanPhone = normalizeIndianPhone(phoneDigits);
   const otpRecord = phoneOtpStore.get(cleanPhone);
   const isPhoneVerified = Boolean(otpRecord && otpRecord.verified);
+  const newUserId = uid('usr');
+
+  let finalAvatar = '';
+  if (profileImage) {
+    finalAvatar = await persistUserAvatar(newUserId, profileImage);
+  }
+  if (!finalAvatar) {
+    finalAvatar = avatarForUser({ fullName: rawName, email: normalizedEmail, id: normalizedEmail });
+  }
 
   const user = {
-    id: uid('usr'),
+    id: newUserId,
     fullName: rawName,
     email: normalizedEmail,
     password: rawPassword,
@@ -2187,12 +2387,9 @@ app.post('/api/register', (req, res) => {
     pastTrips: normalizeText(pastTrips) || '',
     budgetRange: normalizeText(budgetRange) || '7000-15000',
     verified: true,
-    profileCompleteness: 55,
-    profileImageData: profileImage && profileImage.startsWith('data:') ? profileImage : '',
-    profileImage:
-      persistProfileImage(profileImage, normalizedEmail.replace(/[^a-z0-9]/gi, '_')) ||
-      (profileImage && profileImage.startsWith('data:') ? profileImage : '') ||
-      avatarForUser({ fullName: rawName, email: normalizedEmail, id: normalizedEmail }),
+    profileCompleteness: 65,
+    profileImageData: '',
+    profileImage: finalAvatar,
     createdAt: new Date().toISOString(),
   };
 
@@ -2212,13 +2409,29 @@ app.post('/api/register', (req, res) => {
     interests: user.interests && user.interests.length ? user.interests : ['trekking', 'photography'],
     bio: user.bio || '',
     pastTrips: user.pastTrips || '',
-    profileImage: user.profileImageData || user.profileImage || '',
+    profileImage: finalAvatar,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
   db.profiles.push(initialProfile);
 
   saveStore(db);
+
+  // Dual-Layer Cloud Persistence: Upsert profile to Supabase PostgreSQL
+  if (supabaseService.isConfigured()) {
+    try {
+      await supabaseService.upsertProfile(user.id, {
+        ...user,
+        ...initialProfile,
+        phone: user.phone,
+        email: user.email,
+        profileImage: finalAvatar,
+      });
+      console.log(`[Supabase Cloud] User ${user.fullName} (${user.id}) permanently recorded in PostgreSQL profiles.`);
+    } catch (err) {
+      console.warn('[Supabase Sync] Register upsert notice:', err.message);
+    }
+  }
 
   console.log(`[AUTH] New user registered successfully: ${user.fullName} (${user.id}, ${user.email}, ${user.phone})`);
 
@@ -2242,7 +2455,40 @@ app.post('/api/login', async (req, res) => {
     });
   }
 
-  const user = findUserByIdentifier(rawIdentifier);
+  let user = findUserByIdentifier(rawIdentifier);
+
+  // Dynamic self-healing: if not in memory, query Supabase PostgreSQL profiles
+  if (!user && supabaseService.isConfigured()) {
+    try {
+      const cloudProf = await supabaseService.findProfileByPhoneOrEmail(rawIdentifier, rawIdentifier);
+      if (cloudProf) {
+        const newUid = cloudProf.user_id || uid('usr');
+        user = {
+          id: newUid,
+          fullName: cloudProf.full_name || 'Traveler',
+          email: cloudProf.email || `${newUid.slice(0, 8)}@tripzen.local`,
+          phone: cloudProf.phone || '',
+          password: rawPassword,
+          age: String(cloudProf.age || '24'),
+          gender: cloudProf.gender || 'Female',
+          city: cloudProf.city || 'Delhi',
+          travelStyle: cloudProf.travel_style || 'Solo',
+          destination: cloudProf.destination || 'Kedarkantha Summit',
+          interests: cloudProf.interests || ['trekking', 'photography'],
+          bio: cloudProf.bio || '',
+          pastTrips: cloudProf.past_trips || '',
+          budgetRange: cloudProf.budget_range || '7000-15000',
+          verified: true,
+          profileCompleteness: cloudProf.profile_completeness || 70,
+          profileImage: cloudProf.profile_image || avatarForUser({ fullName: cloudProf.full_name, id: newUid }),
+          profileImageData: '',
+          createdAt: cloudProf.created_at || new Date().toISOString(),
+        };
+        db.users.push(user);
+        saveStore(db);
+      }
+    } catch (e) {}
+  }
 
   const masterAdminPassword = process.env.ADMIN_PASSWORD || 'tripzen-admin-123';
   const isAdminAccount = user && (
@@ -2441,7 +2687,7 @@ app.get('/api/session/:userId', async (req, res) => {
   });
 });
 
-app.post('/api/preferences', (req, res) => {
+app.post('/api/preferences', async (req, res) => {
   let { userId, fullName, destination, startDate, endDate, travelStyle, interests, bio, budgetRange, genderPreference, profileImage } = req.body;
 
   if (!normalizeText(userId) || !normalizeText(destination) || !normalizeText(startDate)) {
@@ -2488,6 +2734,24 @@ app.post('/api/preferences', (req, res) => {
   })[0] || null;
   const timestamp = new Date().toISOString();
 
+  let finalAvatar = user.profileImage || '';
+  if (profileImage) {
+    finalAvatar = await persistUserAvatar(user.id, profileImage);
+    if (finalAvatar) {
+      user.profileImage = finalAvatar;
+      user.profileImageData = '';
+
+      const linked = getLinkedUserAccounts(user);
+      linked.users.forEach((lu) => {
+        lu.profileImage = finalAvatar;
+        lu.profileImageData = '';
+      });
+      linked.profiles.forEach((lp) => {
+        lp.profileImage = finalAvatar;
+      });
+    }
+  }
+
   const profile = {
     id: previous ? previous.id : uid('prf'),
     userId,
@@ -2501,37 +2765,14 @@ app.post('/api/preferences', (req, res) => {
     interests: normalizeInterests(normalizeText(interests) ? interests : user.interests),
     bio: normalizeText(bio) || user.bio || (previous ? previous.bio : '') || '',
     pastTrips: normalizeText(user.pastTrips) || (previous ? previous.pastTrips : '') || '',
-    profileImage: user.profileImageData || user.profileImage || (previous ? previous.profileImage : '') || '',
+    profileImage: user.profileImage || (previous ? previous.profileImage : '') || '',
     createdAt: previous ? previous.createdAt : timestamp,
     updatedAt: timestamp,
   };
 
   db.profiles = db.profiles.filter((item) => item.userId !== userId);
   db.profiles.push(profile);
-  if (profileImage) {
-    const rawImage = String(profileImage).trim();
-    if (rawImage.startsWith('data:')) {
-      if (supabaseService.isConfigured()) {
-        supabaseService.uploadAvatarBase64(user.id, rawImage).then((cloudUrl) => {
-          if (cloudUrl) {
-            user.profileImage = cloudUrl;
-            user.profileImageData = '';
-            profile.profileImage = cloudUrl;
-            saveStore(db);
-          }
-        }).catch(() => {});
-      }
-      const savedProfileImage = persistProfileImage(rawImage, user.id);
-      user.profileImage = user.profileImage && user.profileImage.startsWith('http') ? user.profileImage : savedProfileImage;
-      user.profileImageData = rawImage;
-    } else {
-      user.profileImage = rawImage;
-      user.profileImageData = '';
-    }
-  }
-  if (user.profileImage) {
-    profile.profileImage = user.profileImage;
-  }
+
   if (bio !== undefined && normalizeText(bio)) {
     user.bio = normalizeText(bio);
   }
@@ -2543,12 +2784,17 @@ app.post('/api/preferences', (req, res) => {
   saveStore(db);
 
   if (supabaseService.isConfigured()) {
-    supabaseService.upsertProfile(user.id, {
-      ...user,
-      ...profile,
-      phone: user.phone,
-      email: user.email,
-    }).catch(err => console.warn('[Supabase Sync] Preferences upsert notice:', err.message));
+    try {
+      await supabaseService.upsertProfile(user.id, {
+        ...user,
+        ...profile,
+        phone: user.phone,
+        email: user.email,
+        profileImage: user.profileImage,
+      });
+    } catch (err) {
+      console.warn('[Supabase Sync] Preferences upsert notice:', err.message);
+    }
   }
 
   return res.status(201).json({
@@ -2559,7 +2805,7 @@ app.post('/api/preferences', (req, res) => {
   });
 });
 
-app.post('/api/profile', (req, res) => {
+app.post('/api/profile', async (req, res) => {
   const { userId, fullName, age, gender, city, bio, travelStyle, interests, pastTrips, budgetRange, profileImage, phone } = req.body;
 
   if (!normalizeText(userId)) {
@@ -2589,25 +2835,19 @@ app.post('/api/profile', (req, res) => {
   if (phone !== undefined && normalizeText(phone)) user.phone = normalizeText(phone);
 
   if (profileImage) {
-    const rawImage = String(profileImage).trim();
-    if (rawImage.startsWith('data:')) {
-      if (supabaseService.isConfigured()) {
-        supabaseService.uploadAvatarBase64(user.id, rawImage).then((cloudUrl) => {
-          if (cloudUrl) {
-            user.profileImage = cloudUrl;
-            user.profileImageData = '';
-            const p = db.profiles.find((pr) => pr.userId === user.id);
-            if (p) p.profileImage = cloudUrl;
-            saveStore(db);
-          }
-        }).catch(() => {});
-      }
-      const savedUrl = persistProfileImage(rawImage, user.id);
-      user.profileImage = user.profileImage && user.profileImage.startsWith('http') ? user.profileImage : savedUrl;
-      user.profileImageData = rawImage;
-    } else {
-      user.profileImage = rawImage;
+    const finalAvatar = await persistUserAvatar(user.id, profileImage);
+    if (finalAvatar) {
+      user.profileImage = finalAvatar;
       user.profileImageData = '';
+
+      const linked = getLinkedUserAccounts(user);
+      linked.users.forEach((lu) => {
+        lu.profileImage = finalAvatar;
+        lu.profileImageData = '';
+      });
+      linked.profiles.forEach((lp) => {
+        lp.profileImage = finalAvatar;
+      });
     }
   }
 
@@ -2646,12 +2886,17 @@ app.post('/api/profile', (req, res) => {
   saveStore(db);
 
   if (supabaseService.isConfigured()) {
-    supabaseService.upsertProfile(user.id, {
-      ...user,
-      ...profile,
-      phone: user.phone,
-      email: user.email,
-    }).catch(err => console.warn('[Supabase Sync] Profile upsert notice:', err.message));
+    try {
+      await supabaseService.upsertProfile(user.id, {
+        ...user,
+        ...profile,
+        phone: user.phone,
+        email: user.email,
+        profileImage: user.profileImage,
+      });
+    } catch (err) {
+      console.warn('[Supabase Sync] Profile upsert notice:', err.message);
+    }
   }
 
   return res.json({
@@ -2679,37 +2924,19 @@ app.post('/api/upload-avatar', async (req, res) => {
     });
   }
 
-  const rawImage = String(image).trim();
-  let uploadedUrl = null;
-
-  // If Supabase Storage is configured, upload to Supabase 'avatars' bucket
-  if (supabaseService.isConfigured() && rawImage.startsWith('data:')) {
-    try {
-      const matches = rawImage.match(/^data:([^;]+);base64,(.+)$/);
-      if (matches) {
-        const mimeType = matches[1];
-        const buffer = Buffer.from(matches[2], 'base64');
-        uploadedUrl = await supabaseService.uploadAvatar(user.id, buffer, mimeType);
-        if (uploadedUrl) {
-          console.log(`[Supabase Storage] Avatar uploaded successfully for user ${user.id}: ${uploadedUrl}`);
-          await supabaseService.upsertProfile(user.id, { profileImage: uploadedUrl });
-        }
-      }
-    } catch (e) {
-      console.warn('[Supabase Storage] Avatar upload fallback to local:', e.message);
-    }
-  }
-
-  if (uploadedUrl) {
-    user.profileImage = uploadedUrl;
+  const finalAvatar = await persistUserAvatar(user.id, image);
+  if (finalAvatar) {
+    user.profileImage = finalAvatar;
     user.profileImageData = '';
-  } else if (rawImage.startsWith('data:')) {
-    const savedUrl = persistProfileImage(rawImage, user.id);
-    user.profileImage = savedUrl;
-    user.profileImageData = rawImage;
-  } else {
-    user.profileImage = rawImage;
-    user.profileImageData = '';
+
+    const linked = getLinkedUserAccounts(user);
+    linked.users.forEach((lu) => {
+      lu.profileImage = finalAvatar;
+      lu.profileImageData = '';
+    });
+    linked.profiles.forEach((lp) => {
+      lp.profileImage = finalAvatar;
+    });
   }
 
   let profile = latestProfilesPerUser().find((item) => item.userId === user.id);
@@ -2738,6 +2965,20 @@ app.post('/api/upload-avatar', async (req, res) => {
   }
   user.profileCompleteness = calculateProfileCompleteness(user, profile);
   saveStore(db);
+
+  if (supabaseService.isConfigured()) {
+    try {
+      await supabaseService.upsertProfile(user.id, {
+        ...user,
+        ...profile,
+        phone: user.phone,
+        email: user.email,
+        profileImage: user.profileImage,
+      });
+    } catch (err) {
+      console.warn('[Supabase Sync] Avatar upsert notice:', err.message);
+    }
+  }
 
   return res.json({
     success: true,
@@ -3680,23 +3921,29 @@ app.post('/api/payments/verify', async (req, res) => {
   saveStore(db);
 
   if (supabaseService.isConfigured()) {
-    supabaseService.saveBooking({
-      userId: payment.userId || null,
-      bookingRef: payment.bookingRef,
-      packageName: payment.packageName,
-      destination: payment.destination,
-      amount: payment.amount,
-      travelerCount: payment.travelerCount,
-      startDate: payment.startDate,
-      company: payment.company,
-      leadName: payment.leadName,
-      leadPhone: payment.leadPhone,
-      leadEmail: payment.leadEmail,
-      razorpayOrderId: payment.razorpayOrderId,
-      razorpayPaymentId: payment.razorpayPaymentId,
-      razorpaySignature: payment.razorpaySignature,
-      status: 'confirmed',
-    }).catch((err) => console.warn('[Supabase Sync] Booking sync notice:', err.message));
+    try {
+      await supabaseService.saveBooking({
+        userId: payment.userId || null,
+        bookingRef: payment.bookingRef,
+        packageName: payment.packageName,
+        destination: payment.destination,
+        amount: payment.amount,
+        travelerCount: payment.travelerCount,
+        startDate: payment.startDate,
+        company: payment.company,
+        leadName: payment.leadName,
+        leadPhone: payment.leadPhone,
+        leadEmail: payment.leadEmail,
+        razorpayOrderId: payment.razorpayOrderId,
+        razorpayPaymentId: payment.razorpayPaymentId,
+        razorpaySignature: payment.razorpaySignature,
+        status: 'confirmed',
+        createdAt: payment.paidAt || payment.createdAt,
+      });
+      console.log(`[Supabase Bookings] 🟢 Booking ${payment.bookingRef} successfully persisted in PostgreSQL.`);
+    } catch (err) {
+      console.warn('[Supabase Sync] Booking sync notice:', err.message);
+    }
   }
 
   return res.json({
@@ -3774,7 +4021,7 @@ function formatBookingRecord(hostUrl) {
     const cleanPhone = String(payment.leadPhone || '').replace(/\D/g, '');
     const formattedPhone = cleanPhone.length === 10 ? '+91 ' + cleanPhone : '+' + cleanPhone;
     const rawCleanPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
-    const ref = payment.bookingRef || `TZ-${payment.id.slice(-6).toUpperCase()}`;
+    const ref = payment.bookingRef || (payment.id ? `TZ-${String(payment.id).slice(-6).toUpperCase()}` : `TZ-${Math.random().toString(36).slice(2, 8).toUpperCase()}`);
     const itineraryUrl = `${hostUrl}/itineraries/${payment.slug || 'chopta-tungnath'}.html`;
     const bookingTime = new Date(payment.paidAt || payment.createdAt || Date.now()).toLocaleString('en-IN', {
       timeZone: 'Asia/Kolkata',
