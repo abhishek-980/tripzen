@@ -96,11 +96,18 @@ app.use('/uploads', express.static(UPLOADS_DIR, {
   etag: true,
 }));
 
-// API endpoints & dynamic routes should not be cached
-app.use('/api', (req, res, next) => {
+// API endpoints & dynamic routes: ensure cloud state is hydrated before handling any API call
+app.use('/api', async (req, res, next) => {
   res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.header('Pragma', 'no-cache');
   res.header('Expires', '0');
+  try {
+    if (typeof ensureCloudHydrated === 'function') {
+      await ensureCloudHydrated();
+    }
+  } catch (err) {
+    console.warn('[API Cloud Gate Notice]:', err.message);
+  }
   next();
 });
 
@@ -192,56 +199,70 @@ function saveStore(store) {
 
 let db = loadStore();
 
-// On server startup: Hydrate state from Supabase Cloud Storage so data survives all container restarts
-(async function hydrateStoreFromCloud() {
-  if (supabaseService.isConfigured()) {
-    try {
-      const cloudStore = await supabaseService.loadCloudSnapshot();
-      if (cloudStore && Array.isArray(cloudStore.users)) {
-        // 1. Users: merge
-        const userMap = new Map();
-        (db.users || []).forEach(u => userMap.set(u.id, u));
-        (cloudStore.users || []).forEach(u => userMap.set(u.id, { ...(userMap.get(u.id) || {}), ...u }));
-        db.users = Array.from(userMap.values());
+let cloudHydrationPromise = null;
+function ensureCloudHydrated() {
+  if (!cloudHydrationPromise) {
+    cloudHydrationPromise = (async function hydrateStoreFromCloud() {
+      if (supabaseService.isConfigured()) {
+        try {
+          const cloudStore = await supabaseService.loadCloudSnapshot();
+          if (cloudStore && Array.isArray(cloudStore.users)) {
+            // 1. Users: merge
+            const userMap = new Map();
+            (db.users || []).forEach(u => userMap.set(u.id, u));
+            (cloudStore.users || []).forEach(u => userMap.set(u.id, { ...(userMap.get(u.id) || {}), ...u }));
+            db.users = Array.from(userMap.values());
 
-        // 2. Profiles: merge
-        const profMap = new Map();
-        (db.profiles || []).forEach(p => profMap.set(p.id, p));
-        (cloudStore.profiles || []).forEach(p => profMap.set(p.id, { ...(profMap.get(p.id) || {}), ...p }));
-        db.profiles = Array.from(profMap.values());
+            // 2. Profiles: merge
+            const profMap = new Map();
+            (db.profiles || []).forEach(p => profMap.set(p.id, p));
+            (cloudStore.profiles || []).forEach(p => profMap.set(p.id, { ...(profMap.get(p.id) || {}), ...p }));
+            db.profiles = Array.from(profMap.values());
 
-        // 3. Payments/Bookings: merge
-        const payMap = new Map();
-        (db.payments || []).forEach(p => payMap.set(p.id || p.bookingRef, p));
-        (cloudStore.payments || []).forEach(p => payMap.set(p.id || p.bookingRef, { ...(payMap.get(p.id || p.bookingRef) || {}), ...p }));
-        db.payments = Array.from(payMap.values());
+            // 3. Payments: merge
+            const payMap = new Map();
+            (db.payments || []).forEach(p => payMap.set(p.id || p.bookingRef, p));
+            (cloudStore.payments || []).forEach(p => payMap.set(p.id || p.bookingRef, { ...(payMap.get(p.id || p.bookingRef) || {}), ...p }));
+            db.payments = Array.from(payMap.values());
 
-        // 4. Conversations: merge
-        const convMap = new Map();
-        (db.conversations || []).forEach(c => convMap.set(c.id, c));
-        (cloudStore.conversations || []).forEach(c => convMap.set(c.id, { ...(convMap.get(c.id) || {}), ...c }));
-        db.conversations = Array.from(convMap.values());
+            // 4. Bookings: merge
+            const bookMap = new Map();
+            (db.bookings || []).forEach(b => bookMap.set(b.id || b.bookingRef, b));
+            (cloudStore.bookings || []).forEach(b => bookMap.set(b.id || b.bookingRef, { ...(bookMap.get(b.id || b.bookingRef) || {}), ...b }));
+            db.bookings = Array.from(bookMap.values());
 
-        // 5. Messages: merge
-        const msgMap = new Map();
-        (db.messages || []).forEach(m => msgMap.set(m.id, m));
-        (cloudStore.messages || []).forEach(m => msgMap.set(m.id, m));
-        db.messages = Array.from(msgMap.values());
+            // 5. Conversations: merge
+            const convMap = new Map();
+            (db.conversations || []).forEach(c => convMap.set(c.id, c));
+            (cloudStore.conversations || []).forEach(c => convMap.set(c.id, { ...(convMap.get(c.id) || {}), ...c }));
+            db.conversations = Array.from(convMap.values());
 
-        // 6. Trip Groups: merge
-        const grpMap = new Map();
-        (db.tripGroups || []).forEach(g => grpMap.set(g.id, g));
-        (cloudStore.tripGroups || []).forEach(g => grpMap.set(g.id, { ...(grpMap.get(g.id) || {}), ...g }));
-        db.tripGroups = Array.from(grpMap.values());
+            // 6. Messages: merge
+            const msgMap = new Map();
+            (db.messages || []).forEach(m => msgMap.set(m.id, m));
+            (cloudStore.messages || []).forEach(m => msgMap.set(m.id, m));
+            db.messages = Array.from(msgMap.values());
 
-        fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
-        console.log(`[Startup Cloud Hydration] 🟢 Permanently restored: ${db.users.length} users, ${db.payments.length} bookings, ${db.conversations.length} chats, ${db.messages.length} messages.`);
+            // 7. Trip Groups: merge
+            const grpMap = new Map();
+            (db.tripGroups || []).forEach(g => grpMap.set(g.id, g));
+            (cloudStore.tripGroups || []).forEach(g => grpMap.set(g.id, { ...(grpMap.get(g.id) || {}), ...g }));
+            db.tripGroups = Array.from(grpMap.values());
+
+            fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
+            console.log(`[Startup Cloud Hydration] 🟢 Permanently restored: ${db.users.length} users, ${db.payments.length} bookings, ${db.conversations.length} chats, ${db.messages.length} messages.`);
+          }
+        } catch (err) {
+          console.warn('[Startup Cloud Hydration] Notice:', err.message);
+        }
       }
-    } catch (err) {
-      console.warn('[Startup Cloud Hydration] Notice:', err.message);
-    }
+    })();
   }
-})();
+  return cloudHydrationPromise;
+}
+
+// Trigger initial cloud hydration immediately on startup
+ensureCloudHydrated();
 
 app.get('/uploads/:filename', (req, res, next) => {
   const filename = req.params.filename;
@@ -251,11 +272,25 @@ app.get('/uploads/:filename', (req, res, next) => {
     return res.sendFile(filePath);
   }
 
-  // Fallback: check if any user has this avatar in store as base64 dataUrl
+  // Abhishek Sharma permanent avatar redirect
+  if (filename.includes('usr_1775814622426_lafooo')) {
+    return res.redirect('https://cumatiemhapifpmsobct.supabase.co/storage/v1/object/public/avatars/avatars/usr_1775814622426_lafooo.jpg');
+  }
+
+  // Kalika Joshi permanent avatar redirect
+  if (filename.includes('usr_1776056484000_8uoxfs')) {
+    return res.redirect('https://cumatiemhapifpmsobct.supabase.co/storage/v1/object/public/avatars/avatars/usr_1776056484000_8uoxfs_1793361905665.jpg');
+  }
+
+  // Fallback: check if any user has this avatar in store as full URL or base64 dataUrl
   const user = (db.users || []).find((u) =>
     (u.profileImage && u.profileImage.includes(filename)) ||
     (u.id && filename.startsWith(u.id))
   );
+
+  if (user && user.profileImage && user.profileImage.startsWith('http')) {
+    return res.redirect(user.profileImage);
+  }
 
   if (user && user.profileImageData) {
     const match = user.profileImageData.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
@@ -952,16 +987,88 @@ function compatibilityScore(base, candidate) {
 }
 
 
+// Unifies linked accounts (e.g. Abhishek's multiple email/admin logins, shared phones)
+function getLinkedUserAccounts(userIdOrUser) {
+  const targetId = typeof userIdOrUser === 'string' ? userIdOrUser : (userIdOrUser?.id || '');
+  const user = typeof userIdOrUser === 'object' && userIdOrUser ? userIdOrUser : (db.users || []).find((u) => u.id === targetId);
+
+  const linkedIds = new Set();
+  const linkedEmails = new Set();
+  const linkedPhones = new Set();
+
+  if (targetId) linkedIds.add(targetId);
+  if (user) {
+    if (user.id) linkedIds.add(user.id);
+    if (user.supabaseUserId) linkedIds.add(user.supabaseUserId);
+    if (user.email) linkedEmails.add(user.email.trim().toLowerCase());
+    const phone = String(user.phone || '').replace(/\D/g, '');
+    if (phone.length >= 10) linkedPhones.add(phone.slice(-10));
+  }
+
+  // Abhishek Sharma accounts alias link: all his identities unified
+  const isAbhishek =
+    targetId === 'usr_1775814622426_lafooo' ||
+    targetId === 'usr_1776056889159_kta82r' ||
+    linkedEmails.has('abhisheksharma39232@gmail.com') ||
+    linkedEmails.has('ayuouo835@gmail.com') ||
+    linkedPhones.has('8920632874') ||
+    (user && (user.fullName || '').toLowerCase().trim() === 'abhishek sharma');
+
+  if (isAbhishek) {
+    linkedIds.add('usr_1775814622426_lafooo');
+    linkedIds.add('usr_1776056889159_kta82r');
+    linkedEmails.add('abhisheksharma39232@gmail.com');
+    linkedEmails.add('ayuouo835@gmail.com');
+    linkedPhones.add('8920632874');
+  }
+
+  // Also link any other user records matching phone digits or email
+  (db.users || []).forEach((u) => {
+    const uEmail = (u.email || '').trim().toLowerCase();
+    const uPhone = String(u.phone || '').replace(/\D/g, '').slice(-10);
+    if ((uEmail && linkedEmails.has(uEmail)) || (uPhone && linkedPhones.has(uPhone))) {
+      linkedIds.add(u.id);
+      if (u.supabaseUserId) linkedIds.add(u.supabaseUserId);
+      if (uEmail) linkedEmails.add(uEmail);
+      if (uPhone) linkedPhones.add(uPhone);
+    }
+  });
+
+  return {
+    userIds: Array.from(linkedIds),
+    emails: Array.from(linkedEmails),
+    phones: Array.from(linkedPhones),
+  };
+}
+
+
 // sanitize user data before sending to client
 
 
 function sanitizeUser(user) {
-  const profileImg = user.profileImage || user.profileImageData || avatarForUser(user);
+  let profileImg = user.profileImage;
+  const userEmailLower = String(user.email || '').trim().toLowerCase();
+  const userNameLower = String(user.fullName || '').trim().toLowerCase();
+
+  if (
+    user.id === 'usr_1775814622426_lafooo' ||
+    user.id === 'usr_1776056889159_kta82r' ||
+    userEmailLower === 'abhisheksharma39232@gmail.com' ||
+    userEmailLower === 'ayuouo835@gmail.com' ||
+    userNameLower.includes('abhishek sharma')
+  ) {
+    profileImg = 'https://cumatiemhapifpmsobct.supabase.co/storage/v1/object/public/avatars/avatars/usr_1775814622426_lafooo.jpg';
+  } else if (user.id === 'usr_1776056484000_8uoxfs' || userEmailLower === 'gungunsays208@gmail.com') {
+    profileImg = 'https://cumatiemhapifpmsobct.supabase.co/storage/v1/object/public/avatars/avatars/usr_1776056484000_8uoxfs_1793361905665.jpg';
+  } else if (!profileImg || (!profileImg.startsWith('http') && !profileImg.startsWith('/uploads'))) {
+    profileImg = user.profileImageData || avatarForUser(user);
+  }
+
   return {
     id: user.id,
     fullName: user.fullName,
     email: user.email,
-    role: user.role || (String(user.email || '').trim().toLowerCase() === 'abhisheksharma39232@gmail.com' ? 'admin' : 'user'),
+    role: user.role || (userEmailLower === 'abhisheksharma39232@gmail.com' ? 'admin' : 'user'),
     phone: user.phone || '',
     age: user.age || '',
     gender: user.gender || '',
@@ -981,7 +1088,23 @@ function sanitizeUser(user) {
 function sanitizeProfile(profile) {
   if (!profile) return null;
   const user = (db.users || []).find((u) => u.id === profile.userId);
-  const userImg = (user && (user.profileImage || user.profileImageData)) || '';
+  let profileImg = profile.profileImage;
+  const userEmailLower = String(user?.email || '').trim().toLowerCase();
+  const userNameLower = String(profile.fullName || user?.fullName || '').trim().toLowerCase();
+
+  if (
+    profile.userId === 'usr_1775814622426_lafooo' ||
+    profile.userId === 'usr_1776056889159_kta82r' ||
+    userEmailLower === 'abhisheksharma39232@gmail.com' ||
+    userEmailLower === 'ayuouo835@gmail.com' ||
+    userNameLower.includes('abhishek sharma')
+  ) {
+    profileImg = 'https://cumatiemhapifpmsobct.supabase.co/storage/v1/object/public/avatars/avatars/usr_1775814622426_lafooo.jpg';
+  } else if (profile.userId === 'usr_1776056484000_8uoxfs' || userEmailLower === 'gungunsays208@gmail.com') {
+    profileImg = 'https://cumatiemhapifpmsobct.supabase.co/storage/v1/object/public/avatars/avatars/usr_1776056484000_8uoxfs_1793361905665.jpg';
+  } else if (!profileImg || (!profileImg.startsWith('http') && !profileImg.startsWith('/uploads'))) {
+    profileImg = (user && (user.profileImage || user.profileImageData)) || '';
+  }
 
   return {
     id: profile.id,
@@ -995,7 +1118,8 @@ function sanitizeProfile(profile) {
     interests: normalizeInterests(profile.interests),
     bio: profile.bio || '',
     pastTrips: profile.pastTrips || '',
-    profileImage: profile.profileImage || userImg || '',
+    profileImage: profileImg,
+    fullName: profile.fullName || (user ? user.fullName : ''),
     updatedAt: profile.updatedAt || profile.createdAt,
   };
 }
@@ -1169,23 +1293,25 @@ function getConversationView(conversation, viewerProfileId, viewerUserId) {
     else if (viewerProfileId.startsWith('prf-')) resolvedViewerUserId = viewerProfileId.replace(/^prf-/, '');
   }
 
-  // Set of all profile IDs and user IDs that belong to the viewing user
+  const linked = getLinkedUserAccounts(resolvedViewerUserId || viewerProfileId);
+
+  // Set of all profile IDs and user IDs that belong to the viewing user or any linked accounts
   const viewerProfileIds = new Set(
     db.profiles
-      .filter((p) => p.userId === resolvedViewerUserId)
+      .filter((p) => linked.userIds.includes(p.userId))
       .map((p) => p.id)
   );
   if (viewerProfileId) viewerProfileIds.add(viewerProfileId);
-  if (resolvedViewerUserId) {
-    viewerProfileIds.add(resolvedViewerUserId);
-    viewerProfileIds.add(`prf-${resolvedViewerUserId}`);
-  }
+  linked.userIds.forEach((id) => {
+    viewerProfileIds.add(id);
+    viewerProfileIds.add(`prf-${id}`);
+  });
 
-  // Identify partner profile ID (must NOT belong to viewer)
+  // Identify partner profile ID (must NOT belong to viewer or any linked account)
   let otherProfileId = memberProfileIds.find((id) => !viewerProfileIds.has(id)) || null;
 
-  // Identify partner user ID (must NOT belong to viewer)
-  let otherUserId = memberUserIds.find((uId) => uId !== resolvedViewerUserId) || null;
+  // Identify partner user ID (must NOT belong to viewer or any linked account)
+  let otherUserId = memberUserIds.find((uId) => !linked.userIds.includes(uId)) || null;
 
   let otherProfile = otherProfileId ? db.profiles.find((profile) => profile.id === otherProfileId) : null;
   let otherUser = otherUserId
@@ -1224,7 +1350,7 @@ function getConversationView(conversation, viewerProfileId, viewerUserId) {
   const lastReadAt = lastReadAtByProfileId[viewerProfileId] || '';
   const unreadCount = db.messages.filter((message) => {
     if (message.conversationId !== conversation.id) return false;
-    if (viewerProfileIds.has(message.senderProfileId) || (resolvedViewerUserId && message.senderUserId === resolvedViewerUserId)) return false;
+    if (viewerProfileIds.has(message.senderProfileId) || (resolvedViewerUserId && linked.userIds.includes(message.senderUserId))) return false;
     if (!lastReadAt) return true;
     return new Date(message.createdAt).getTime() > new Date(lastReadAt).getTime();
   }).length;
@@ -1962,17 +2088,17 @@ app.post('/api/supabase/verify-otp', async (req, res) => {
       };
       db.users.push(localUser);
     } else {
-      localUser.id = user.id; // Align user IDs
+      localUser.supabaseUserId = user.id; // Record Supabase auth UUID without breaking existing store ID references
       if (fullName && !localUser.fullName) localUser.fullName = fullName;
       localUser.verified = true;
     }
 
     // Mirror canonical profile locally
-    let localProfile = latestProfilesPerUser().find((p) => p.userId === user.id);
+    let localProfile = latestProfilesPerUser().find((p) => p.userId === localUser.id || p.userId === user.id);
     if (!localProfile) {
       localProfile = {
         id: uid('prf'),
-        userId: user.id,
+        userId: localUser.id,
         fullName: localUser.fullName,
         destination: 'Kedarkantha Summit',
         startDate: new Date().toISOString().slice(0, 10),
@@ -2263,8 +2389,36 @@ app.post('/api/reset-password', (req, res) => {
   });
 });
 
-app.get('/api/session/:userId', (req, res) => {
-  const user = db.users.find((item) => item.id === req.params.userId);
+app.get('/api/session/:userId', async (req, res) => {
+  await ensureCloudHydrated();
+  let user = db.users.find((item) => item.id === req.params.userId);
+
+  if (!user) {
+    const linked = getLinkedUserAccounts(req.params.userId);
+    user = db.users.find((u) => linked.userIds.includes(u.id));
+  }
+
+  // Dynamic self-healing: if still not in memory, query Supabase cloud snapshot
+  if (!user && supabaseService.isConfigured()) {
+    try {
+      const cloudStore = await supabaseService.loadCloudSnapshot();
+      if (cloudStore && Array.isArray(cloudStore.users)) {
+        const found = cloudStore.users.find((u) => u.id === req.params.userId);
+        if (found) {
+          db.users.push(found);
+          user = found;
+          if (Array.isArray(cloudStore.profiles)) {
+            const profs = cloudStore.profiles.filter((p) => p.userId === user.id);
+            profs.forEach((p) => {
+              if (!db.profiles.some((ep) => ep.id === p.id)) db.profiles.push(p);
+            });
+          }
+          saveStore(db);
+        }
+      }
+    } catch (e) {}
+  }
+
   if (!user) {
     return res.status(404).json({
       success: false,
@@ -2272,7 +2426,10 @@ app.get('/api/session/:userId', (req, res) => {
     });
   }
 
-  const profile = latestProfilesPerUser().find((item) => item.userId === user.id);
+  const linked = getLinkedUserAccounts(user);
+  const userProfiles = db.profiles.filter((item) => linked.userIds.includes(item.userId));
+  const profile = userProfiles.sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))[0] || null;
+
   user.profileCompleteness = calculateProfileCompleteness(user, profile);
   saveStore(db);
 
@@ -2874,29 +3031,32 @@ app.post('/api/booking', (req, res) => {
 
 // conversations list for a user with latest message and partner info
 
-app.get('/api/conversations/:userId', (req, res) => {
+app.get('/api/conversations/:userId', async (req, res) => {
+  await ensureCloudHydrated();
   const userId = req.params.userId;
-  const profile = findLatestProfileByUserId(userId);
+  const linked = getLinkedUserAccounts(userId);
 
-  // Collect all profile IDs that have ever belonged to this user
-  const allUserProfiles = db.profiles.filter((p) => p.userId === userId);
+  // Collect all profile IDs that have ever belonged to this user or any linked accounts
+  const allUserProfiles = db.profiles.filter((p) => linked.userIds.includes(p.userId));
   const userProfileIds = new Set(allUserProfiles.map((p) => p.id));
-  if (profile) userProfileIds.add(profile.id);
-  userProfileIds.add(userId);
-  userProfileIds.add(`prf-${userId}`);
+  linked.userIds.forEach((id) => {
+    userProfileIds.add(id);
+    userProfileIds.add(`prf-${id}`);
+  });
 
-  const activeProfileId = profile ? profile.id : (allUserProfiles[0] ? allUserProfiles[0].id : `prf-${userId}`);
+  const latestProfile = allUserProfiles.sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))[0];
+  const activeProfileId = latestProfile ? latestProfile.id : (allUserProfiles[0] ? allUserProfiles[0].id : `prf-${userId}`);
 
   const conversations = db.conversations
     .filter((conversation) => {
       const members = conversation.memberProfileIds || [];
       const userMembers = conversation.memberUserIds || [];
       return (
-        members.some((mId) => userProfileIds.has(mId) || mId === userId) ||
-        userMembers.includes(userId) ||
+        members.some((mId) => userProfileIds.has(mId) || linked.userIds.includes(mId)) ||
+        userMembers.some((uId) => linked.userIds.includes(uId)) ||
         members.some((mId) => {
           const p = db.profiles.find((pr) => pr.id === mId);
-          return p && p.userId === userId;
+          return p && linked.userIds.includes(p.userId);
         })
       );
     })
@@ -2988,15 +3148,16 @@ app.post('/api/messages', (req, res) => {
     });
   }
 
-  // Ensure sender belongs to this conversation (by profileId or userId)
+  // Ensure sender belongs to this conversation (by profileId or userId across linked accounts)
   const senderProfile = db.profiles.find((p) => p.id === senderProfileId);
   const senderUserId = senderProfile ? senderProfile.userId : senderProfileId.replace(/^prf-/, '');
+  const linked = getLinkedUserAccounts(senderUserId || senderProfileId);
 
   const isMember = (conversation.memberProfileIds || []).includes(senderProfileId) ||
-    (conversation.memberUserIds || []).includes(senderUserId) ||
+    (conversation.memberUserIds || []).some((uId) => linked.userIds.includes(uId)) ||
     (conversation.memberProfileIds || []).some((mId) => {
       const prof = db.profiles.find((p) => p.id === mId);
-      return prof && prof.userId === senderUserId;
+      return prof && linked.userIds.includes(prof.userId);
     });
 
   if (!isMember) {
@@ -3688,54 +3849,45 @@ app.get('/api/bookings', (req, res) => {
 });
 
 app.get('/api/bookings/user/:userId', async (req, res) => {
+  await ensureCloudHydrated();
   const { userId } = req.params;
-  const user = db.users.find((u) => u.id === userId);
+  let user = db.users.find((u) => u.id === userId);
+  if (!user) {
+    const linked = getLinkedUserAccounts(userId);
+    user = db.users.find((u) => linked.userIds.includes(u.id));
+  }
   if (!user) {
     return res.json({ success: true, bookings: [], totalCount: 0 });
   }
 
-  const profile = db.profiles.find((p) => p.userId === userId);
-  const userProfileId = profile ? profile.id : '';
-  const cleanUserPhone = String(user.phone || '').replace(/\D/g, '');
-  const userEmailLower = String(user.email || '').toLowerCase().trim();
+  const linked = getLinkedUserAccounts(user);
+  const hostUrl = `${req.protocol}://${req.get('host')}`;
   const userNameLower = String(user.fullName || '').toLowerCase().trim();
 
-  const hostUrl = `${req.protocol}://${req.get('host')}`;
   const userBookings = (db.payments || [])
     .filter((item) => {
       const isPaid = item.status === 'paid' || Boolean(item.paidAt);
       if (!isPaid) return false;
 
-      // If the booking explicitly belongs to another registered user ID, do NOT match
-      if (item.userId && item.userId !== user.id) {
-        return false;
-      }
+      // 1. Linked userId match
+      if (item.userId && linked.userIds.includes(item.userId)) return true;
 
-      // 1. Exact userId match
-      if (item.userId && item.userId === user.id) return true;
-
-      // 2. Email match
+      // 2. Email match across linked accounts
       const itemEmail = String(item.userEmail || item.leadEmail || '').toLowerCase().trim();
-      if (userEmailLower && itemEmail && userEmailLower === itemEmail) return true;
+      if (itemEmail && linked.emails.includes(itemEmail)) return true;
 
       // 3. Exact full name match
       const leadNameLower = normalizeText(item.leadName).toLowerCase();
       if (userNameLower && leadNameLower && userNameLower === leadNameLower) return true;
 
-      // 4. Exact phone number match (excluding dummy placeholders)
-      const cleanLeadPhone = String(item.leadPhone || '').replace(/\D/g, '');
+      // 4. Exact phone number match across linked accounts (excluding dummy placeholders)
+      const cleanLeadPhone = String(item.leadPhone || '').replace(/\D/g, '').slice(-10);
       const isPlaceholderPhone = cleanLeadPhone === '9876543210' || cleanLeadPhone === '9999999999' || cleanLeadPhone === '1234567890';
-      if (!isPlaceholderPhone && cleanUserPhone && cleanLeadPhone && (cleanUserPhone === cleanLeadPhone || cleanUserPhone.endsWith(cleanLeadPhone) || cleanLeadPhone.endsWith(cleanUserPhone))) {
+      if (!isPlaceholderPhone && cleanLeadPhone && linked.phones.includes(cleanLeadPhone)) {
         return true;
       }
 
-      // 5. Profile ID match (only if the leadName does not belong to another distinct known registered user)
-      if (userProfileId && item.profileId === userProfileId) {
-        const otherUser = db.users.find((u) => u.id !== user.id && normalizeText(u.fullName).toLowerCase() === leadNameLower);
-        if (!otherUser) return true;
-      }
-
-      return false; // Strict user isolation!
+      return false;
     })
     .sort((a, b) => new Date(b.paidAt || b.createdAt) - new Date(a.paidAt || a.createdAt))
     .map(formatBookingRecord(hostUrl));
@@ -3743,7 +3895,9 @@ app.get('/api/bookings/user/:userId', async (req, res) => {
   // Dual-Layer Cloud Persistence: Also query Supabase PostgreSQL 'bookings' table
   if (supabaseService.isConfigured()) {
     try {
-      const cloudBookings = await supabaseService.findBookingsByPhoneOrEmail(cleanUserPhone, userEmailLower, user.id);
+      const cleanPhone = linked.phones[0] || String(user.phone || '').replace(/\D/g, '');
+      const cleanEmail = linked.emails[0] || String(user.email || '').toLowerCase().trim();
+      const cloudBookings = await supabaseService.findBookingsByPhoneOrEmail(cleanPhone, cleanEmail, user.id);
       if (cloudBookings && cloudBookings.length > 0) {
         cloudBookings.forEach((cb) => {
           const alreadyExists = userBookings.some((ub) => ub.bookingRef === cb.booking_ref || ub.id === cb.id || ub.razorpayPaymentId === cb.razorpay_payment_id);

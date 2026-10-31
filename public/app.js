@@ -5467,11 +5467,19 @@ async function loadSession() {
     return;
   }
 
+  // Ensure state has cached data immediately for instant, zero-delay rendering
+  if (!state.user) {
+    state.user = loadCachedState('user', null);
+  }
+  if (!state.profile) {
+    state.profile = loadCachedState('profile', null);
+  }
+
   try {
     const data = await api(`/api/session/${userId}`);
-    state.user = data.user || null;
-    state.profile = data.profile || null;
-    if (state.user) {
+    if (data && data.user) {
+      state.user = data.user;
+      state.profile = data.profile || null;
       saveCachedState('user', state.user);
       if (state.profile) saveCachedState('profile', state.profile);
       if (state.user.profileImage) {
@@ -5488,12 +5496,11 @@ async function loadSession() {
       }
     }
   } catch (error) {
-    if (error.status === 404 || error.status === 401) {
-      localStorage.removeItem('tripzenUserId');
-      localStorage.removeItem('tripzen_cache_user');
-      localStorage.removeItem('tripzen_cache_profile');
-      state.user = null;
-      state.profile = null;
+    console.warn('[Session Sync Notice]', error.message || error);
+    // Bulletproof session resilience: NEVER wipe user session or cache on network issues or server spin-up!
+    if (!state.user) {
+      state.user = loadCachedState('user', null);
+      state.profile = loadCachedState('profile', null);
     }
   } finally {
     state.loading = false;
@@ -5557,9 +5564,11 @@ async function loadTripGroups(destination = state.groupDestinationFilter) {
 async function loadBookings() {
   try {
     state.bookingsLoading = true;
-    const userId = state.user?.id;
+    const userId = state.user?.id || localStorage.getItem('tripzenUserId');
     if (!userId) {
-      state.bookings = [];
+      if (!state.bookings || state.bookings.length === 0) {
+        state.bookings = loadCachedState('bookings', []);
+      }
       return;
     }
     const data = await api(`/api/bookings/user/${userId}`);
@@ -5902,8 +5911,11 @@ async function markConversationAsRead(conversationId) {
 
 async function loadConversations(options = {}) {
   const { notify = true } = options;
-  if (!state.user) {
-    state.conversations = [];
+  const userId = state.user?.id || localStorage.getItem('tripzenUserId');
+  if (!userId) {
+    if (!state.conversations || state.conversations.length === 0) {
+      state.conversations = loadCachedState('conversations', []);
+    }
     state.activeConversationId = '';
     state.messages = [];
     updateUnreadCount();
@@ -5912,7 +5924,7 @@ async function loadConversations(options = {}) {
 
   try {
     const previousConversations = state.conversations;
-    const data = await api(`/api/conversations/${state.user.id}`);
+    const data = await api(`/api/conversations/${userId}`);
     if (data.profileId && !state.profile) {
       state.profile = { id: data.profileId, userId: state.user.id, destination: state.user.destination || '' };
     }
@@ -5949,7 +5961,6 @@ async function loadConversations(options = {}) {
     if (!state.conversations || state.conversations.length === 0) {
       state.conversations = loadCachedState('conversations', []);
     }
-    state.messages = [];
     updateUnreadCount();
   }
 }
