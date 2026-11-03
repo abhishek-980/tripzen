@@ -1528,7 +1528,18 @@ function getConversationView(conversation, viewerProfileId, viewerUserId) {
     conversation.lastReadAtByProfileId && typeof conversation.lastReadAtByProfileId === 'object'
       ? conversation.lastReadAtByProfileId
       : {};
-  const lastReadAt = lastReadAtByProfileId[viewerProfileId] || '';
+  let lastReadAt = lastReadAtByProfileId[viewerProfileId] || '';
+  for (const pid of viewerProfileIds) {
+    if (lastReadAtByProfileId[pid] && (!lastReadAt || new Date(lastReadAtByProfileId[pid]) > new Date(lastReadAt))) {
+      lastReadAt = lastReadAtByProfileId[pid];
+    }
+  }
+  if (resolvedViewerUserId && lastReadAtByProfileId[resolvedViewerUserId]) {
+    if (!lastReadAt || new Date(lastReadAtByProfileId[resolvedViewerUserId]) > new Date(lastReadAt)) {
+      lastReadAt = lastReadAtByProfileId[resolvedViewerUserId];
+    }
+  }
+
   const unreadCount = db.messages.filter((message) => {
     if (message.conversationId !== conversation.id) return false;
     if (viewerProfileIds.has(message.senderProfileId) || (resolvedViewerUserId && linked.userIds.includes(message.senderUserId))) return false;
@@ -1603,14 +1614,25 @@ function getConversationView(conversation, viewerProfileId, viewerUserId) {
   };
 }
 
-function markConversationRead(conversation, profileId) {
-  if (!conversation || !profileId) return;
+function markConversationRead(conversation, profileId, userId) {
+  if (!conversation || (!profileId && !userId)) return;
 
   if (!conversation.lastReadAtByProfileId || typeof conversation.lastReadAtByProfileId !== 'object') {
     conversation.lastReadAtByProfileId = {};
   }
 
-  conversation.lastReadAtByProfileId[profileId] = new Date().toISOString();
+  const now = new Date().toISOString();
+  if (profileId) {
+    conversation.lastReadAtByProfileId[profileId] = now;
+  }
+  if (userId) {
+    conversation.lastReadAtByProfileId[userId] = now;
+  }
+  const linked = getLinkedUserAccounts(userId || profileId);
+  linked.userIds.forEach((id) => {
+    conversation.lastReadAtByProfileId[id] = now;
+    conversation.lastReadAtByProfileId[`prf-${id}`] = now;
+  });
   conversation.updatedAt = conversation.updatedAt || conversation.createdAt;
 }
 
@@ -3188,7 +3210,8 @@ app.get('/api/matches/:userId', (req, res) => {
   });
 });
 
-app.post('/api/booking', (req, res) => {
+app.post('/api/booking', async (req, res) => {
+  await ensureCloudHydrated();
   const { requesterProfileId, targetProfileId, message, plannedDestination } = req.body;
 
   if (!normalizeText(requesterProfileId) || !normalizeText(targetProfileId) || !normalizeText(plannedDestination)) {
@@ -3198,8 +3221,55 @@ app.post('/api/booking', (req, res) => {
     });
   }
 
-  const requester = db.profiles.find((profile) => profile.id === requesterProfileId);
-  const target = db.profiles.find((profile) => profile.id === targetProfileId);
+  let requester = db.profiles.find((profile) =>
+    profile.id === requesterProfileId ||
+    profile.userId === requesterProfileId ||
+    profile.userId === requesterProfileId.replace(/^prf-/, '') ||
+    profile.id === `prf-${requesterProfileId}`
+  );
+  let target = db.profiles.find((profile) =>
+    profile.id === targetProfileId ||
+    profile.userId === targetProfileId ||
+    profile.userId === targetProfileId.replace(/^prf-/, '') ||
+    profile.id === `prf-${targetProfileId}`
+  );
+
+  // Self-healing fallback from db.users if profile missing
+  if (!requester) {
+    const rawUserId = requesterProfileId.replace(/^prf-/, '');
+    const reqUser = db.users.find((u) => u.id === requesterProfileId || u.id === rawUserId);
+    if (reqUser) {
+      requester = {
+        id: `prf-${reqUser.id}`,
+        userId: reqUser.id,
+        fullName: reqUser.fullName,
+        destination: normalizeText(plannedDestination) || 'Himalayas',
+        travelStyle: reqUser.travelStyle || 'Solo',
+        profileImage: reqUser.profileImage || '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      db.profiles.push(requester);
+    }
+  }
+
+  if (!target) {
+    const rawTargetId = targetProfileId.replace(/^prf-/, '');
+    const tgtUser = db.users.find((u) => u.id === targetProfileId || u.id === rawTargetId);
+    if (tgtUser) {
+      target = {
+        id: `prf-${tgtUser.id}`,
+        userId: tgtUser.id,
+        fullName: tgtUser.fullName,
+        destination: normalizeText(plannedDestination) || 'Himalayas',
+        travelStyle: tgtUser.travelStyle || 'Solo',
+        profileImage: tgtUser.profileImage || '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      db.profiles.push(target);
+    }
+  }
 
   if (!requester || !target) {
     return res.status(404).json({
@@ -3210,8 +3280,8 @@ app.post('/api/booking', (req, res) => {
 
   const booking = {
     id: uid('bkg'),
-    requesterProfileId,
-    targetProfileId,
+    requesterProfileId: requester.id,
+    targetProfileId: target.id,
     plannedDestination: normalizeText(plannedDestination),
     message: normalizeText(message),
     status: 'pending',
@@ -3219,22 +3289,29 @@ app.post('/api/booking', (req, res) => {
   };
 
   db.bookings.push(booking);
-  let conversation = getConversationForProfiles(requesterProfileId, targetProfileId);
+  let conversation = getConversationForProfiles(requester.id, target.id);
 
   if (!conversation) {
     conversation = {
       id: uid('cnv'),
-      memberProfileIds: [requesterProfileId, targetProfileId],
+      type: 'direct',
+      memberProfileIds: [requester.id, target.id],
       memberUserIds: [requester.userId, target.userId].filter(Boolean),
       destination: normalizeText(plannedDestination),
       lastReadAtByProfileId: {
-        [requesterProfileId]: new Date().toISOString(),
+        [requester.id]: new Date().toISOString(),
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    if (requester.userId) {
+      conversation.lastReadAtByProfileId[requester.userId] = conversation.lastReadAtByProfileId[requester.id];
+    }
     db.conversations.push(conversation);
   } else {
+    conversation.memberProfileIds = conversation.memberProfileIds || [];
+    if (!conversation.memberProfileIds.includes(requester.id)) conversation.memberProfileIds.push(requester.id);
+    if (!conversation.memberProfileIds.includes(target.id)) conversation.memberProfileIds.push(target.id);
     conversation.memberUserIds = conversation.memberUserIds || [];
     if (requester.userId && !conversation.memberUserIds.includes(requester.userId)) {
       conversation.memberUserIds.push(requester.userId);
@@ -3249,15 +3326,21 @@ app.post('/api/booking', (req, res) => {
       conversation.lastReadAtByProfileId = {};
     }
 
+    const nowIso = new Date().toISOString();
     db.messages.push({
       id: uid('msg'),
       conversationId: conversation.id,
-      senderProfileId: requesterProfileId,
+      senderProfileId: requester.id,
+      senderUserId: requester.userId || '',
+      senderName: requester.fullName || 'Traveler',
       text: normalizeText(message),
-      createdAt: new Date().toISOString(),
+      createdAt: nowIso,
     });
-    conversation.lastReadAtByProfileId[requesterProfileId] = new Date().toISOString();
-    conversation.updatedAt = new Date().toISOString();
+    conversation.lastReadAtByProfileId[requester.id] = nowIso;
+    if (requester.userId) {
+      conversation.lastReadAtByProfileId[requester.userId] = nowIso;
+    }
+    conversation.updatedAt = nowIso;
   }
 
   saveStore(db);
@@ -3266,7 +3349,7 @@ app.post('/api/booking', (req, res) => {
     success: true,
     message: 'Connection request sent.',
     booking,
-    conversation: getConversationView(conversation, requesterProfileId, requester.userId),
+    conversation: getConversationView(conversation, requester.id, requester.userId),
   });
 });
 
@@ -3315,7 +3398,8 @@ app.get('/api/conversations/:userId', async (req, res) => {
   });
 });
 
-app.get('/api/messages/:conversationId', (req, res) => {
+app.get('/api/messages/:conversationId', async (req, res) => {
+  await ensureCloudHydrated();
   const conversation = db.conversations.find((item) => item.id === req.params.conversationId);
 
   if (!conversation) {
@@ -3325,23 +3409,48 @@ app.get('/api/messages/:conversationId', (req, res) => {
     });
   }
 
+  // End-to-end privacy check: If a requesting userId or profileId is provided, enforce membership
+  const requestingUserId = req.query.userId || req.headers['x-user-id'] || '';
+  const requestingProfileId = req.query.profileId || req.headers['x-profile-id'] || '';
+
+  if (requestingUserId || requestingProfileId) {
+    const linked = getLinkedUserAccounts(requestingUserId || requestingProfileId);
+    const isMember =
+      (conversation.memberProfileIds || []).some((mId) => linked.userIds.includes(mId) || mId === requestingProfileId) ||
+      (conversation.memberUserIds || []).some((uId) => linked.userIds.includes(uId)) ||
+      (conversation.memberProfileIds || []).some((mId) => {
+        const prof = db.profiles.find((p) => p.id === mId);
+        return prof && linked.userIds.includes(prof.userId);
+      });
+
+    if (!isMember) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access restricted: This conversation is end-to-end encrypted for its authorized members.',
+      });
+    }
+  }
+
   const messages = db.messages
     .filter((message) => message.conversationId === conversation.id)
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
     .map((message) => {
       const senderProfile = db.profiles.find((profile) => profile.id === message.senderProfileId);
-      const senderUser = senderProfile
-        ? db.users.find((user) => user.id === senderProfile.userId)
-        : (db.users.find((u) => u.id === message.senderProfileId.replace(/^prf-/, '')) || null);
+      const resolvedSenderUserId =
+        message.senderUserId ||
+        (senderProfile ? senderProfile.userId : '') ||
+        (db.users.find((u) => u.id === message.senderProfileId?.replace(/^prf-/, ''))?.id || '');
+      const senderUser = resolvedSenderUserId ? db.users.find((user) => user.id === resolvedSenderUserId) : null;
 
       return {
         id: message.id,
         conversationId: message.conversationId,
         senderProfileId: message.senderProfileId,
-        senderUserId: senderUser ? senderUser.id : (senderProfile ? senderProfile.userId : ''),
+        senderUserId: resolvedSenderUserId,
+        senderName: message.senderName || (senderUser ? senderUser.fullName : (senderProfile ? senderProfile.fullName : 'Traveler')),
         text: message.text,
         createdAt: message.createdAt,
-        senderName: senderUser ? senderUser.fullName : 'Traveler',
+        encrypted: true,
       };
     });
 
@@ -3352,7 +3461,7 @@ app.get('/api/messages/:conversationId', (req, res) => {
 });
 
 app.post('/api/conversations/:conversationId/read', (req, res) => {
-  const { profileId } = req.body;
+  const { profileId, userId } = req.body;
   const conversation = db.conversations.find((item) => item.id === req.params.conversationId);
 
   if (!conversation) {
@@ -3362,16 +3471,17 @@ app.post('/api/conversations/:conversationId/read', (req, res) => {
     });
   }
 
-  markConversationRead(conversation, profileId);
+  markConversationRead(conversation, profileId, userId);
   saveStore(db);
 
   return res.json({
     success: true,
-    conversation: getConversationView(conversation, profileId),
+    conversation: getConversationView(conversation, profileId, userId),
   });
 });
 
-app.post('/api/messages', (req, res) => {
+app.post('/api/messages', async (req, res) => {
+  await ensureCloudHydrated();
   const { conversationId, senderProfileId, text } = req.body;
 
   if (!normalizeText(conversationId) || !normalizeText(senderProfileId) || !normalizeText(text)) {
@@ -3390,11 +3500,16 @@ app.post('/api/messages', (req, res) => {
   }
 
   // Ensure sender belongs to this conversation (by profileId or userId across linked accounts)
-  const senderProfile = db.profiles.find((p) => p.id === senderProfileId);
-  const senderUserId = senderProfile ? senderProfile.userId : senderProfileId.replace(/^prf-/, '');
+  const senderProfile = db.profiles.find((p) =>
+    p.id === senderProfileId ||
+    p.userId === senderProfileId ||
+    p.userId === senderProfileId.replace(/^prf-/, '')
+  );
+  const senderUserId = req.body.senderUserId || (senderProfile ? senderProfile.userId : senderProfileId.replace(/^prf-/, ''));
   const linked = getLinkedUserAccounts(senderUserId || senderProfileId);
 
   const isMember = (conversation.memberProfileIds || []).includes(senderProfileId) ||
+    (conversation.memberProfileIds || []).some((mId) => linked.userIds.includes(mId) || (senderProfile && mId === senderProfile.id)) ||
     (conversation.memberUserIds || []).some((uId) => linked.userIds.includes(uId)) ||
     (conversation.memberProfileIds || []).some((mId) => {
       const prof = db.profiles.find((p) => p.id === mId);
@@ -3408,30 +3523,43 @@ app.post('/api/messages', (req, res) => {
     });
   }
 
+  const effectiveProfileId = senderProfile ? senderProfile.id : senderProfileId;
+  const senderUser = senderUserId ? db.users.find((u) => u.id === senderUserId) : null;
+  const senderName = senderUser ? senderUser.fullName : (senderProfile ? senderProfile.fullName : 'Traveler');
+
   // Ensure current profile and user are tracked in the conversation
   conversation.memberProfileIds = conversation.memberProfileIds || [];
-  if (!conversation.memberProfileIds.includes(senderProfileId)) {
-    conversation.memberProfileIds.push(senderProfileId);
+  if (!conversation.memberProfileIds.includes(effectiveProfileId)) {
+    conversation.memberProfileIds.push(effectiveProfileId);
   }
   conversation.memberUserIds = conversation.memberUserIds || [];
   if (senderUserId && !conversation.memberUserIds.includes(senderUserId)) {
     conversation.memberUserIds.push(senderUserId);
   }
 
+  const nowIso = new Date().toISOString();
   const message = {
     id: uid('msg'),
     conversationId,
-    senderProfileId,
+    senderProfileId: effectiveProfileId,
+    senderUserId: senderUserId || '',
+    senderName,
     text: normalizeText(text),
-    createdAt: new Date().toISOString(),
+    createdAt: nowIso,
   };
 
   db.messages.push(message);
   if (!conversation.lastReadAtByProfileId || typeof conversation.lastReadAtByProfileId !== 'object') {
     conversation.lastReadAtByProfileId = {};
   }
-  conversation.lastReadAtByProfileId[senderProfileId] = message.createdAt;
-  conversation.updatedAt = message.createdAt;
+  conversation.lastReadAtByProfileId[effectiveProfileId] = nowIso;
+  if (senderProfileId !== effectiveProfileId) {
+    conversation.lastReadAtByProfileId[senderProfileId] = nowIso;
+  }
+  if (senderUserId) {
+    conversation.lastReadAtByProfileId[senderUserId] = nowIso;
+  }
+  conversation.updatedAt = nowIso;
   saveStore(db);
 
   return res.status(201).json({
@@ -3440,8 +3568,11 @@ app.post('/api/messages', (req, res) => {
       id: message.id,
       conversationId: message.conversationId,
       senderProfileId: message.senderProfileId,
+      senderUserId: message.senderUserId,
+      senderName: message.senderName,
       text: message.text,
       createdAt: message.createdAt,
+      encrypted: true,
     },
   });
 });

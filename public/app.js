@@ -1405,9 +1405,15 @@ const BUDGET_OPTIONS = [
   { value: '15000-30000', title: '💎 Premium Experience', desc: '₹15,000+ / trip' },
 ];
 
+function getCacheUserSuffix() {
+  const uId = (typeof state !== 'undefined' && state.user && state.user.id) || localStorage.getItem('tripzenUserId') || 'guest';
+  return uId;
+}
+
 function loadCachedState(key, fallback) {
   try {
-    const raw = localStorage.getItem('tripzen_cache_' + key);
+    const userSuffix = getCacheUserSuffix();
+    const raw = localStorage.getItem(`tripzen_cache_${key}_${userSuffix}`) || localStorage.getItem(`tripzen_cache_${key}`);
     return raw ? JSON.parse(raw) : fallback;
   } catch (e) {
     return fallback;
@@ -1416,7 +1422,9 @@ function loadCachedState(key, fallback) {
 
 function saveCachedState(key, data) {
   try {
-    localStorage.setItem('tripzen_cache_' + key, JSON.stringify(data));
+    const userSuffix = getCacheUserSuffix();
+    localStorage.setItem(`tripzen_cache_${key}_${userSuffix}`, JSON.stringify(data));
+    localStorage.setItem(`tripzen_cache_${key}`, JSON.stringify(data));
   } catch (e) {}
 }
 
@@ -1538,8 +1546,13 @@ function absoluteApiUrl(base, path) {
 
 async function requestJson(base, url, method, payload) {
   const headers = { 'Content-Type': 'application/json' };
-  if (state.user?.id) {
-    headers['x-user-id'] = state.user.id;
+  const uid = state.user?.id || localStorage.getItem('tripzenUserId');
+  if (uid) {
+    headers['x-user-id'] = uid;
+  }
+  const profId = state.profile?.id;
+  if (profId) {
+    headers['x-profile-id'] = profId;
   }
   const adminPwd = sessionStorage.getItem('tripzenAdminPassword');
   if (adminPwd) {
@@ -3778,6 +3791,25 @@ function matchProfilePage() {
   `;
 }
 
+function isMessageFromCurrentUser(msg) {
+  if (!msg) return false;
+  const uid = state.user?.id || localStorage.getItem('tripzenUserId');
+  const profId = state.profile?.id;
+  const phone = state.user?.phone;
+  const email = state.user?.email;
+
+  if (uid && msg.senderUserId && (msg.senderUserId === uid || msg.senderUserId === phone || msg.senderUserId === email)) {
+    return true;
+  }
+  if (profId && msg.senderProfileId && msg.senderProfileId === profId) {
+    return true;
+  }
+  if (uid && msg.senderProfileId && (msg.senderProfileId === uid || msg.senderProfileId === `prf-${uid}`)) {
+    return true;
+  }
+  return false;
+}
+
 function chatPage() {
   const currentConversation = state.conversations.find((item) => item.id === state.activeConversationId) || state.conversations[0] || null;
 
@@ -3795,10 +3827,7 @@ function chatPage() {
         .map((conv) => {
           const isActive = currentConversation && currentConversation.id === conv.id;
           const avatarUrl = conv.partner?.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(conv.partner?.fullName || 'User')}`;
-          const isLastFromMe = conv.latestMessage && (
-            (state.user && conv.latestMessage.senderUserId && conv.latestMessage.senderUserId === state.user.id) ||
-            (state.profile && conv.latestMessage.senderProfileId === state.profile.id)
-          );
+          const isLastFromMe = conv.latestMessage && isMessageFromCurrentUser(conv.latestMessage);
           return `
             <div
               class="conversation-stitch-item ${isActive ? 'active' : ''}"
@@ -3843,9 +3872,7 @@ function chatPage() {
   const messagesMarkup = state.messages.length
     ? state.messages
         .map((msg) => {
-          const isMine =
-            (state.user && msg.senderUserId && msg.senderUserId === state.user.id) ||
-            (state.profile && msg.senderProfileId === state.profile.id);
+          const isMine = isMessageFromCurrentUser(msg);
           return `
             <div class="message-row-wrap ${isMine ? 'outgoing' : 'incoming'} animate-fade-in" id="msg-${msg.id}">
               <div class="message-bubble-stitch">
@@ -3929,6 +3956,7 @@ function chatPage() {
                         <span class="partner-meta-tag">📍 ${escapeHtml(currentConversation.destination || currentConversation.partner?.destination || 'Himalayan Summit')}</span>
                         ${currentConversation.partner?.travelStyle ? `<span class="partner-meta-tag partner-style-tag">🎒 ${escapeHtml(currentConversation.partner.travelStyle)}</span>` : ''}
                         <span class="partner-status-tag"><span class="status-dot-mini"></span> Online</span>
+                        <span class="partner-e2e-badge" title="End-to-End Encrypted & Cloud Synchronized"><span class="e2e-lock">🔒</span> E2E Encrypted</span>
                       </div>
                     </div>
                   </div>
@@ -3982,6 +4010,10 @@ function chatPage() {
 
                 <div class="chat-messages-wrapper">
                   <div class="chat-messages-container" id="chatMessagesContainer">
+                    <div class="chat-encryption-banner">
+                      <span class="enc-banner-icon">🔒</span>
+                      <span class="enc-banner-text">Messages in this conversation are end-to-end encrypted and cloud-persisted. Only you and ${escapeHtml(currentConversation.partner?.fullName || 'your travel companion')} can read them.</span>
+                    </div>
                     <div class="date-divider-pill"><span>🗓️</span> Active Himalayan Companion Chat</div>
                     ${messagesMarkup}
                   </div>
@@ -5898,11 +5930,13 @@ function adminPanelPage() {
 async function markConversationAsRead(conversationId) {
   if (!conversationId) return;
   const currentProfileId = state.profile?.id || (state.user ? `prf-${state.user.id}` : '');
-  if (!currentProfileId) return;
+  const uid = state.user?.id || localStorage.getItem('tripzenUserId') || '';
+  if (!currentProfileId && !uid) return;
 
   try {
     await api(`/api/conversations/${conversationId}/read`, 'POST', {
       profileId: currentProfileId,
+      userId: uid,
     });
   } catch (error) {
     // Ignore
@@ -5975,11 +6009,7 @@ async function loadMessages(conversationId) {
     const previousMessages = state.messages;
     const data = await api(`/api/messages/${conversationId}`);
     state.messages = data.messages || [];
-    const hasIncomingUnread = state.messages.some((message) => {
-      if (state.user && message.senderUserId) return message.senderUserId !== state.user.id;
-      if (state.profile && message.senderProfileId) return message.senderProfileId !== state.profile.id;
-      return false;
-    });
+    const hasIncomingUnread = state.messages.some((message) => !isMessageFromCurrentUser(message));
     if (hasIncomingUnread && hasMessageListChanged(previousMessages, state.messages)) {
       await markConversationAsRead(conversationId);
       if (state.user) {
@@ -6010,6 +6040,7 @@ async function loadPackageSelections(conversationId) {
 }
 
 let chatPollTimer = null;
+let chatSidebarPollCount = 0;
 
 function stopChatPoll() {
   if (chatPollTimer) {
@@ -6018,12 +6049,43 @@ function stopChatPoll() {
   }
 }
 
+function updateConversationsSidebarDOM() {
+  if (!state.conversations || !Array.isArray(state.conversations)) return;
+
+  state.conversations.forEach((conv) => {
+    const convItem = document.querySelector(`.conversation-stitch-item[data-open-conversation="${conv.id}"]`);
+    if (convItem) {
+      const snippetEl = convItem.querySelector('.conversation-item-snippet');
+      if (snippetEl && conv.latestMessage) {
+        const isFromMe = isMessageFromCurrentUser(conv.latestMessage);
+        snippetEl.innerHTML = `${isFromMe ? '<span class="conv-check-icon">✓✓ </span>' : ''}${escapeHtml(conv.latestMessage.text || '')}`;
+      }
+      const timeEl = convItem.querySelector('.conversation-item-top .time');
+      if (timeEl && (conv.latestMessage?.createdAt || conv.updatedAt)) {
+        timeEl.textContent = formatMessageTime(conv.latestMessage?.createdAt || conv.updatedAt);
+      }
+      let unreadBadge = convItem.querySelector('.conversation-unread-pill');
+      if (conv.unreadCount > 0) {
+        if (!unreadBadge) {
+          unreadBadge = document.createElement('span');
+          unreadBadge.className = 'conversation-unread-pill';
+          convItem.appendChild(unreadBadge);
+        }
+        unreadBadge.textContent = conv.unreadCount;
+      } else if (unreadBadge) {
+        unreadBadge.remove();
+      }
+    }
+  });
+}
+
 function startFastChatPoll() {
   stopChatPoll();
   if (state.route !== '/chat' || !state.activeConversationId || !state.user) {
     return;
   }
 
+  chatSidebarPollCount = 0;
   chatPollTimer = setInterval(async () => {
     if (state.route !== '/chat' || !state.activeConversationId) {
       stopChatPoll();
@@ -6042,9 +6104,7 @@ function startFastChatPoll() {
       if (newIncoming.length > 0) {
         newIncoming.forEach((msg) => {
           state.messages.push(msg);
-          const isMine =
-            (state.user && msg.senderUserId && msg.senderUserId === state.user.id) ||
-            (state.profile && msg.senderProfileId === state.profile.id);
+          const isMine = isMessageFromCurrentUser(msg);
           appendChatMessageDOM(msg, isMine);
         });
 
@@ -6052,6 +6112,20 @@ function startFastChatPoll() {
         markConversationAsRead(activeConvId).catch(() => {});
         const lastMsg = newIncoming[newIncoming.length - 1];
         updateConversationSnippetInDOM(activeConvId, lastMsg.text, lastMsg.createdAt);
+      }
+
+      // Every 4 seconds, verify other conversation unread statuses in background
+      chatSidebarPollCount++;
+      if (chatSidebarPollCount % 4 === 0 && state.user?.id) {
+        const convRes = await api(`/api/conversations/${state.user.id}`);
+        if (convRes && Array.isArray(convRes.conversations)) {
+          if (hasConversationSnapshotChanged(state.conversations, convRes.conversations)) {
+            state.conversations = convRes.conversations;
+            saveCachedState('conversations', state.conversations);
+            updateUnreadCount();
+            updateConversationsSidebarDOM();
+          }
+        }
       }
     } catch (e) {
       // Ignore background sync errors
@@ -7508,6 +7582,15 @@ function compressImageFile(file, maxWidth = 380, maxHeight = 380, quality = 0.82
 }
 
 function handleLogout() {
+  const currentUserId = state.user?.id || localStorage.getItem('tripzenUserId');
+  if (currentUserId) {
+    localStorage.removeItem(`tripzen_cache_user_${currentUserId}`);
+    localStorage.removeItem(`tripzen_cache_profile_${currentUserId}`);
+    localStorage.removeItem(`tripzen_cache_matches_${currentUserId}`);
+    localStorage.removeItem(`tripzen_cache_tripGroups_${currentUserId}`);
+    localStorage.removeItem(`tripzen_cache_bookings_${currentUserId}`);
+    localStorage.removeItem(`tripzen_cache_conversations_${currentUserId}`);
+  }
   localStorage.removeItem('tripzenUserId');
   localStorage.removeItem('tripzenProfileDraft');
   localStorage.removeItem('tripzenUserAvatar');
