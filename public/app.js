@@ -6319,22 +6319,24 @@ async function checkForOAuthCallback() {
 
   // 1. Check for access_token in hash (e.g. #access_token=... or #/auth#access_token=...)
   if (hash.includes('access_token=')) {
-    const rawHash = hash.replace(/^#\/?[^#]*#?/, '');
-    const params = new URLSearchParams(rawHash);
+    const idx = hash.indexOf('access_token=');
+    const tokenQuery = hash.slice(idx);
+    const params = new URLSearchParams(tokenQuery);
     accessToken = params.get('access_token') || '';
     refreshToken = params.get('refresh_token') || '';
   }
 
   // 2. Check for PKCE auth code in search query (e.g. ?code=...)
   if (search.includes('code=')) {
-    const params = new URLSearchParams(search);
+    const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
     authCode = params.get('code') || '';
   }
 
   // 3. Check for OAuth error in URL
   const fullUrl = window.location.href;
   if (fullUrl.includes('error_description=') || fullUrl.includes('error=')) {
-    const params = new URLSearchParams(search || hash.replace(/^#\/?[^#]*#?/, ''));
+    const errorQuery = hash.includes('error') ? hash.slice(hash.indexOf('error')) : (search.startsWith('?') ? search.slice(1) : search);
+    const params = new URLSearchParams(errorQuery);
     const errorDesc = params.get('error_description') || params.get('error');
     if (errorDesc) {
       state.authStatusType = 'error';
@@ -6344,6 +6346,23 @@ async function checkForOAuthCallback() {
         window.history.replaceState(null, '', window.location.pathname + '#/auth');
       }
       return false;
+    }
+  }
+
+  // 4. Fallback check from client-side Supabase SDK if token already captured by Supabase client
+  if (!accessToken && !authCode && window.supabase && typeof window.supabase.createClient === 'function') {
+    try {
+      const cfgRes = await fetch('/api/config').then(r => r.json()).catch(() => null);
+      if (cfgRes && cfgRes.supabaseUrl && cfgRes.supabaseAnonKey) {
+        const sb = window.supabase.createClient(cfgRes.supabaseUrl, cfgRes.supabaseAnonKey);
+        const { data: { session } } = await sb.auth.getSession();
+        if (session && session.access_token) {
+          accessToken = session.access_token;
+          refreshToken = session.refresh_token;
+        }
+      }
+    } catch (e) {
+      // Ignore background session check
     }
   }
 
