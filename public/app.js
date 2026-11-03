@@ -1844,7 +1844,7 @@ function updateUnreadCount() {
     : DEFAULT_TITLE;
 }
 
-function showIncomingNotification(text) {
+function showIncomingNotification(text, duration = 3000) {
   if (!text) return;
 
   state.notificationMessage = text;
@@ -1854,7 +1854,7 @@ function showIncomingNotification(text) {
   notificationTimer = setTimeout(() => {
     state.notificationMessage = '';
     renderApp();
-  }, 4500);
+  }, duration);
 
   if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
     try {
@@ -6399,9 +6399,10 @@ async function checkForOAuthCallback() {
       saveCachedState('user', state.user);
       if (state.profile) saveCachedState('profile', state.profile);
 
-      state.notificationMessage = res.isNewUser
-        ? `Welcome to TripZen, ${res.user.fullName}! 🏔️ Account created via Google.`
+      const welcomeMsg = res.isNewUser
+        ? `Welcome to TripZen, ${res.user.fullName}! 🏔️`
         : `Welcome back, ${res.user.fullName}! 🎒`;
+      showIncomingNotification(welcomeMsg, 3000);
 
       // Clean address bar so tokens do not linger in URL
       if (window.history && window.history.replaceState) {
