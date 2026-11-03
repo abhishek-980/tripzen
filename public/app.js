@@ -6282,7 +6282,7 @@ async function handleGoogleAuth() {
     state.authStatusType = 'info';
     renderApp();
 
-    const redirectUri = window.location.origin + window.location.pathname;
+    const redirectUri = window.location.origin + '/';
     const res = await api(`/api/auth/google/url?redirect=${encodeURIComponent(redirectUri)}`);
 
     if (res && res.url) {

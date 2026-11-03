@@ -2677,8 +2677,13 @@ app.get('/api/auth/google/url', async (req, res) => {
     });
   }
 
-  const reqOrigin = req.query.redirect || req.headers.origin || `${req.protocol}://${req.get('host')}`;
-  const redirectTo = `${reqOrigin.replace(/\/+$/, '')}/#/auth`;
+  let reqOrigin = req.query.redirect || req.headers.origin || `${req.protocol}://${req.get('host')}`;
+  reqOrigin = String(reqOrigin).split('#')[0].split('?')[0].replace(/\/+$/, '');
+  const host = req.get('host') || '';
+  if (host.includes('tripzen.co.in') || reqOrigin.includes('tripzen.co.in')) {
+    reqOrigin = 'https://tripzen.co.in';
+  }
+  const redirectTo = `${reqOrigin}/`;
 
   try {
     const data = await supabaseService.getGoogleAuthUrl(redirectTo);
@@ -2705,8 +2710,13 @@ app.get('/api/auth/google', async (req, res) => {
     return res.redirect('/#/auth?error=' + encodeURIComponent('Supabase is not configured.'));
   }
 
-  const reqOrigin = req.headers.origin || `${req.protocol}://${req.get('host')}`;
-  const redirectTo = `${reqOrigin.replace(/\/+$/, '')}/#/auth`;
+  let reqOrigin = req.headers.origin || `${req.protocol}://${req.get('host')}`;
+  reqOrigin = String(reqOrigin).split('#')[0].split('?')[0].replace(/\/+$/, '');
+  const host = req.get('host') || '';
+  if (host.includes('tripzen.co.in') || reqOrigin.includes('tripzen.co.in')) {
+    reqOrigin = 'https://tripzen.co.in';
+  }
+  const redirectTo = `${reqOrigin}/`;
 
   try {
     const data = await supabaseService.getGoogleAuthUrl(redirectTo);
