@@ -125,6 +125,52 @@ async function verifyOtp({ email, phone, token, type }) {
 }
 
 /**
+ * Generate Google OAuth sign-in URL using Supabase Auth
+ */
+async function getGoogleAuthUrl(redirectTo) {
+  const client = getClient();
+  if (!client) {
+    throw new Error('Supabase is not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY in .env');
+  }
+
+  const { data, error } = await client.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      },
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+/**
+ * Verify Supabase access token and get authenticated user
+ */
+async function getUserByToken(token) {
+  const client = getClient();
+  const admin = getAdminClient();
+  const authClient = admin || client;
+  if (!authClient || !token) return null;
+
+  try {
+    const { data, error } = await authClient.auth.getUser(token);
+    if (error || !data?.user) return null;
+    return data.user;
+  } catch (err) {
+    console.warn('[Supabase Auth] Token verification notice:', err.message);
+    return null;
+  }
+}
+
+/**
  * Helper to check if string is valid UUID
  */
 function isUuid(str) {
@@ -523,5 +569,7 @@ module.exports = {
   listUsers,
   listBookings,
   updateBookingStatus,
+  getGoogleAuthUrl,
+  getUserByToken,
 };
 

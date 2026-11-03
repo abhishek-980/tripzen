@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tripzen-pwa-v20261104_v60';
+const CACHE_NAME = 'tripzen-pwa-v20261104_v61';
 const STATIC_ASSETS = [
   './',
   './index.html',

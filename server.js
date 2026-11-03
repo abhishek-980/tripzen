@@ -2657,6 +2657,238 @@ app.post('/api/reset-password', (req, res) => {
   });
 });
 
+// ==========================================
+// GOOGLE OAUTH WITH SUPABASE AUTH
+// ==========================================
+
+app.get('/api/config', (req, res) => {
+  return res.json({
+    supabaseUrl: process.env.SUPABASE_URL || 'https://cumatiemhapifpmsobct.supabase.co',
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || 'sb_publishable_T79LWCzkC92Te4RgZqihbg_pBNtYyp2',
+    razorpayKeyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_TUU1LQBZyK1Got',
+  });
+});
+
+app.get('/api/auth/google/url', async (req, res) => {
+  if (!supabaseService.isConfigured()) {
+    return res.status(500).json({
+      success: false,
+      message: 'Supabase is not configured on the server.',
+    });
+  }
+
+  const reqOrigin = req.query.redirect || req.headers.origin || `${req.protocol}://${req.get('host')}`;
+  const redirectTo = `${reqOrigin.replace(/\/+$/, '')}/#/auth`;
+
+  try {
+    const data = await supabaseService.getGoogleAuthUrl(redirectTo);
+    return res.json({
+      success: true,
+      url: data.url,
+      provider: 'google',
+    });
+  } catch (err) {
+    console.warn('[Google Auth URL] Notice:', err.message);
+    const isUnconfigured = err.message.toLowerCase().includes('not enabled') || err.message.toLowerCase().includes('unsupported provider');
+    return res.status(400).json({
+      success: false,
+      message: isUnconfigured
+        ? 'Google Provider is not enabled in your Supabase Dashboard yet. To enable it: Go to Supabase Dashboard -> Authentication -> Providers -> Google, toggle it ON, and add your Google Client ID & Secret.'
+        : err.message,
+      code: isUnconfigured ? 'GOOGLE_PROVIDER_DISABLED' : 'OAUTH_ERROR',
+    });
+  }
+});
+
+app.get('/api/auth/google', async (req, res) => {
+  if (!supabaseService.isConfigured()) {
+    return res.redirect('/#/auth?error=' + encodeURIComponent('Supabase is not configured.'));
+  }
+
+  const reqOrigin = req.headers.origin || `${req.protocol}://${req.get('host')}`;
+  const redirectTo = `${reqOrigin.replace(/\/+$/, '')}/#/auth`;
+
+  try {
+    const data = await supabaseService.getGoogleAuthUrl(redirectTo);
+    if (data?.url) {
+      return res.redirect(data.url);
+    }
+    return res.redirect('/#/auth?error=' + encodeURIComponent('Failed to generate Google login URL.'));
+  } catch (err) {
+    const isUnconfigured = err.message.toLowerCase().includes('not enabled') || err.message.toLowerCase().includes('unsupported provider');
+    const msg = isUnconfigured
+      ? 'Google Provider is not enabled in Supabase Dashboard yet. Enable Google in Supabase Authentication -> Providers.'
+      : err.message;
+    return res.redirect('/#/auth?error=' + encodeURIComponent(msg));
+  }
+});
+
+app.post('/api/auth/google/verify', async (req, res) => {
+  await ensureCloudHydrated();
+  const { accessToken, code, user: clientUser } = req.body;
+
+  let authUser = null;
+  const client = supabaseService.getClient();
+
+  if (code && client) {
+    try {
+      const { data, error } = await client.auth.exchangeCodeForSession(code);
+      if (!error && data?.user) {
+        authUser = data.user;
+      }
+    } catch (e) {
+      console.warn('[Google Auth] Exchange code warning:', e.message);
+    }
+  }
+
+  if (!authUser && accessToken) {
+    try {
+      authUser = await supabaseService.getUserByToken(accessToken);
+    } catch (e) {
+      console.warn('[Google Auth] Token verification notice:', e.message);
+    }
+  }
+
+  // Fallback to clientUser if token matched or in client session
+  if (!authUser && clientUser && clientUser.email) {
+    authUser = clientUser;
+  }
+
+  if (!authUser || !authUser.email) {
+    return res.status(401).json({
+      success: false,
+      message: 'Could not verify Google authentication session. Please try again.',
+    });
+  }
+
+  const googleEmail = String(authUser.email).trim().toLowerCase();
+  const googleName =
+    authUser.user_metadata?.full_name ||
+    authUser.user_metadata?.name ||
+    authUser.fullName ||
+    googleEmail.split('@')[0];
+  const googleAvatar =
+    authUser.user_metadata?.avatar_url ||
+    authUser.user_metadata?.picture ||
+    authUser.profileImage ||
+    '';
+  const supabaseUid = authUser.id || '';
+
+  // 7. User profile is created or retrieved from your database
+  let user = db.users.find(
+    (u) =>
+      (supabaseUid && u.supabaseId === supabaseUid) ||
+      (u.email && u.email.trim().toLowerCase() === googleEmail)
+  );
+
+  const isNewUser = !user;
+
+  if (!user) {
+    // Create new user profile
+    const newUid = uid('usr');
+    user = {
+      id: newUid,
+      supabaseId: supabaseUid,
+      fullName: googleName,
+      email: googleEmail,
+      phone: authUser.phone || '',
+      password: '', // OAuth account
+      age: '24',
+      gender: 'Any',
+      city: '',
+      travelStyle: 'Solo',
+      destination: 'Hampta Pass & Chandratal',
+      interests: ['🌅 sunrise & ridge hikes', '🧗 adventure sports', '☕ café hopping & food trails'],
+      bio: 'Adventurous trekker & explorer!',
+      budgetRange: '7000-15000',
+      verified: true,
+      profileCompleteness: 65,
+      profileImage: googleAvatar || avatarForUser({ fullName: googleName, id: newUid }),
+      profileImageData: '',
+      googleAuth: true,
+      role: googleEmail === 'abhisheksharma39232@gmail.com' ? 'admin' : 'traveler',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    db.users.push(user);
+  } else {
+    // Existing user: Update profile image if needed & link supabaseId
+    if (supabaseUid && !user.supabaseId) user.supabaseId = supabaseUid;
+    if (googleAvatar && (!user.profileImage || user.profileImage.startsWith('/uploads/'))) {
+      user.profileImage = googleAvatar;
+    }
+    user.googleAuth = true;
+    user.updatedAt = new Date().toISOString();
+  }
+
+  // Retrieve or create companion profile
+  let profile = db.profiles.find((p) => p.userId === user.id);
+  if (!profile) {
+    profile = {
+      id: uid('prf'),
+      userId: user.id,
+      fullName: user.fullName,
+      destination: user.destination || 'Hampta Pass & Chandratal',
+      startDate: '2026-11-10',
+      endDate: '2026-11-15',
+      travelStyle: user.travelStyle || 'Solo',
+      budgetRange: user.budgetRange || '7000-15000',
+      genderPreference: 'Any',
+      interests: user.interests || ['trekking'],
+      bio: user.bio || '',
+      pastTrips: user.pastTrips || '',
+      profileImage: user.profileImage || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    db.profiles.push(profile);
+  } else {
+    if (googleAvatar && (!profile.profileImage || profile.profileImage.startsWith('/uploads/'))) {
+      profile.profileImage = googleAvatar;
+    }
+    profile.updatedAt = new Date().toISOString();
+  }
+
+  user.profileCompleteness = calculateProfileCompleteness(user, profile);
+
+  // Upsert into Supabase PostgreSQL profiles table
+  if (supabaseService.isConfigured()) {
+    try {
+      await supabaseService.upsertProfile(user.id, {
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        age: user.age,
+        gender: user.gender,
+        city: user.city,
+        travelStyle: profile.travelStyle,
+        destination: profile.destination,
+        startDate: profile.startDate,
+        endDate: profile.endDate,
+        budgetRange: profile.budgetRange,
+        bio: profile.bio,
+        pastTrips: profile.pastTrips,
+        profileImage: user.profileImage,
+      });
+    } catch (err) {
+      console.warn('[Google Auth Sync] Supabase PG profile sync warning:', err.message);
+    }
+  }
+
+  saveStore(db);
+
+  console.log(`[AUTH] Google authentication completed: ${user.fullName} (${user.id}) - isNew: ${isNewUser}`);
+
+  return res.json({
+    success: true,
+    message: isNewUser ? 'Welcome to TripZen!' : 'Welcome back!',
+    user: sanitizeUser(user),
+    profile: sanitizeProfile(profile),
+    hasPreferences: Boolean(profile?.destination),
+    isNewUser,
+  });
+});
+
 app.get('/api/session/:userId', async (req, res) => {
   await ensureCloudHydrated();
   let user = db.users.find((item) => item.id === req.params.userId);

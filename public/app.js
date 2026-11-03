@@ -1440,6 +1440,7 @@ const state = {
   authEmailDraft: localStorage.getItem('tripzenSavedIdentifier') || '',
   authStatus: '',
   authStatusType: '',
+  showGoogleProviderModal: false,
   profileStatus: '',
   profileStatusType: '',
   selectedInterests: [],
@@ -5147,6 +5148,22 @@ function authPage() {
               <span>${isSignup ? 'Create Account ➔' : (isForgotPassword ? 'Regenerate Password & Sign In ➔' : 'Continue to Matches ➔')}</span>
             </button>
 
+            ${!isForgotPassword ? `
+              <div class="auth-divider-stitch">
+                <span>OR</span>
+              </div>
+
+              <button type="button" class="google-auth-btn" id="googleAuthBtn" title="Continue with your Google account">
+                <svg class="google-icon-svg" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                <span class="google-btn-text">Continue with Google</span>
+              </button>
+            ` : ''}
+
             ${isForgotPassword ? `<button type="button" class="auth-back-link" id="backToLoginBtn">← Back to Login</button>` : ''}
           </form>
 
@@ -5453,6 +5470,7 @@ function renderApp() {
     ${mainHtml}
     ${renderCheckoutModal()}
     ${renderItineraryModal()}
+    ${renderGoogleProviderModal()}
     ${renderPwaInstallBanner()}
     ${renderIosInstallModal()}
   `;
@@ -5491,6 +5509,11 @@ function hydratePreferenceFormDefaults() {
 }
 
 async function loadSession() {
+  const handledOAuth = await checkForOAuthCallback();
+  if (handledOAuth) {
+    return;
+  }
+
   const userId = localStorage.getItem('tripzenUserId');
   if (!userId) {
     state.user = null;
@@ -6188,6 +6211,210 @@ function startLiveSync() {
       pollInFlight = false;
     }
   }, CHAT_POLL_INTERVAL);
+}
+
+/* ==========================================================================
+   SUPABASE GOOGLE OAUTH AUTHENTICATION
+   Flow:
+   1. User clicks Continue with Google.
+   2. Google authentication window opens.
+   3. User selects their Google account.
+   4. Google verifies their identity.
+   5. Supabase receives the authentication response.
+   6. User gets redirected to the Tripzen dashboard.
+   7. User profile is created or retrieved from your database.
+   ========================================================================== */
+
+function renderGoogleProviderModal() {
+  if (!state.showGoogleProviderModal) return '';
+  return `
+    <div class="modal-backdrop animate-fade-in" id="googleProviderModal" style="display: flex; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(6px); z-index: 10000; padding: 20px;">
+      <div class="modal-card" style="max-width: 520px; width: 100%; background: #ffffff; border-radius: 20px; padding: 26px 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); text-align: left; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(66, 133, 244, 0.12); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">
+              🔑
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 1.18rem; font-weight: 800; color: #0f172a; letter-spacing: -0.01em;">Enable Google in Supabase</h3>
+              <span style="font-size: 0.78rem; font-weight: 600; color: #64748b;">One-time configuration in your Supabase project</span>
+            </div>
+          </div>
+          <button type="button" id="closeGoogleModalBtn" style="background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #94a3b8; padding: 4px; line-height: 1;">✕</button>
+        </div>
+
+        <p style="font-size: 0.88rem; color: #334155; line-height: 1.5; margin-bottom: 14px;">
+          TripZen connects to your Supabase project (<code>cumatiemhapifpmsobct</code>). To enable <strong>Continue with Google</strong>, toggle the Google Provider ON in your Supabase Auth settings:
+        </p>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+          <ol style="font-size: 0.84rem; color: #334155; line-height: 1.6; margin: 0; padding-left: 18px;">
+            <li style="margin-bottom: 6px;">Open <strong><a href="https://supabase.com/dashboard/project/cumatiemhapifpmsobct/auth/providers" target="_blank" rel="noopener" style="color: #059669; font-weight: 700; text-decoration: underline;">Supabase Auth Providers</a></strong>.</li>
+            <li style="margin-bottom: 6px;">Find <strong>Google</strong> and toggle it <strong>ON</strong>.</li>
+            <li style="margin-bottom: 6px;">Paste your Google <strong>Client ID</strong> & <strong>Client Secret</strong> (from Google Cloud Console).</li>
+            <li>Add this Authorized Redirect URI in Google Cloud Console:<br/>
+              <code style="display: block; margin-top: 4px; background: #ffffff; border: 1px solid #cbd5e1; padding: 6px 8px; border-radius: 6px; font-size: 0.76rem; word-break: break-all; color: #0f172a; font-family: monospace;">https://cumatiemhapifpmsobct.supabase.co/auth/v1/callback</code>
+            </li>
+          </ol>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center; margin-top: 20px;">
+          <button type="button" class="ghost-btn" id="closeGoogleModalBtn2" style="padding: 9px 16px; font-size: 0.86rem; border-radius: 10px;">Close</button>
+          <a href="https://supabase.com/dashboard/project/cumatiemhapifpmsobct/auth/providers" target="_blank" rel="noopener" class="primary-btn" style="text-decoration: none; padding: 9px 18px; font-size: 0.86rem; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px;">
+            <span>Open Supabase Dashboard</span>
+            <span>➔</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function handleGoogleAuth() {
+  const btn = document.getElementById('googleAuthBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="auth-btn-spinner" style="display: inline-block; width: 14px; height: 14px; border: 2px solid #cbd5e1; border-top-color: #059669; border-radius: 50%; animation: spin 0.8s linear infinite;"></span> Connecting to Google...`;
+  }
+
+  try {
+    state.authStatus = 'Connecting to Supabase Google OAuth...';
+    state.authStatusType = 'info';
+    renderApp();
+
+    const redirectUri = window.location.origin + window.location.pathname;
+    const res = await api(`/api/auth/google/url?redirect=${encodeURIComponent(redirectUri)}`);
+
+    if (res && res.url) {
+      // Step 2: Google authentication window opens!
+      window.location.href = res.url;
+      return;
+    }
+    throw new Error('Failed to generate Google login URL.');
+  } catch (err) {
+    console.error('Google Auth Error:', err);
+    state.authStatusType = 'error';
+    if (err.message && (err.message.includes('not enabled') || err.message.includes('GOOGLE_PROVIDER_DISABLED') || err.message.includes('Unsupported provider'))) {
+      state.authStatus = 'Google Provider needs to be toggled ON in your Supabase Dashboard.';
+      state.showGoogleProviderModal = true;
+    } else {
+      state.authStatus = err.message || 'Google authentication could not be completed.';
+    }
+    renderApp();
+  } finally {
+    const btnReset = document.getElementById('googleAuthBtn');
+    if (btnReset) {
+      btnReset.disabled = false;
+    }
+  }
+}
+
+async function checkForOAuthCallback() {
+  const hash = window.location.hash || '';
+  const search = window.location.search || '';
+
+  let accessToken = '';
+  let refreshToken = '';
+  let authCode = '';
+
+  // 1. Check for access_token in hash (e.g. #access_token=... or #/auth#access_token=...)
+  if (hash.includes('access_token=')) {
+    const rawHash = hash.replace(/^#\/?[^#]*#?/, '');
+    const params = new URLSearchParams(rawHash);
+    accessToken = params.get('access_token') || '';
+    refreshToken = params.get('refresh_token') || '';
+  }
+
+  // 2. Check for PKCE auth code in search query (e.g. ?code=...)
+  if (search.includes('code=')) {
+    const params = new URLSearchParams(search);
+    authCode = params.get('code') || '';
+  }
+
+  // 3. Check for OAuth error in URL
+  const fullUrl = window.location.href;
+  if (fullUrl.includes('error_description=') || fullUrl.includes('error=')) {
+    const params = new URLSearchParams(search || hash.replace(/^#\/?[^#]*#?/, ''));
+    const errorDesc = params.get('error_description') || params.get('error');
+    if (errorDesc) {
+      state.authStatusType = 'error';
+      state.authStatus = decodeURIComponent(errorDesc.replace(/\+/g, ' '));
+      // Clean error from address bar
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname + '#/auth');
+      }
+      return false;
+    }
+  }
+
+  if (!accessToken && !authCode) {
+    return false;
+  }
+
+  // Step 5 & 6 & 7: Process authentication response from Supabase & Google!
+  state.loading = true;
+  state.globalStatus = 'Verifying Google identity and loading your traveler profile...';
+  state.globalStatusType = 'info';
+  renderApp();
+
+  try {
+    const res = await api('/api/auth/google/verify', 'POST', {
+      accessToken,
+      refreshToken,
+      code: authCode,
+    });
+
+    if (res && res.success && res.user) {
+      // User profile is created or retrieved from database!
+      localStorage.setItem('tripzenUserId', res.user.id);
+      localStorage.setItem('tripzenSavedIdentifier', res.user.email || '');
+      if (res.user.profileImage) {
+        localStorage.setItem('tripzenUserAvatar', res.user.profileImage);
+      }
+      if (res.user.age) {
+        localStorage.setItem('tripzenUserAge', res.user.age);
+      }
+
+      state.user = res.user;
+      state.profile = res.profile || null;
+      saveCachedState('user', state.user);
+      if (state.profile) saveCachedState('profile', state.profile);
+
+      state.notificationMessage = res.isNewUser
+        ? `Welcome to TripZen, ${res.user.fullName}! 🏔️ Account created via Google.`
+        : `Welcome back, ${res.user.fullName}! 🎒`;
+
+      // Clean address bar so tokens do not linger in URL
+      if (window.history && window.history.replaceState) {
+        const destRoute = res.hasPreferences ? '#/matches' : '#/preferences';
+        window.history.replaceState(null, '', window.location.pathname + destRoute);
+      }
+
+      await Promise.allSettled([
+        loadMatches(),
+        loadTripGroups(),
+        loadBookings(),
+        loadConversations(),
+      ]);
+      startLiveSync();
+
+      state.route = res.hasPreferences ? '/matches' : '/preferences';
+      window.location.hash = state.route;
+      state.globalStatus = '';
+      state.globalStatusType = '';
+      state.loading = false;
+      renderApp();
+      return true;
+    }
+  } catch (err) {
+    console.error('Google OAuth verification failed:', err);
+    state.authStatusType = 'error';
+    state.authStatus = err.message || 'Google verification failed. Please try signing in again.';
+    state.globalStatus = '';
+    state.loading = false;
+    renderApp();
+  }
+  return false;
 }
 
 async function handleAuthSubmit(event) {
@@ -8966,6 +9193,27 @@ function hydrateUI() {
   const authForm = document.getElementById('authForm');
   if (authForm) {
     authForm.addEventListener('submit', handleAuthSubmit);
+  }
+
+  const googleAuthBtn = document.getElementById('googleAuthBtn');
+  if (googleAuthBtn) {
+    googleAuthBtn.addEventListener('click', handleGoogleAuth);
+  }
+
+  const closeGoogleModalBtn = document.getElementById('closeGoogleModalBtn');
+  if (closeGoogleModalBtn) {
+    closeGoogleModalBtn.addEventListener('click', () => {
+      state.showGoogleProviderModal = false;
+      renderApp();
+    });
+  }
+
+  const closeGoogleModalBtn2 = document.getElementById('closeGoogleModalBtn2');
+  if (closeGoogleModalBtn2) {
+    closeGoogleModalBtn2.addEventListener('click', () => {
+      state.showGoogleProviderModal = false;
+      renderApp();
+    });
   }
 
 
