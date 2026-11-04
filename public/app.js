@@ -1777,6 +1777,21 @@ function normalizedRoute() {
 }
 
 function isDashboardRoute(route = normalizedRoute()) {
+  if (
+    route === '/terms' ||
+    route === '/terms-and-conditions' ||
+    route === '/privacy' ||
+    route === '/privacy-policy' ||
+    route === '/refund-policy' ||
+    route === '/cancellation-policy' ||
+    route === '/shipping-policy' ||
+    route === '/delivery-policy' ||
+    route === '/contact' ||
+    route === '/contact-us'
+  ) {
+    return Boolean(state.user);
+  }
+
   return (
     route === '/admin' ||
     route === '/profile' ||
@@ -2172,6 +2187,12 @@ function dashboardSidebar() {
       </nav>
 
       <div class="sidebar-footer">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 12px; font-size: 0.74rem;">
+          <a href="#/terms" style="color: rgba(255, 255, 255, 0.65); text-decoration: none;">Terms</a>
+          <a href="#/privacy" style="color: rgba(255, 255, 255, 0.65); text-decoration: none;">Privacy</a>
+          <a href="#/refund-policy" style="color: rgba(255, 255, 255, 0.65); text-decoration: none;">Refunds</a>
+          <a href="#/contact" style="color: rgba(255, 255, 255, 0.65); text-decoration: none;">Contact</a>
+        </div>
         <button type="button" class="sidebar-logout-btn action-logout-btn" id="logoutBtn">
           <span>🚪 Log Out</span>
         </button>
@@ -2195,6 +2216,11 @@ function dashboardShell(contentMarkup) {
   else if (current === '/groups' || current === '/cost-sharing') routeTitle = 'Cost Sharing Groups';
   else if (current === '/bookings' || current === '/my-bookings') routeTitle = 'My Bookings';
   else if (current === '/about') routeTitle = 'About TripZen';
+  else if (current === '/terms' || current === '/terms-and-conditions') routeTitle = 'Terms & Conditions';
+  else if (current === '/privacy' || current === '/privacy-policy') routeTitle = 'Privacy Policy';
+  else if (current === '/refund-policy' || current === '/cancellation-policy') routeTitle = 'Cancellation & Refund';
+  else if (current === '/shipping-policy' || current === '/delivery-policy') routeTitle = 'Shipping & Delivery';
+  else if (current === '/contact' || current === '/contact-us') routeTitle = 'Contact Us';
 
   return `
     <div class="dashboard-container">
@@ -2229,6 +2255,7 @@ function dashboardShell(contentMarkup) {
           ${state.notificationMessage ? `<div class="floating-notification">${escapeHtml(state.notificationMessage)}</div>` : ''}
           ${state.globalStatus ? `<div class="global-banner ${state.globalStatusType || ''}">${escapeHtml(state.globalStatus)}</div>` : ''}
           ${contentMarkup}
+          ${appSiteFooter()}
         </main>
       </div>
     </div>
@@ -5173,6 +5200,19 @@ function authPage() {
             <span>256-bit Encrypted • Zero Spam • 100% Privacy Protected</span>
           </div>
 
+          <!-- Mandatory Legal & Compliance Policy Links (Razorpay / RBI / IT Act) -->
+          <div class="auth-legal-footer-links">
+            <a href="#/terms">Terms</a>
+            <span>•</span>
+            <a href="#/privacy">Privacy</a>
+            <span>•</span>
+            <a href="#/refund-policy">Refund Policy</a>
+            <span>•</span>
+            <a href="#/shipping-policy">Delivery</a>
+            <span>•</span>
+            <a href="#/contact">Contact Us</a>
+          </div>
+
           ${statusMarkup(state.authStatus, state.authStatusType)}
         </div>
       </div>
@@ -5431,6 +5471,445 @@ function aboutPage() {
   `;
 }
 
+function appSiteFooter() {
+  return `
+    <footer class="app-site-footer">
+      <div class="footer-trust-strip">
+        <div class="footer-trust-brand">
+          <img src="./assets/tripzen-logo.png" alt="TripZen" class="footer-trust-logo" />
+          <span class="footer-trust-brand-name">TripZen</span>
+        </div>
+        <div class="footer-trust-badges">
+          <span class="footer-trust-badge">🔒 256-Bit SSL Encrypted</span>
+          <span class="footer-trust-badge">🇮🇳 IT Act & DPDPA Compliant</span>
+          <span class="footer-trust-badge">💳 RBI Authorized Gateways</span>
+        </div>
+      </div>
+      <div class="footer-links-row">
+        <div class="footer-policy-links">
+          <a href="#/terms" class="footer-policy-link">Terms & Conditions</a>
+          <a href="#/privacy" class="footer-policy-link">Privacy Policy</a>
+          <a href="#/refund-policy" class="footer-policy-link">Cancellation & Refund</a>
+          <a href="#/shipping-policy" class="footer-policy-link">Shipping & Delivery</a>
+          <a href="#/contact" class="footer-policy-link">Contact Us</a>
+        </div>
+        <div class="footer-copyright">
+          © 2026 TripZen Travel Technologies (Abhishek Sharma). All rights reserved.
+        </div>
+      </div>
+    </footer>
+  `;
+}
+
+function legalPolicyPage(activeTab = 'terms') {
+  const returnHref = state.user ? '#/matches' : '#/auth';
+  const returnLabel = state.user ? '← Back to Dashboard' : '← Return to Login';
+
+  let headerTitle = 'Terms & Conditions';
+  let headerDesc = 'Please review the official terms governing expedition bookings, companion matching, and platform usage.';
+  let badgeText = '📜 Legal Agreement • IT Act 2000';
+
+  if (activeTab === 'privacy') {
+    headerTitle = 'Privacy Policy';
+    headerDesc = 'Learn how TripZen safeguards your personal data, handles Google OAuth credentials, and preserves privacy.';
+    badgeText = '🛡️ Data Protection • DPDPA 2023 Compliant';
+  } else if (activeTab === 'refund') {
+    headerTitle = 'Cancellation & Refund Policy';
+    headerDesc = 'Clear, fair timelines and bank crediting procedures for trek cancellations and natural calamity rescheduling.';
+    badgeText = '💰 Transparent Refunds • 5–7 Day Bank Credit SLA';
+  } else if (activeTab === 'shipping') {
+    headerTitle = 'Shipping & Service Delivery Policy';
+    headerDesc = 'Instant digital voucher delivery via WhatsApp and on-ground mountain expedition fulfillment procedures.';
+    badgeText = '🚚 Digital Delivery • Instant WhatsApp Vouchers';
+  } else if (activeTab === 'contact') {
+    headerTitle = 'Contact Us & Grievance Redressal';
+    headerDesc = 'Official contact coordinates, operational office address, and statutory grievance officer contact details.';
+    badgeText = '📞 Official Support • Consumer Protection Rules 2020';
+  }
+
+  let bodyHtml = '';
+
+  if (activeTab === 'terms') {
+    bodyHtml = `
+      <h2>1. Introduction & Acceptance of Terms</h2>
+      <p>
+        These Terms and Conditions (“Terms”) govern your use of the website <strong>https://tripzen.co.in</strong>, mobile web application, and associated travel coordination services (collectively, “TripZen” or “Platform”), operated by <strong>TripZen Travel Technologies</strong> (“We”, “Us”, or “Our”), founded by Abhishek Sharma.
+      </p>
+      <p>
+        By accessing our website, creating an account, coordinating with companions, or making a reservation, you agree to comply with and be bound by these Terms, our Privacy Policy, and our Refund & Cancellation Policy. If you do not agree to these terms, you must discontinue using TripZen.
+      </p>
+
+      <h2>2. Eligibility & Account Security</h2>
+      <ul>
+        <li><strong>Age Requirement:</strong> You must be at least 18 years of age to book expeditions or create an active profile on TripZen.</li>
+        <li><strong>Accuracy of Information:</strong> You agree to provide true, accurate, and complete information regarding your identity, fitness level, and emergency contacts.</li>
+        <li><strong>Account Confidentiality:</strong> You are responsible for safeguarding your login credentials (passwords, Google OAuth tokens) and all activities conducted through your account.</li>
+      </ul>
+
+      <h2>3. Nature of Platform & Services</h2>
+      <p>
+        TripZen operates an intentional travel companion matchmaking and expedition booking marketplace. Our platform enables verified trekkers to:
+      </p>
+      <ul>
+        <li>Discover like-minded companions matching preferred summits, trails, and departure windows.</li>
+        <li>Communicate in secure, encrypted user-to-user inboxes.</li>
+        <li>Coordinate cost-sharing travel groups to split campsite and logistical costs.</li>
+        <li>Reserve curated trekking expeditions and adventure packages led by certified local guides and tour operators.</li>
+      </ul>
+
+      <div class="legal-callout-box alert">
+        <h4>⚠️ High Altitude Adventure & Mountain Safety Disclaimer</h4>
+        <p>
+          Trekking in Himalayan and high-altitude regions (e.g., Hampta Pass, Kedarkantha, Roopkund, Chadar, Kuari Pass) involves inherent risks, including Acute Mountain Sickness (AMS), rapid weather deterioration, snowfall, flash floods, and physical exertion. By booking, you acknowledge that you have assessed your personal fitness level, agreed to follow the instructions of licensed local guides, and assumed voluntary responsibility for participating in mountain adventures.
+        </p>
+      </div>
+
+      <h2>4. Booking, Pricing & Payments</h2>
+      <ul>
+        <li><strong>Pricing Transparency:</strong> All package rates and booking prices are listed in Indian Rupees (INR) and are inclusive of forest permits, guide fees, camping equipment, and specified meals.</li>
+        <li><strong>Authorized Payment Gateways:</strong> Payments on TripZen are securely processed via RBI-authorized payment aggregators (e.g. Razorpay, Cashfree, UPI). TripZen does not store raw debit/credit card numbers or banking CVVs on its servers.</li>
+        <li><strong>Instant Confirmation:</strong> Upon successful transaction verification, a confirmed booking voucher and reference ID (e.g. <code>TZ-XXXXXX</code>) are generated and dispatched immediately via WhatsApp and Email.</li>
+      </ul>
+
+      <h2>5. User Conduct & Community Guidelines</h2>
+      <p>TripZen enforces a strict zero-tolerance policy against:</p>
+      <ul>
+        <li>Harassment, stalking, intimidation, or offensive conduct in chats or during on-ground treks.</li>
+        <li>Misrepresenting identity or creating fraudulent traveler profiles.</li>
+        <li>Using platform communication channels for spam, unauthorized commercial solicitation, or non-travel related activities.</li>
+      </ul>
+      <p>Violators will face immediate account termination without refund and may be reported to law enforcement authorities.</p>
+
+      <h2>6. Intellectual Property</h2>
+      <p>
+        All content, brand assets, logos, design architecture, graphics, and algorithms on TripZen are the intellectual property of TripZen Travel Technologies and protected under applicable copyright and trademark laws.
+      </p>
+
+      <h2>7. Limitation of Liability</h2>
+      <p>
+        To the maximum extent permitted by Indian law, TripZen and its affiliates shall not be liable for any indirect, incidental, or consequential damages resulting from trail closures, delays caused by natural calamities, flight cancellations, or personal injury sustained due to disregard of mountain safety protocols.
+      </p>
+
+      <h2>8. Governing Law & Dispute Resolution</h2>
+      <p>
+        These Terms shall be governed by and construed in accordance with the laws of the Republic of India. Any legal dispute, controversy, or claim arising out of or relating to these Terms shall be subject to the exclusive jurisdiction of the competent courts in <strong>New Delhi, Delhi, India</strong>.
+      </p>
+    `;
+  } else if (activeTab === 'privacy') {
+    bodyHtml = `
+      <h2>1. Overview & Commitment to Privacy</h2>
+      <p>
+        TripZen Travel Technologies (“TripZen”, “We”, “Our”) respects the privacy of every traveler who uses our platform. This Privacy Policy details our practices regarding personal data collection, processing, cloud storage, and user rights in compliance with the <strong>Digital Personal Data Protection Act, 2023 (DPDPA)</strong> and the <strong>Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011</strong>.
+      </p>
+
+      <h2>2. What Information We Collect</h2>
+      <p>We only collect information necessary to deliver intentional travel matching and secure expedition booking:</p>
+      <ul>
+        <li><strong>Account Identifiers:</strong> Full Name, Email Address, Mobile Phone Number, Age, Gender, City, and Profile Avatar.</li>
+        <li><strong>Google OAuth Data:</strong> When signing in with Google, we receive your Google ID, verified email, and profile photo via Supabase Auth.</li>
+        <li><strong>Travel & Trail Preferences:</strong> Intended Himalayan summits, desired trekking style, departure dates, fitness rating, and past trekking background.</li>
+        <li><strong>Booking Records:</strong> Transaction identifiers, selected package, booking status, and dates. <em>Note: Payment card details and UPI PINs are processed directly by RBI-licensed payment aggregators and are never seen or stored by TripZen.</em></li>
+        <li><strong>Encrypted Communications:</strong> User-to-user messages exchanged in travel inboxes are securely persisted with end-to-end access restricted solely to the two chatting travelers.</li>
+      </ul>
+
+      <div class="legal-callout-box info">
+        <h4>🔒 Zero-Spam & Zero-Selling Guarantee</h4>
+        <p>
+          TripZen will <strong>NEVER sell, rent, or trade</strong> your personal information or phone number to marketing agencies, loan aggregators, or third-party advertisers. Your information is used exclusively to facilitate your mountain journey and companion matching.
+        </p>
+      </div>
+
+      <h2>3. How We Use Your Data</h2>
+      <ul>
+        <li><strong>Companion Compatibility Matching:</strong> Aligning you with compatible trekkers heading to the same trail during your departure dates.</li>
+        <li><strong>Booking Confirmations:</strong> Dispatching instant booking confirmations, vouchers, and expedition manifests via our verified WhatsApp Cloud API and Email.</li>
+        <li><strong>On-Ground Mountain Safety:</strong> Providing local licensed expedition leaders with verified trekker manifests for forest permits, emergency rescue logistics, and campsite headcounts.</li>
+        <li><strong>Account Recovery:</strong> Facilitating secure password resets and multi-factor session validation.</li>
+      </ul>
+
+      <h2>4. Data Security & Cloud Persistence</h2>
+      <p>
+        We employ industry-leading technical and organizational security controls:
+      </p>
+      <ul>
+        <li><strong>Encryption in Transit:</strong> 256-bit TLS 1.3 / SSL encryption across all API requests and socket connections.</li>
+        <li><strong>Cloud Database Security:</strong> Databases hosted on Supabase Cloud PostgreSQL with Row Level Security (RLS) policies and encrypted at rest.</li>
+        <li><strong>Automated Backups:</strong> Redundant cloud snapshot persistence ensures your bookings and conversation histories survive infrastructure redeploys without data loss.</li>
+      </ul>
+
+      <h2>5. Sharing with Authorized Service Partners</h2>
+      <p>We share limited information strictly on a need-to-know basis with trusted infrastructure partners:</p>
+      <ul>
+        <li><strong>Supabase Auth & Database:</strong> For secure authentication and encrypted cloud data persistence.</li>
+        <li><strong>WhatsApp Cloud API:</strong> For automated real-time booking confirmation and emergency trek notifications.</li>
+        <li><strong>RBI-Authorized Payment Gateways:</strong> For processing UPI, Netbanking, and Card transactions securely.</li>
+        <li><strong>Certified Expedition Operators:</strong> Providing trek leaders with traveler manifests for forest permits and altitude medical clearance.</li>
+      </ul>
+
+      <h2>6. Your Privacy Rights</h2>
+      <p>Under Indian privacy regulations, you retain full control over your personal data:</p>
+      <ul>
+        <li><strong>Access & Correction:</strong> Review and update your profile, photo, or travel preferences anytime directly inside the app.</li>
+        <li><strong>Data Portability:</strong> Request an export of your account and booking records.</li>
+        <li><strong>Right to Erasure (Account Deletion):</strong> Request permanent deletion of your account, chats, and traveler profile by emailing our Grievance Officer.</li>
+      </ul>
+
+      <h2>7. Grievance Officer & Contact Details</h2>
+      <p>
+        In accordance with the Information Technology Act 2000 and DPDPA 2023, the details of our designated Grievance Officer are:
+      </p>
+      <div class="legal-callout-box">
+        <h4>Grievance Redressal Officer</h4>
+        <p><strong>Name:</strong> Abhishek Sharma</p>
+        <p><strong>Email:</strong> <a href="mailto:grievance@tripzen.co.in">grievance@tripzen.co.in</a> / <a href="mailto:support@tripzen.co.in">support@tripzen.co.in</a></p>
+        <p><strong>Phone / WhatsApp:</strong> +91 89206 32874</p>
+        <p><strong>Address:</strong> Pocket 1, Sector 14, Dwarka, New Delhi, Delhi 110078, India</p>
+        <p style="margin-top: 6px; font-size: 0.82rem; color: #64748b;">Response SLA: Acknowledgment within 48 hours; resolution within 30 calendar days.</p>
+      </div>
+    `;
+  } else if (activeTab === 'refund') {
+    bodyHtml = `
+      <h2>1. Overview</h2>
+      <p>
+        At <strong>TripZen Travel Technologies</strong> (“TripZen”), we strive to keep our cancellation and refund process as flexible and transparent as possible. When you book a trek or expedition package, campsite reservations, guide allocations, forest department entry permits, and local safety equipment are procured in advance.
+      </p>
+
+      <h2>2. Standard Cancellation & Refund Matrix</h2>
+      <p>If you choose to cancel a confirmed expedition booking, your refund is determined by the number of days prior to the trek departure date:</p>
+
+      <table class="legal-table">
+        <thead>
+          <tr>
+            <th>Cancellation Timeline</th>
+            <th>Cash Refund to Bank</th>
+            <th>TripZen Credit Voucher Option</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>15 days or more</strong> before departure</td>
+            <td><strong>90% Refund</strong> (10% standard admin fee)</td>
+            <td><strong>100% Voucher</strong> (Valid for 12 months)</td>
+          </tr>
+          <tr>
+            <td><strong>7 to 14 days</strong> before departure</td>
+            <td><strong>50% Refund</strong></td>
+            <td><strong>60% Voucher</strong> (Valid for 12 months)</td>
+          </tr>
+          <tr>
+            <td><strong>Less than 7 days</strong> before departure</td>
+            <td>No cash refund (Permits & logistics non-refundable)</td>
+            <td><strong>Reschedule Voucher</strong> (Transfer to upcoming batch for 20% logistics fee)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="legal-callout-box info">
+        <h4>💡 TripZen 100% Credit Voucher Benefit</h4>
+        <p>
+          If you choose a <strong>TripZen Credit Voucher</strong> instead of a bank refund, you get 100% of your booking amount saved. The voucher can be redeemed against <strong>any trek or expedition</strong> across Himachal, Uttarakhand, Ladakh, or Kashmir within <strong>365 days</strong>.
+        </p>
+      </div>
+
+      <h2>3. Natural Calamities & Force Majeure Trail Closures</h2>
+      <p>
+        Mountain environments can be unpredictable. If a trek is officially cancelled by TripZen or local authorities due to:
+      </p>
+      <ul>
+        <li>Severe weather warnings (blizzards, excessive snowfall, cloudbursts).</li>
+        <li>Landslides, flash floods, or road blockages en route to base camp.</li>
+        <li>Government or Forest Department trail closures.</li>
+      </ul>
+      <p>
+        Trekkers will be issued a <strong>100% Free Rescheduling Voucher</strong> with zero deductions, valid for any available batch within 12 months.
+      </p>
+
+      <h2>4. Medical Emergencies Before Departure</h2>
+      <p>
+        If you are unable to participate due to a sudden acute medical illness or injury, submit a formal medical certificate issued by a registered medical practitioner at least 48 hours prior to trek departure to receive an <strong>80% Travel Credit Voucher</strong>.
+      </p>
+
+      <h2>5. Refund Turnaround Time & Processing Method</h2>
+      <ul>
+        <li><strong>Mode of Refund:</strong> All approved refunds are credited directly back to the <strong>original source of payment</strong> (same Bank Account, UPI ID, or Credit/Debit Card used during checkout).</li>
+        <li><strong>Processing Timeline:</strong> Refunds are initiated within <strong>24 to 48 hours</strong> of approval. Depending on your bank's clearance cycle, the funds will reflect in your account within <strong>5 to 7 business days</strong>.</li>
+        <li><strong>Zero Hidden Deductions:</strong> TripZen does not charge hidden dispute or convenience penalties.</li>
+      </ul>
+
+      <h2>6. How to Request a Cancellation or Refund</h2>
+      <p>To cancel a booking and initiate a refund, follow these quick steps:</p>
+      <ol>
+        <li>Email our support desk at <a href="mailto:support@tripzen.co.in" style="color: #059669; font-weight: 700;">support@tripzen.co.in</a> or message our verified WhatsApp helpline at <a href="https://wa.me/918920632874" target="_blank" style="color: #059669; font-weight: 700;">+91 89206 32874</a>.</li>
+        <li>Provide your <strong>Booking Reference ID</strong> (e.g. <code>TZ-955612</code>), registered phone number, and reason for cancellation.</li>
+        <li>Our team will verify the timeline and respond within <strong>24 hours</strong> with your refund transaction receipt or credit voucher code.</li>
+      </ol>
+    `;
+  } else if (activeTab === 'shipping') {
+    bodyHtml = `
+      <h2>1. Nature of Services Provided</h2>
+      <p>
+        <strong>TripZen Travel Technologies</strong> is an experiential travel platform offering digital companion matchmaking, curated trekking expeditions, and mountain travel packages. We do not sell or ship physical merchandise or physical goods. Consequently, traditional postal or courier shipping does not apply to our platform.
+      </p>
+
+      <h2>2. Digital Delivery Timelines & Process</h2>
+      <p>All bookings, tickets, and vouchers are delivered digitally through automated electronic channels:</p>
+      <ul>
+        <li><strong>Instant Digital Confirmation:</strong> Within <strong>15 minutes</strong> of successful payment completion, your official Booking Reference ID (e.g. <code>TZ-XXXXXX</code>) and detailed digital itinerary receipt are delivered via <strong>WhatsApp</strong> (to your registered mobile number) and <strong>Email</strong>.</li>
+        <li><strong>In-App Dashboard Access:</strong> Your booking status and details are accessible 24/7 immediately in your <strong><a href="#/bookings" style="color: #059669; font-weight: 700;">My Bookings</a></strong> section on the TripZen dashboard.</li>
+        <li><strong>Pre-Departure Briefing & Leader Contact:</strong> Exactly <strong>48 hours before the scheduled trek start date</strong>, you will receive your final Pre-Trek Dispatch via WhatsApp and Email. This includes:
+          <ul>
+            <li>Exact Base Camp Reporting Location (e.g., Manali Private Bus Stand, Rishikesh Natraj Chowk, Leh Main Market).</li>
+            <li>Designated Reporting Time and Trek Leader / Mountain Guide phone number.</li>
+            <li>Local emergency contact details and mandatory mountain gear checklist.</li>
+          </ul>
+        </li>
+      </ul>
+
+      <div class="legal-callout-box info">
+        <h4>📲 Zero Shipping Fees</h4>
+        <p>
+          Because all booking confirmations, vouchers, and emergency travel manifests are delivered digitally, there are <strong>zero shipping, handling, or courier charges</strong> levied on any transaction.
+        </p>
+      </div>
+
+      <h2>3. Fulfillment of On-Ground Travel Services</h2>
+      <p>
+        The physical fulfillment of your expedition begins at the designated reporting base camp on the start date selected during checkout. Licensed local mountain guides and certified trek leads will verify your digital voucher on your phone (no physical paper printout required).
+      </p>
+
+      <h2>4. Delay in Receiving Digital Confirmations</h2>
+      <p>
+        In rare cases of network delays or incorrect phone/email entries during checkout, if you do not receive your digital confirmation within 30 minutes of payment:
+      </p>
+      <ul>
+        <li>Check your spam/junk folder for confirmation emails.</li>
+        <li>Contact our immediate support desk via WhatsApp at <a href="https://wa.me/918920632874" target="_blank" style="color: #059669; font-weight: 700;">+91 89206 32874</a> or email <a href="mailto:support@tripzen.co.in" style="color: #059669; font-weight: 700;">support@tripzen.co.in</a>. Our support team will manually re-dispatch your booking voucher within 1 business hour.</li>
+      </ul>
+    `;
+  } else if (activeTab === 'contact') {
+    bodyHtml = `
+      <h2>1. Get in Touch with Our Team</h2>
+      <p>
+        Whether you are planning your first Himalayan pass crossover or need real-time support on an active booking, our team is available 6 days a week to support you.
+      </p>
+
+      <div class="legal-contact-grid">
+        <div class="legal-contact-card">
+          <div class="legal-contact-icon">💬</div>
+          <div class="legal-contact-info">
+            <h4>WhatsApp & Phone Helpline</h4>
+            <p><a href="https://wa.me/918920632874" target="_blank">+91 89206 32874</a></p>
+            <p style="font-size: 0.78rem; margin-top: 4px; color: #64748b;">Instant replies via verified business bot & live agent</p>
+          </div>
+        </div>
+
+        <div class="legal-contact-card">
+          <div class="legal-contact-icon">✉️</div>
+          <div class="legal-contact-info">
+            <h4>Customer Support Email</h4>
+            <p><a href="mailto:support@tripzen.co.in">support@tripzen.co.in</a></p>
+            <p><a href="mailto:abhisheksharma39232@gmail.com" style="color: #64748b; font-size: 0.82rem;">abhisheksharma39232@gmail.com</a></p>
+          </div>
+        </div>
+
+        <div class="legal-contact-card">
+          <div class="legal-contact-icon">📍</div>
+          <div class="legal-contact-info">
+            <h4>Operational Office</h4>
+            <p>Pocket 1, Sector 14, Dwarka</p>
+            <p>New Delhi, Delhi 110078, India</p>
+          </div>
+        </div>
+
+        <div class="legal-contact-card">
+          <div class="legal-contact-icon">⏰</div>
+          <div class="legal-contact-info">
+            <h4>Operating Hours</h4>
+            <p>Monday – Saturday: 9:00 AM – 8:00 PM IST</p>
+            <p style="font-size: 0.78rem; margin-top: 4px; color: #64748b;">Emergency trail support: 24/7 during active treks</p>
+          </div>
+        </div>
+      </div>
+
+      <h2>2. Legal Entity & Corporate Information</h2>
+      <table class="legal-table">
+        <tbody>
+          <tr>
+            <td><strong>Brand Name</strong></td>
+            <td><strong>TripZen</strong> (TripZen Travel Technologies)</td>
+          </tr>
+          <tr>
+            <td><strong>Operating Founder</strong></td>
+            <td>Abhishek Sharma</td>
+          </tr>
+          <tr>
+            <td><strong>Nature of Business</strong></td>
+            <td>Travel Companion Matchmaking & Curated Adventure Expeditions</td>
+          </tr>
+          <tr>
+            <td><strong>Registered Office</strong></td>
+            <td>Pocket 1, Sector 14, Dwarka, New Delhi, Delhi 110078, India</td>
+          </tr>
+          <tr>
+            <td><strong>Official Website</strong></td>
+            <td><a href="https://tripzen.co.in" target="_blank" style="color: #059669; font-weight: 700;">https://tripzen.co.in</a></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>3. Grievance Redressal Mechanism</h2>
+      <p>
+        In compliance with Rule 3(2) of the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021 and the Consumer Protection (E-Commerce) Rules, 2020, the contact details of the designated <strong>Grievance Officer</strong> are provided below:
+      </p>
+
+      <div class="legal-callout-box info">
+        <h4>Designated Grievance Officer</h4>
+        <p><strong>Officer Name:</strong> Abhishek Sharma</p>
+        <p><strong>Designation:</strong> Head of Operations & Grievance Officer</p>
+        <p><strong>Direct Email:</strong> <a href="mailto:grievance@tripzen.co.in">grievance@tripzen.co.in</a> / <a href="mailto:support@tripzen.co.in">support@tripzen.co.in</a></p>
+        <p><strong>Postal Address:</strong> TripZen Travel Technologies, Pocket 1, Sector 14, Dwarka, New Delhi, Delhi 110078, India</p>
+        <p style="margin-top: 8px; font-size: 0.82rem; color: #475569;">
+          <strong>Statutory Response SLAs:</strong> All consumer complaints received will be acknowledged with a unique ticket number within <strong>48 hours</strong> and redressed within <strong>30 calendar days</strong>.
+        </p>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="legal-policy-container animate-fade-in">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <a href="#/" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: #0f172a; font-weight: 800; font-size: 1.1rem;">
+          <img src="./assets/tripzen-logo.png" alt="TripZen" style="width: 32px; height: 32px; border-radius: 8px;" />
+          <span>TripZen</span>
+        </a>
+        <a href="${returnHref}" class="ghost-btn" style="padding: 8px 16px; font-size: 0.84rem; text-decoration: none;">${returnLabel}</a>
+      </div>
+
+      <div class="legal-header-card">
+        <div class="legal-badge-strip">
+          <span class="legal-compliance-pill">${escapeHtml(badgeText)}</span>
+        </div>
+        <h1>${escapeHtml(headerTitle)}</h1>
+        <p>${escapeHtml(headerDesc)}</p>
+        <div class="legal-last-updated">Last Updated: November 4, 2026 • Verified Legal Documentation</div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="legal-tabs-bar">
+        <a href="#/terms" class="legal-tab-btn ${activeTab === 'terms' ? 'active' : ''}">📜 Terms of Service</a>
+        <a href="#/privacy" class="legal-tab-btn ${activeTab === 'privacy' ? 'active' : ''}">🔒 Privacy Policy</a>
+        <a href="#/refund-policy" class="legal-tab-btn ${activeTab === 'refund' ? 'active' : ''}">💰 Refund & Cancellation</a>
+        <a href="#/shipping-policy" class="legal-tab-btn ${activeTab === 'shipping' ? 'active' : ''}">🚚 Delivery Policy</a>
+        <a href="#/contact" class="legal-tab-btn ${activeTab === 'contact' ? 'active' : ''}">📞 Contact Us</a>
+      </div>
+
+      <div class="legal-content-card">
+        ${bodyHtml}
+      </div>
+    </div>
+  `;
+}
+
 function pageContent() {
   const route = normalizedRoute();
   if (route === '/admin') return adminPanelPage();
@@ -5444,6 +5923,11 @@ function pageContent() {
   if (route === '/groups' || route === '/cost-sharing') return costSharingPage();
   if (route === '/bookings' || route === '/my-bookings') return bookingsPage();
   if (route === '/about') return aboutPage();
+  if (route === '/terms' || route === '/terms-and-conditions') return legalPolicyPage('terms');
+  if (route === '/privacy' || route === '/privacy-policy') return legalPolicyPage('privacy');
+  if (route === '/refund-policy' || route === '/cancellation-policy' || route === '/refund') return legalPolicyPage('refund');
+  if (route === '/shipping-policy' || route === '/delivery-policy' || route === '/shipping') return legalPolicyPage('shipping');
+  if (route === '/contact' || route === '/contact-us') return legalPolicyPage('contact');
   if (state.user) return preferencesPage();
   return authPage();
 }

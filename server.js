@@ -5671,6 +5671,27 @@ app.post('/api/seed-demo', (req, res) => {
   });
 });
 
+// Mandatory Legal & Compliance Policy Routes (Razorpay / RBI / IT Act 2000)
+app.get(['/terms', '/terms-and-conditions', '/terms.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'terms.html'));
+});
+
+app.get(['/privacy', '/privacy-policy', '/privacy.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
+});
+
+app.get(['/refund-policy', '/cancellation-policy', '/refund', '/refund-policy.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'refund-policy.html'));
+});
+
+app.get(['/shipping-policy', '/delivery-policy', '/shipping', '/shipping-policy.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'shipping-policy.html'));
+});
+
+app.get(['/contact', '/contact-us', '/contact.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'contact.html'));
+});
+
 app.get(/.*/, (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
