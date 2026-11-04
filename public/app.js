@@ -1536,7 +1536,7 @@ document.title = DEFAULT_TITLE;
 function isAdminUser() {
   if (state.adminUnlocked || sessionStorage.getItem('tripzenAdminUnlocked') === 'true') return true;
   const email = (state.user?.email || '').toLowerCase().trim();
-  if (email === 'abhisheksharma39232@gmail.com') return true;
+  if (email === 'abhisheksharma39232@gmail.com' || email === 'support.tripzen@gmail.com') return true;
   if (state.user?.role === 'admin' || state.user?.isAdmin) return true;
   return false;
 }
@@ -5661,7 +5661,7 @@ function legalPolicyPage(activeTab = 'terms') {
       <div class="legal-callout-box">
         <h4>Grievance Redressal Officer</h4>
         <p><strong>Name:</strong> Abhishek Sharma</p>
-        <p><strong>Email:</strong> <a href="mailto:grievance@tripzen.co.in">grievance@tripzen.co.in</a> / <a href="mailto:support@tripzen.co.in">support@tripzen.co.in</a></p>
+        <p><strong>Email:</strong> <a href="mailto:Support.tripzen@gmail.com">Support.tripzen@gmail.com</a></p>
         <p><strong>Phone / WhatsApp:</strong> +91 89206 32874</p>
         <p><strong>Address:</strong> Galaxy Apartments, Sector 49, Noida, Uttar Pradesh 201301, India</p>
         <p style="margin-top: 6px; font-size: 0.82rem; color: #64748b;">Response SLA: Acknowledgment within 48 hours; resolution within 30 calendar days.</p>
@@ -5739,7 +5739,7 @@ function legalPolicyPage(activeTab = 'terms') {
       <h2>6. How to Request a Cancellation or Refund</h2>
       <p>To cancel a booking and initiate a refund, follow these quick steps:</p>
       <ol>
-        <li>Email our support desk at <a href="mailto:support@tripzen.co.in" style="color: #059669; font-weight: 700;">support@tripzen.co.in</a> or message our verified WhatsApp helpline at <a href="https://wa.me/918920632874" target="_blank" style="color: #059669; font-weight: 700;">+91 89206 32874</a>.</li>
+        <li>Email our support desk at <a href="mailto:Support.tripzen@gmail.com" style="color: #059669; font-weight: 700;">Support.tripzen@gmail.com</a> or message our verified WhatsApp helpline at <a href="https://wa.me/918920632874" target="_blank" style="color: #059669; font-weight: 700;">+91 89206 32874</a>.</li>
         <li>Provide your <strong>Booking Reference ID</strong> (e.g. <code>TZ-955612</code>), registered phone number, and reason for cancellation.</li>
         <li>Our team will verify the timeline and respond within <strong>24 hours</strong> with your refund transaction receipt or credit voucher code.</li>
       </ol>
@@ -5783,7 +5783,7 @@ function legalPolicyPage(activeTab = 'terms') {
       </p>
       <ul>
         <li>Check your spam/junk folder for confirmation emails.</li>
-        <li>Contact our immediate support desk via WhatsApp at <a href="https://wa.me/918920632874" target="_blank" style="color: #059669; font-weight: 700;">+91 89206 32874</a> or email <a href="mailto:support@tripzen.co.in" style="color: #059669; font-weight: 700;">support@tripzen.co.in</a>. Our support team will manually re-dispatch your booking voucher within 1 business hour.</li>
+        <li>Contact our immediate support desk via WhatsApp at <a href="https://wa.me/918920632874" target="_blank" style="color: #059669; font-weight: 700;">+91 89206 32874</a> or email <a href="mailto:Support.tripzen@gmail.com" style="color: #059669; font-weight: 700;">Support.tripzen@gmail.com</a>. Our support team will manually re-dispatch your booking voucher within 1 business hour.</li>
       </ul>
     `;
   } else if (activeTab === 'contact') {
@@ -5807,8 +5807,7 @@ function legalPolicyPage(activeTab = 'terms') {
           <div class="legal-contact-icon">✉️</div>
           <div class="legal-contact-info">
             <h4>Customer Support Email</h4>
-            <p><a href="mailto:support@tripzen.co.in">support@tripzen.co.in</a></p>
-            <p><a href="mailto:abhisheksharma39232@gmail.com" style="color: #64748b; font-size: 0.82rem;">abhisheksharma39232@gmail.com</a></p>
+            <p><a href="mailto:Support.tripzen@gmail.com">Support.tripzen@gmail.com</a></p>
           </div>
         </div>
 
@@ -5866,7 +5865,7 @@ function legalPolicyPage(activeTab = 'terms') {
         <h4>Designated Grievance Officer</h4>
         <p><strong>Officer Name:</strong> Abhishek Sharma</p>
         <p><strong>Designation:</strong> Head of Operations & Grievance Officer</p>
-        <p><strong>Direct Email:</strong> <a href="mailto:grievance@tripzen.co.in">grievance@tripzen.co.in</a> / <a href="mailto:support@tripzen.co.in">support@tripzen.co.in</a></p>
+        <p><strong>Direct Email:</strong> <a href="mailto:Support.tripzen@gmail.com">Support.tripzen@gmail.com</a></p>
         <p><strong>Postal Address:</strong> TripZen Travel Technologies, Galaxy Apartments, Sector 49, Noida, Uttar Pradesh 201301, India</p>
         <p style="margin-top: 8px; font-size: 0.82rem; color: #475569;">
           <strong>Statutory Response SLAs:</strong> All consumer complaints received will be acknowledged with a unique ticket number within <strong>48 hours</strong> and redressed within <strong>30 calendar days</strong>.

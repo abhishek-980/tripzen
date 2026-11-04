@@ -1249,7 +1249,7 @@ function sanitizeUser(user) {
     id: user.id,
     fullName: user.fullName,
     email: user.email,
-    role: user.role || (userEmailLower === 'abhisheksharma39232@gmail.com' ? 'admin' : 'user'),
+    role: user.role || ((userEmailLower === 'abhisheksharma39232@gmail.com' || userEmailLower === 'support.tripzen@gmail.com') ? 'admin' : 'user'),
     phone: user.phone || '',
     age: user.age || '',
     gender: user.gender || '',
@@ -2515,6 +2515,7 @@ app.post('/api/login', async (req, res) => {
   const masterAdminPassword = process.env.ADMIN_PASSWORD || 'tripzen-admin-123';
   const isAdminAccount = user && (
     String(user.email || '').trim().toLowerCase() === 'abhisheksharma39232@gmail.com' ||
+    String(user.email || '').trim().toLowerCase() === 'support.tripzen@gmail.com' ||
     user.role === 'admin'
   );
 
@@ -2816,7 +2817,7 @@ app.post('/api/auth/google/verify', async (req, res) => {
       profileImage: googleAvatar || avatarForUser({ fullName: googleName, id: newUid }),
       profileImageData: '',
       googleAuth: true,
-      role: googleEmail === 'abhisheksharma39232@gmail.com' ? 'admin' : 'traveler',
+      role: (googleEmail === 'abhisheksharma39232@gmail.com' || googleEmail === 'support.tripzen@gmail.com') ? 'admin' : 'traveler',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
