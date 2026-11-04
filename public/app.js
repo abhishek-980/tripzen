@@ -5592,7 +5592,7 @@ function legalPolicyPage(activeTab = 'terms') {
 
       <h2>8. Governing Law & Dispute Resolution</h2>
       <p>
-        These Terms shall be governed by and construed in accordance with the laws of the Republic of India. Any legal dispute, controversy, or claim arising out of or relating to these Terms shall be subject to the exclusive jurisdiction of the competent courts in <strong>New Delhi, Delhi, India</strong>.
+        These Terms shall be governed by and construed in accordance with the laws of the Republic of India. Any legal dispute, controversy, or claim arising out of or relating to these Terms shall be subject to the exclusive jurisdiction of the competent courts in <strong>Gautam Buddha Nagar (Noida), Uttar Pradesh, India</strong>.
       </p>
     `;
   } else if (activeTab === 'privacy') {
@@ -5663,7 +5663,7 @@ function legalPolicyPage(activeTab = 'terms') {
         <p><strong>Name:</strong> Abhishek Sharma</p>
         <p><strong>Email:</strong> <a href="mailto:grievance@tripzen.co.in">grievance@tripzen.co.in</a> / <a href="mailto:support@tripzen.co.in">support@tripzen.co.in</a></p>
         <p><strong>Phone / WhatsApp:</strong> +91 89206 32874</p>
-        <p><strong>Address:</strong> Pocket 1, Sector 14, Dwarka, New Delhi, Delhi 110078, India</p>
+        <p><strong>Address:</strong> Galaxy Apartments, Sector 49, Noida, Uttar Pradesh 201301, India</p>
         <p style="margin-top: 6px; font-size: 0.82rem; color: #64748b;">Response SLA: Acknowledgment within 48 hours; resolution within 30 calendar days.</p>
       </div>
     `;
@@ -5816,8 +5816,8 @@ function legalPolicyPage(activeTab = 'terms') {
           <div class="legal-contact-icon">📍</div>
           <div class="legal-contact-info">
             <h4>Operational Office</h4>
-            <p>Pocket 1, Sector 14, Dwarka</p>
-            <p>New Delhi, Delhi 110078, India</p>
+            <p>Galaxy Apartments, Sector 49</p>
+            <p>Noida, Uttar Pradesh 201301, India</p>
           </div>
         </div>
 
@@ -5848,7 +5848,7 @@ function legalPolicyPage(activeTab = 'terms') {
           </tr>
           <tr>
             <td><strong>Registered Office</strong></td>
-            <td>Pocket 1, Sector 14, Dwarka, New Delhi, Delhi 110078, India</td>
+            <td>Galaxy Apartments, Sector 49, Noida, Uttar Pradesh 201301, India</td>
           </tr>
           <tr>
             <td><strong>Official Website</strong></td>
@@ -5867,7 +5867,7 @@ function legalPolicyPage(activeTab = 'terms') {
         <p><strong>Officer Name:</strong> Abhishek Sharma</p>
         <p><strong>Designation:</strong> Head of Operations & Grievance Officer</p>
         <p><strong>Direct Email:</strong> <a href="mailto:grievance@tripzen.co.in">grievance@tripzen.co.in</a> / <a href="mailto:support@tripzen.co.in">support@tripzen.co.in</a></p>
-        <p><strong>Postal Address:</strong> TripZen Travel Technologies, Pocket 1, Sector 14, Dwarka, New Delhi, Delhi 110078, India</p>
+        <p><strong>Postal Address:</strong> TripZen Travel Technologies, Galaxy Apartments, Sector 49, Noida, Uttar Pradesh 201301, India</p>
         <p style="margin-top: 8px; font-size: 0.82rem; color: #475569;">
           <strong>Statutory Response SLAs:</strong> All consumer complaints received will be acknowledged with a unique ticket number within <strong>48 hours</strong> and redressed within <strong>30 calendar days</strong>.
         </p>
