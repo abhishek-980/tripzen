@@ -1,7 +1,7 @@
 {
   "name": "tripzen",
   "version": "1.0.0",
-  "description": "Tripzen travel matchmaking website",
+  "description": "Tripzen adventure travel and curated trekking expedition booking platform",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -10,7 +10,8 @@
   "keywords": [
     "tripzen",
     "travel",
-    "matchmaking",
+    "trekking",
+    "expeditions",
     "booking"
   ],
   "author": "",
