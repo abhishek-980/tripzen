@@ -4223,7 +4223,7 @@ function joinBookPage() {
                     type="button"
                     class="package-action-btn-primary"
                     data-open-checkout="${escapeHtml(tripPackage.id)}"
-                    title="Instant Booking via Razorpay"
+                    title="Instant Booking via Secure Gateway"
                   >
                     <span class="btn-text-full">⚡ Book Now</span>
                     <span class="btn-text-short">⚡ Book</span>
@@ -4273,7 +4273,7 @@ function joinBookPage() {
                       </div>
 
                       <div class="itinerary-user-payment-trust-box">
-                        <span class="payment-trust-pill secure">🔒 Razorpay Secured</span>
+                        <span class="payment-trust-pill secure">🔒 Authorized Payment Gateway</span>
                         <span class="payment-trust-pill">UPI • Cards • NetBanking</span>
                       </div>
                     </div>
@@ -7903,7 +7903,7 @@ function renderItineraryModal() {
 
             <!-- Dashed Trust Container -->
             <div class="itinerary-user-payment-trust-box">
-              <span class="payment-trust-pill secure">🔒 Razorpay Secured</span>
+              <span class="payment-trust-pill secure">🔒 Authorized Payment Gateway</span>
               <span class="payment-trust-pill">UPI • Cards • NetBanking</span>
             </div>
           </div>
@@ -8213,11 +8213,11 @@ function renderCheckoutModal() {
           </div>
 
           <button type="button" class="checkout-pay-btn" id="triggerRazorpaySubmitBtn">
-            <span>🔒 Pay INR ${totalPrice.toLocaleString('en-IN')} via Razorpay</span>
+            <span>🔒 Pay INR ${totalPrice.toLocaleString('en-IN')} (UPI / Cards / NetBanking)</span>
           </button>
 
           <div class="checkout-trust-badge">
-            <span>🛡️ 256-Bit Encrypted Razorpay Gateway</span>
+            <span>🛡️ 256-Bit SSL Encrypted Payment Gateway</span>
             <span>•</span>
             <span>UPI • Cards • NetBanking • Instant Confirmation</span>
           </div>
