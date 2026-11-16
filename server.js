@@ -5673,6 +5673,10 @@ app.post('/api/seed-demo', (req, res) => {
 });
 
 // Mandatory Legal & Compliance Policy Routes (Razorpay / RBI / IT Act 2000)
+app.get(['/about', '/about-us', '/about.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'about.html'));
+});
+
 app.get(['/terms', '/terms-and-conditions', '/terms.html'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'terms.html'));
 });

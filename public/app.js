@@ -5491,6 +5491,7 @@ function appSiteFooter() {
       </div>
       <div class="footer-links-row">
         <div class="footer-policy-links">
+          <a href="#/about" class="footer-policy-link">About Us</a>
           <a href="#/terms" class="footer-policy-link">Terms of Service</a>
           <a href="#/privacy" class="footer-policy-link">Privacy Policy</a>
           <a href="#/refund-policy" class="footer-policy-link">Cancellation &amp; Refund</a>
@@ -5513,7 +5514,11 @@ function legalPolicyPage(activeTab = 'terms') {
   let headerDesc = 'Please review the official terms governing expedition bookings, guided departures, and platform usage.';
   let badgeText = '📜 Legal Agreement • IT Act 2000';
 
-  if (activeTab === 'privacy') {
+  if (activeTab === 'about') {
+    headerTitle = 'About TripZen Travel Technologies';
+    headerDesc = 'Curated Himalayan trekking expeditions, certified wilderness mountain guides, and verified group departures across India.';
+    badgeText = '🏔️ About TripZen • Govt. Registered MSME: UDYAM-UP-28-0250895';
+  } else if (activeTab === 'privacy') {
     headerTitle = 'Privacy Policy';
     headerDesc = 'Learn how TripZen safeguards your personal data, handles Google OAuth credentials, and preserves privacy.';
     badgeText = '🛡️ Data Protection • DPDPA 2023 Compliant';
@@ -5533,7 +5538,72 @@ function legalPolicyPage(activeTab = 'terms') {
 
   let bodyHtml = '';
 
-  if (activeTab === 'terms') {
+  if (activeTab === 'about') {
+    bodyHtml = `
+      <h2>1. Who We Are</h2>
+      <p>
+        <strong>TripZen Travel Technologies</strong> is an experiential adventure travel and guided expedition platform founded by Abhishek Sharma. We specialize in organizing curated high-altitude Himalayan mountain treks, wilderness expeditions, and small-group adventure departures across Himachal Pradesh, Uttarakhand, Ladakh, and Jammu &amp; Kashmir.
+      </p>
+      <p>
+        Every trek in our catalog is planned in direct partnership with certified local guides and licensed expedition operators. We believe in high mountain safety standards, eco-friendly leave-no-trace camping, and transparent all-inclusive pricing with zero hidden charges.
+      </p>
+
+      <h2>2. Legal Entity &amp; Statutory Corporate Details</h2>
+      <table class="legal-table">
+        <tbody>
+          <tr>
+            <td><strong>Brand / Trade Name</strong></td>
+            <td><strong>TripZen</strong> (TripZen Travel Technologies)</td>
+          </tr>
+          <tr>
+            <td><strong>Legal Entity Status</strong></td>
+            <td>Registered Micro-Enterprise (Ministry of MSME, Government of India)</td>
+          </tr>
+          <tr>
+            <td><strong>Udyam Registration Number (URN)</strong></td>
+            <td><strong>UDYAM-UP-28-0250895</strong></td>
+          </tr>
+          <tr>
+            <td><strong>Primary Business Activity / NIC Code</strong></td>
+            <td>79120 (Tour operator activities) &amp; 79110 (Travel agency activities)</td>
+          </tr>
+          <tr>
+            <td><strong>Operating Founder &amp; Proprietor</strong></td>
+            <td>Abhishek Sharma</td>
+          </tr>
+          <tr>
+            <td><strong>Registered &amp; Operational Office</strong></td>
+            <td>Galaxy Apartments, Sector 49, Noida, Uttar Pradesh 201301, India</td>
+          </tr>
+          <tr>
+            <td><strong>Customer Support Helpline</strong></td>
+            <td><a href="https://wa.me/918920632874" target="_blank" style="color: #059669; font-weight: 700;">+91 89206 32874</a></td>
+          </tr>
+          <tr>
+            <td><strong>Official Support Email</strong></td>
+            <td><a href="mailto:Support.tripzen@gmail.com" style="color: #059669; font-weight: 700;">Support.tripzen@gmail.com</a></td>
+          </tr>
+          <tr>
+            <td><strong>Official Domain</strong></td>
+            <td><a href="https://tripzen.co.in" target="_blank" style="color: #059669; font-weight: 700;">https://tripzen.co.in</a></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>3. Our Safety &amp; Expedition Standards</h2>
+      <ul>
+        <li><strong>Wilderness First Responder (WFR) Certified Guides:</strong> All mountain departures are accompanied by licensed trek leads trained in high-altitude medicine, AMS management, and emergency evacuations.</li>
+        <li><strong>Sanitized Alpine Swiss Tents:</strong> We provide triple-layer insulated sleeping bags, clean sleeping mats, and weather-tested alpine tents.</li>
+        <li><strong>Forest Permits &amp; Eco-Passes:</strong> All government forest entry fees, trail permits, and ecological conservation levies are procured before arrival.</li>
+        <li><strong>Nutritious Trail Meals:</strong> Fresh, warm, vegetarian nutrition designed specifically for stamina in low-oxygen environments.</li>
+      </ul>
+
+      <h2>4. Secure Payment Processing &amp; Customer Assurance</h2>
+      <p>
+        TripZen partners exclusively with RBI-authorized payment aggregators (such as Razorpay and Cashfree) to ensure that customer payments are protected by 256-bit SSL encryption. All confirmed bookings generate an immediate Booking Reference Voucher (e.g. <code>TZ-XXXXXX</code>) dispatched automatically via WhatsApp and Email.
+      </p>
+    `;
+  } else if (activeTab === 'terms') {
     bodyHtml = `
       <h2>1. Introduction & Acceptance of Terms</h2>
       <p>
@@ -5904,9 +5974,10 @@ function legalPolicyPage(activeTab = 'terms') {
 
       <!-- Navigation Tabs -->
       <div class="legal-tabs-bar">
+        <a href="#/about" class="legal-tab-btn ${activeTab === 'about' ? 'active' : ''}">🏔️ About Us</a>
         <a href="#/terms" class="legal-tab-btn ${activeTab === 'terms' ? 'active' : ''}">📜 Terms of Service</a>
         <a href="#/privacy" class="legal-tab-btn ${activeTab === 'privacy' ? 'active' : ''}">🔒 Privacy Policy</a>
-        <a href="#/refund-policy" class="legal-tab-btn ${activeTab === 'refund' ? 'active' : ''}">💰 Refund & Cancellation</a>
+        <a href="#/refund-policy" class="legal-tab-btn ${activeTab === 'refund' ? 'active' : ''}">💰 Refund &amp; Cancellation</a>
         <a href="#/shipping-policy" class="legal-tab-btn ${activeTab === 'shipping' ? 'active' : ''}">🚚 Delivery Policy</a>
         <a href="#/contact" class="legal-tab-btn ${activeTab === 'contact' ? 'active' : ''}">📞 Contact Us</a>
       </div>
@@ -5993,6 +6064,7 @@ function storefrontLandingPage() {
             </div>
           </div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="#/about" class="ghost-btn" style="font-size: 0.84rem; padding: 8px 16px; text-decoration: none;">About Us</a>
             <a href="#/terms" class="ghost-btn" style="font-size: 0.84rem; padding: 8px 16px; text-decoration: none;">Terms of Service</a>
             <a href="#/refund-policy" class="ghost-btn" style="font-size: 0.84rem; padding: 8px 16px; text-decoration: none;">Refund Policy</a>
             <a href="#/contact" class="ghost-btn" style="font-size: 0.84rem; padding: 8px 16px; text-decoration: none;">Contact Us</a>
@@ -6015,7 +6087,7 @@ function pageContent() {
   if (route === '/join-book' || route === '/packages') return joinBookPage();
   if (route === '/groups' || route === '/cost-sharing') return costSharingPage();
   if (route === '/bookings' || route === '/my-bookings') return bookingsPage();
-  if (route === '/about') return aboutPage();
+  if (route === '/about' || route === '/about-us') return legalPolicyPage('about');
   if (route === '/terms' || route === '/terms-and-conditions') return legalPolicyPage('terms');
   if (route === '/privacy' || route === '/privacy-policy') return legalPolicyPage('privacy');
   if (route === '/refund-policy' || route === '/cancellation-policy' || route === '/refund') return legalPolicyPage('refund');
