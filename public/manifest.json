@@ -1,7 +1,7 @@
 {
-  "name": "TripZen | Himalayan Trek & Companion Matchmaking",
+  "name": "TripZen | Curated Trekking Expeditions & Adventure Tours",
   "short_name": "TripZen",
-  "description": "Find verified travel companions, join mountain expeditions, and coordinate Himalayan treks.",
+  "description": "Book verified Himalayan trekking expeditions, certified mountain guides, alpine camps, and adventure travel packages.",
   "start_url": "./#/",
   "scope": "./",
   "display": "standalone",
@@ -22,20 +22,20 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["travel", "social", "lifestyle"],
+  "categories": ["travel", "tourism", "sports"],
   "shortcuts": [
     {
-      "name": "Find Travel Buddies",
-      "short_name": "Matches",
-      "description": "Discover compatible companions heading to your summit",
-      "url": "./#/matches",
+      "name": "Explore Trek Packages",
+      "short_name": "Packages",
+      "description": "Book curated Himalayan trekking expeditions",
+      "url": "./#/packages",
       "icons": [{ "src": "./assets/tripzen-logo.png", "sizes": "192x192" }]
     },
     {
-      "name": "Companion Chats",
-      "short_name": "Chats",
-      "description": "Coordinate logistics, taxis and stays",
-      "url": "./#/chat",
+      "name": "Group Departures",
+      "short_name": "Batches",
+      "description": "Join verified group departures and alpine camps",
+      "url": "./#/groups",
       "icons": [{ "src": "./assets/tripzen-logo.png", "sizes": "192x192" }]
     },
     {

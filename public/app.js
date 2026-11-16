@@ -1530,7 +1530,7 @@ let pollInFlight = false;
 let initialConversationLoadComplete = false;
 let notificationTimer = null;
 const CHAT_POLL_INTERVAL = 3000;
-const DEFAULT_TITLE = 'TripZen | Travel Matchmaking';
+const DEFAULT_TITLE = 'TripZen | Curated Trekking Expeditions & Mountain Tours';
 document.title = DEFAULT_TITLE;
 
 function isAdminUser() {
@@ -1761,7 +1761,7 @@ function normalizedRoute() {
 
   if (
     !state.user &&
-    (route === '/profile' || route === '/preferences' || route === '/matches' || route === '/chat' || route === '/join-book' || route === '/packages' || route.startsWith('/match/'))
+    (route === '/profile' || route === '/preferences' || route === '/matches' || route === '/chat' || route.startsWith('/match/'))
   ) {
     return '/auth';
   }
@@ -1790,6 +1790,10 @@ function isDashboardRoute(route = normalizedRoute()) {
     route === '/contact-us'
   ) {
     return Boolean(state.user);
+  }
+
+  if (!state.user && (route === '/' || route === '/join-book' || route === '/packages' || route === '/about')) {
+    return false;
   }
 
   return (
@@ -2030,14 +2034,14 @@ function topbar() {
         </a>
 
         <nav class="stitch-nav-menu">
-          <a href="#/preferences" class="stitch-nav-item ${current === '/preferences' ? 'active' : ''}">Plan</a>
-          <a href="#/matches" class="stitch-nav-item ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}">Matches</a>
-          <a href="#/chat" class="stitch-nav-item ${current === '/chat' ? 'active' : ''}">
-            Chat ${state.unreadConversationCount > 0 ? `<span class="nav-counter-pill">${state.unreadConversationCount}</span>` : ''}
-          </a>
-          <a href="#/join-book" class="stitch-nav-item ${current === '/join-book' || current === '/packages' ? 'active' : ''}">Packages</a>
+          <a href="#/packages" class="stitch-nav-item ${current === '/join-book' || current === '/packages' ? 'active' : ''}">Trek Packages</a>
           <a href="#/groups" class="stitch-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">
-            Groups ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}
+            Group Batches ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}
+          </a>
+          <a href="#/preferences" class="stitch-nav-item ${current === '/preferences' ? 'active' : ''}">Plan Trip</a>
+          <a href="#/matches" class="stitch-nav-item ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}">Co-Trekkers</a>
+          <a href="#/chat" class="stitch-nav-item ${current === '/chat' ? 'active' : ''}">
+            Messages ${state.unreadConversationCount > 0 ? `<span class="nav-counter-pill">${state.unreadConversationCount}</span>` : ''}
           </a>
           <a href="#/bookings" class="stitch-nav-item ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}">
             Bookings ${state.bookings.length > 0 ? `<span class="nav-counter-pill">${state.bookings.length}</span>` : ''}
@@ -2068,22 +2072,22 @@ function topbar() {
       <!-- Mobile Dropdown Navigation Drawer -->
       <div class="mobile-nav-drawer ${state.mobileNavOpen ? 'open' : ''}" id="mobileNavDrawer">
         <div class="mobile-nav-links">
+          <a href="#/packages" class="mobile-nav-item ${current === '/join-book' || current === '/packages' ? 'active' : ''}">
+            <span class="mobile-nav-icon">📦</span> <span>Trek Packages</span>
+          </a>
+          <a href="#/groups" class="mobile-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">
+            <span class="mobile-nav-icon">👥</span> <span>Group Batches</span>
+            ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}
+          </a>
           <a href="#/preferences" class="mobile-nav-item ${current === '/preferences' ? 'active' : ''}">
             <span class="mobile-nav-icon">🎛️</span> <span>Plan Trip</span>
           </a>
           <a href="#/matches" class="mobile-nav-item ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}">
-            <span class="mobile-nav-icon">🧭</span> <span>Matches</span>
+            <span class="mobile-nav-icon">🧭</span> <span>Co-Trekkers</span>
           </a>
           <a href="#/chat" class="mobile-nav-item ${current === '/chat' ? 'active' : ''}">
-            <span class="mobile-nav-icon">✉️</span> <span>Chat &amp; Messages</span>
+            <span class="mobile-nav-icon">✉️</span> <span>Messages</span>
             ${state.unreadConversationCount > 0 ? `<span class="nav-counter-pill">${state.unreadConversationCount}</span>` : ''}
-          </a>
-          <a href="#/join-book" class="mobile-nav-item ${current === '/join-book' || current === '/packages' ? 'active' : ''}">
-            <span class="mobile-nav-icon">📦</span> <span>Curated Packages</span>
-          </a>
-          <a href="#/groups" class="mobile-nav-item ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}">
-            <span class="mobile-nav-icon">👥</span> <span>Groups &amp; Cost Sharing</span>
-            ${state.tripGroups.length > 0 ? `<span class="nav-counter-pill">${state.tripGroups.length}</span>` : ''}
           </a>
           <a href="#/bookings" class="mobile-nav-item ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}">
             <span class="mobile-nav-icon">🎟️</span> <span>My Bookings</span>
@@ -2143,27 +2147,27 @@ function dashboardSidebar() {
       </div>
 
       <nav class="sidebar-nav-list">
+        <a href="#/join-book" class="sidebar-nav-link ${current === '/join-book' || current === '/packages' ? 'active' : ''}" title="Trek Packages">
+          <span class="sidebar-nav-icon">📦</span>
+          <span class="sidebar-nav-label">Packages</span>
+        </a>
+        <a href="#/groups" class="sidebar-nav-link ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}" title="Group Batches">
+          <span class="sidebar-nav-icon">👥</span>
+          <span class="sidebar-nav-label">Batches</span>
+          ${state.tripGroups.length > 0 ? `<span class="sidebar-nav-badge">${state.tripGroups.length}</span>` : ''}
+        </a>
         <a href="#/preferences" class="sidebar-nav-link ${current === '/preferences' ? 'active' : ''}" title="Plan Trip">
           <span class="sidebar-nav-icon">🎛️</span>
           <span class="sidebar-nav-label">Plan</span>
         </a>
-        <a href="#/matches" class="sidebar-nav-link ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}" title="Discover Matches">
+        <a href="#/matches" class="sidebar-nav-link ${current === '/matches' || current.startsWith('/match/') ? 'active' : ''}" title="Co-Trekkers">
           <span class="sidebar-nav-icon">🧭</span>
-          <span class="sidebar-nav-label">Matches</span>
+          <span class="sidebar-nav-label">Co-Trekkers</span>
         </a>
-        <a href="#/chat" class="sidebar-nav-link ${current === '/chat' ? 'active' : ''}" title="Messages & Chat">
+        <a href="#/chat" class="sidebar-nav-link ${current === '/chat' ? 'active' : ''}" title="Messages">
           <span class="sidebar-nav-icon">✉️</span>
-          <span class="sidebar-nav-label">Chat</span>
+          <span class="sidebar-nav-label">Messages</span>
           ${state.unreadConversationCount > 0 ? `<span class="sidebar-nav-badge">${state.unreadConversationCount}</span>` : ''}
-        </a>
-        <a href="#/join-book" class="sidebar-nav-link ${current === '/join-book' || current === '/packages' ? 'active' : ''}" title="Curated Packages">
-          <span class="sidebar-nav-icon">📦</span>
-          <span class="sidebar-nav-label">Packages</span>
-        </a>
-        <a href="#/groups" class="sidebar-nav-link ${current === '/groups' || current === '/cost-sharing' ? 'active' : ''}" title="Cost Sharing Groups">
-          <span class="sidebar-nav-icon">👥</span>
-          <span class="sidebar-nav-label">Groups</span>
-          ${state.tripGroups.length > 0 ? `<span class="sidebar-nav-badge">${state.tripGroups.length}</span>` : ''}
         </a>
         <a href="#/bookings" class="sidebar-nav-link desktop-only ${current === '/bookings' || current === '/my-bookings' ? 'active' : ''}" title="My Bookings">
           <span class="sidebar-nav-icon">🎟️</span>
@@ -2210,10 +2214,10 @@ function dashboardShell(contentMarkup) {
   let routeTitle = 'Dashboard';
   if (current === '/profile') routeTitle = 'Profile & Travel Preferences';
   else if (current === '/preferences') routeTitle = 'Plan Your Trip';
-  else if (current === '/matches' || current.startsWith('/match/')) routeTitle = 'Trek Matches & Companions';
+  else if (current === '/matches' || current.startsWith('/match/')) routeTitle = 'Co-Trekkers & Group Departures';
   else if (current === '/chat') routeTitle = 'Messages & Travel Inbox';
-  else if (current === '/join-book' || current === '/packages') routeTitle = 'Curated Expeditions';
-  else if (current === '/groups' || current === '/cost-sharing') routeTitle = 'Cost Sharing Groups';
+  else if (current === '/join-book' || current === '/packages') routeTitle = 'Himalayan Trek Packages';
+  else if (current === '/groups' || current === '/cost-sharing') routeTitle = 'Group Batches & Departures';
   else if (current === '/bookings' || current === '/my-bookings') routeTitle = 'My Bookings';
   else if (current === '/about') routeTitle = 'About TripZen';
   else if (current === '/terms' || current === '/terms-and-conditions') routeTitle = 'Terms & Conditions';
@@ -4415,8 +4419,8 @@ function joinBookPage() {
       <div class="page-header-stitch">
         <div class="page-header-row">
           <div>
-            <h1>Curated Packages</h1>
-            <p>Verified Himalayan operators • Instant Razorpay booking • Split costs with buddies.</p>
+            <h1>Himalayan Trekking Expeditions &amp; Tour Packages</h1>
+            <p>Verified Himalayan operators • All-Inclusive Departures • Instant Booking with WhatsApp Vouchers • Govt. Registered MSME</p>
           </div>
           ${
             currentConversation
@@ -4469,11 +4473,11 @@ function joinBookPage() {
       <!-- Cost-Sharing Squads Link Banner -->
       <div class="cost-share-banner-cta" style="margin-top: 36px; background: linear-gradient(135deg, rgba(35,89,70,0.07), rgba(232,135,58,0.07)); border: 1px solid var(--surface-border); border-radius: var(--radius-xl); padding: 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
         <div>
-          <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--ink); margin: 0 0 6px 0;">Looking to split camp & transport costs instead?</h3>
-          <p style="font-size: 0.88rem; color: var(--muted); margin: 0;">Join or create a verified traveler cost-sharing squad and save up to 40% on trip logistics.</p>
+          <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--ink); margin: 0 0 6px 0;">Looking for Upcoming Fixed Group Departures?</h3>
+          <p style="font-size: 0.88rem; color: var(--muted); margin: 0;">Join scheduled weekend departures with licensed local mountain guides and verified alpine camps.</p>
         </div>
         <a href="#/groups" class="primary-btn" style="padding: 11px 24px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-          <span>👥 Explore Cost-Sharing Squads ➔</span>
+          <span>👥 View Group Departures ➔</span>
         </a>
       </div>
     </div>
@@ -4941,10 +4945,10 @@ function authPage() {
   const draftPhone = savedDraft.phone || '';
 
   let headerTitle = 'Welcome Back';
-  let headerSubtitle = 'Sign in to access your travel matches and group trips';
+  let headerSubtitle = 'Sign in to access your trek bookings and group departures';
   if (isSignup) {
     headerTitle = 'Create Account';
-    headerSubtitle = 'Connect with verified travel buddies across India';
+    headerSubtitle = 'Book verified high-altitude treks and join certified departures';
   } else if (isForgotPassword) {
     headerTitle = 'Reset Password';
     headerSubtitle = 'Enter your phone number or email to set a new password';
@@ -4966,15 +4970,15 @@ function authPage() {
         <div class="auth-hero-left">
           <div class="auth-hero-badge">
             <span class="auth-badge-live-pulse"></span>
-            <span>🛡️ 100% Verified Trek & Travel Matchmaking</span>
+            <span>🏔️ Verified Himalayan Treks & Certified Mountain Guides</span>
           </div>
 
           <h1 class="auth-hero-title">
-            Find the ones who share your <span class="highlight-auth-brand">travel dreams</span>.
+            Book Certified Mountain Treks & <span class="highlight-auth-brand">Guided Expeditions</span>.
           </h1>
 
           <p class="auth-hero-desc">
-            Lock in your destination and dates. Connect with vetted, compatible travel buddies heading to the same treks, roadtrips, and weekend escapes across India.
+            Explore verified Himalayan summits, alpine camps, and certified mountain guide departures with transparent all-inclusive package pricing.
           </p>
 
           <!-- Live Traveler Community Strip -->
@@ -4991,7 +4995,7 @@ function authPage() {
                 <span class="trust-stars">★★★★★</span>
                 <strong>4.9 / 5 Rating</strong>
               </div>
-              <span class="trust-metric-sub">Over 820+ verified treks & road trips matched</span>
+              <span class="trust-metric-sub">Over 820+ verified trek departures completed across India</span>
             </div>
           </div>
 
@@ -5172,7 +5176,7 @@ function authPage() {
             }
 
             <button type="submit" class="primary-btn wide-btn auth-submit-btn" style="margin-top: 14px;">
-              <span>${isSignup ? 'Create Account ➔' : (isForgotPassword ? 'Regenerate Password & Sign In ➔' : 'Continue to Matches ➔')}</span>
+              <span>${isSignup ? 'Create Account ➔' : (isForgotPassword ? 'Regenerate Password & Sign In ➔' : 'Continue to Expeditions ➔')}</span>
             </button>
 
             ${!isForgotPassword ? `
@@ -5444,26 +5448,26 @@ function aboutPage() {
     <div class="curate-wrapper animate-fade-in">
       <div class="page-header-stitch">
         <h1>About TripZen</h1>
-        <p>Connecting compatible adventurers for shared mountain journeys and vacations.</p>
+        <p>Curated Himalayan trekking expeditions, certified mountain guides, and verified group departures.</p>
       </div>
 
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 32px;">
         <div class="curate-form-card">
-          <h3>🎯 Intentional Matching</h3>
+          <h3>🏔️ Certified Expeditions</h3>
           <p style="color: var(--text-body); font-size: 0.95rem; margin-top: 8px;">
-            Matches stay hidden until destination and dates are selected. That ensures every profile you see is genuinely planning the same journey.
+            Every trek package is led by licensed mountain guides with verified safety gear, alpine tents, and forest department permits included.
           </p>
         </div>
         <div class="curate-form-card">
-          <h3>🤝 Split & Save</h3>
+          <h3>👥 Fixed Group Departures</h3>
           <p style="color: var(--text-body); font-size: 0.95rem; margin-top: 8px;">
-            Create shared-cost group trips to divide logistics and camp costs with other vetted travelers.
+            Join scheduled weekend and seasonal batches with transparent all-inclusive per-person rates and instant booking confirmation.
           </p>
         </div>
         <div class="curate-form-card">
-          <h3>🔒 Verified & Safe</h3>
+          <h3>🔒 Verified & Compliant</h3>
           <p style="color: var(--text-body); font-size: 0.95rem; margin-top: 8px;">
-            Coordinate in real-time chat, shortlist operator packages, and secure bookings safely inside TripZen.
+            TripZen is a registered Micro-Enterprise under the Ministry of MSME, Govt. of India (Udyam: UDYAM-UP-28-0250895) with RBI-authorized payment processing.
           </p>
         </div>
       </div>
@@ -5487,14 +5491,14 @@ function appSiteFooter() {
       </div>
       <div class="footer-links-row">
         <div class="footer-policy-links">
-          <a href="#/terms" class="footer-policy-link">Terms & Conditions</a>
+          <a href="#/terms" class="footer-policy-link">Terms of Service</a>
           <a href="#/privacy" class="footer-policy-link">Privacy Policy</a>
-          <a href="#/refund-policy" class="footer-policy-link">Cancellation & Refund</a>
-          <a href="#/shipping-policy" class="footer-policy-link">Shipping & Delivery</a>
-          <a href="#/contact" class="footer-policy-link">Contact Us</a>
+          <a href="#/refund-policy" class="footer-policy-link">Cancellation &amp; Refund</a>
+          <a href="#/shipping-policy" class="footer-policy-link">Service Delivery</a>
+          <a href="#/contact" class="footer-policy-link">Contact &amp; Grievance</a>
         </div>
         <div class="footer-copyright">
-          © 2026 TripZen Travel Technologies (Abhishek Sharma). All rights reserved.
+          © 2026 TripZen Travel Technologies (Govt. of India MSME: <strong>UDYAM-UP-28-0250895</strong>). All rights reserved.
         </div>
       </div>
     </footer>
@@ -5502,11 +5506,11 @@ function appSiteFooter() {
 }
 
 function legalPolicyPage(activeTab = 'terms') {
-  const returnHref = state.user ? '#/matches' : '#/auth';
-  const returnLabel = state.user ? '← Back to Dashboard' : '← Return to Login';
+  const returnHref = state.user ? '#/packages' : '#/';
+  const returnLabel = state.user ? '← Back to Expeditions' : '← Return to Home';
 
   let headerTitle = 'Terms & Conditions';
-  let headerDesc = 'Please review the official terms governing expedition bookings, companion matching, and platform usage.';
+  let headerDesc = 'Please review the official terms governing expedition bookings, guided departures, and platform usage.';
   let badgeText = '📜 Legal Agreement • IT Act 2000';
 
   if (activeTab === 'privacy') {
@@ -5533,10 +5537,10 @@ function legalPolicyPage(activeTab = 'terms') {
     bodyHtml = `
       <h2>1. Introduction & Acceptance of Terms</h2>
       <p>
-        These Terms and Conditions (“Terms”) govern your use of the website <strong>https://tripzen.co.in</strong>, mobile web application, and associated travel coordination services (collectively, “TripZen” or “Platform”), operated by <strong>TripZen Travel Technologies</strong> (“We”, “Us”, or “Our”), founded by Abhishek Sharma.
+        These Terms and Conditions (“Terms”) govern your use of the website <strong>https://tripzen.co.in</strong>, mobile web application, and associated adventure travel services (collectively, “TripZen” or “Platform”), operated by <strong>TripZen Travel Technologies</strong> (“We”, “Us”, or “Our”), a registered Micro-Enterprise under the Ministry of MSME, Government of India (Udyam: <strong>UDYAM-UP-28-0250895</strong>), founded and operated by Abhishek Sharma.
       </p>
       <p>
-        By accessing our website, creating an account, coordinating with companions, or making a reservation, you agree to comply with and be bound by these Terms, our Privacy Policy, and our Refund & Cancellation Policy. If you do not agree to these terms, you must discontinue using TripZen.
+        By accessing our website, creating an account, reserving an expedition, or using our travel services, you agree to comply with and be bound by these Terms, our Privacy Policy, and our Refund & Cancellation Policy. If you do not agree to these terms, you must discontinue using TripZen.
       </p>
 
       <h2>2. Eligibility & Account Security</h2>
@@ -5548,13 +5552,13 @@ function legalPolicyPage(activeTab = 'terms') {
 
       <h2>3. Nature of Platform & Services</h2>
       <p>
-        TripZen operates an intentional travel companion matchmaking and expedition booking marketplace. Our platform enables verified trekkers to:
+        TripZen operates a curated adventure travel booking marketplace and mountain expedition platform. Our platform enables verified travelers to:
       </p>
       <ul>
-        <li>Discover like-minded companions matching preferred summits, trails, and departure windows.</li>
-        <li>Communicate in secure, encrypted user-to-user inboxes.</li>
-        <li>Coordinate cost-sharing travel groups to split campsite and logistical costs.</li>
-        <li>Reserve curated trekking expeditions and adventure packages led by certified local guides and tour operators.</li>
+        <li>Reserve curated high-altitude trekking expeditions, summit climbs, and adventure packages led by certified local guides and tour operators.</li>
+        <li>Coordinate small-group travel departures with shared alpine camping and licensed guide logistics.</li>
+        <li>Connect with fellow trek group participants and trek leaders regarding trail advisories, packing requirements, and safety briefings.</li>
+        <li>Receive automated digital vouchers, verified booking IDs, and real-time expedition updates.</li>
       </ul>
 
       <div class="legal-callout-box alert">
@@ -5599,11 +5603,11 @@ function legalPolicyPage(activeTab = 'terms') {
     bodyHtml = `
       <h2>1. Overview & Commitment to Privacy</h2>
       <p>
-        TripZen Travel Technologies (“TripZen”, “We”, “Our”) respects the privacy of every traveler who uses our platform. This Privacy Policy details our practices regarding personal data collection, processing, cloud storage, and user rights in compliance with the <strong>Digital Personal Data Protection Act, 2023 (DPDPA)</strong> and the <strong>Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011</strong>.
+        TripZen Travel Technologies (“TripZen”, “We”, “Our”, Govt. of India MSME: <strong>UDYAM-UP-28-0250895</strong>) respects the privacy of every traveler who uses our platform. This Privacy Policy details our practices regarding personal data collection, processing, cloud storage, and user rights in compliance with the <strong>Digital Personal Data Protection Act, 2023 (DPDPA)</strong> and the <strong>Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011</strong>.
       </p>
 
       <h2>2. What Information We Collect</h2>
-      <p>We only collect information necessary to deliver intentional travel matching and secure expedition booking:</p>
+      <p>We only collect information necessary to deliver verified adventure tour reservations and secure expedition booking:</p>
       <ul>
         <li><strong>Account Identifiers:</strong> Full Name, Email Address, Mobile Phone Number, Age, Gender, City, and Profile Avatar.</li>
         <li><strong>Google OAuth Data:</strong> When signing in with Google, we receive your Google ID, verified email, and profile photo via Supabase Auth.</li>
@@ -5615,13 +5619,13 @@ function legalPolicyPage(activeTab = 'terms') {
       <div class="legal-callout-box info">
         <h4>🔒 Zero-Spam & Zero-Selling Guarantee</h4>
         <p>
-          TripZen will <strong>NEVER sell, rent, or trade</strong> your personal information or phone number to marketing agencies, loan aggregators, or third-party advertisers. Your information is used exclusively to facilitate your mountain journey and companion matching.
+          TripZen will <strong>NEVER sell, rent, or trade</strong> your personal information or phone number to marketing agencies, loan aggregators, or third-party advertisers. Your information is used exclusively to facilitate your mountain journey and booking fulfillment.
         </p>
       </div>
 
       <h2>3. How We Use Your Data</h2>
       <ul>
-        <li><strong>Companion Compatibility Matching:</strong> Aligning you with compatible trekkers heading to the same trail during your departure dates.</li>
+        <li><strong>Expedition Coordination:</strong> Aligning you with verified group departures heading to the same trail during your departure dates.</li>
         <li><strong>Booking Confirmations:</strong> Dispatching instant booking confirmations, vouchers, and expedition manifests via our verified WhatsApp Cloud API and Email.</li>
         <li><strong>On-Ground Mountain Safety:</strong> Providing local licensed expedition leaders with verified trekker manifests for forest permits, emergency rescue logistics, and campsite headcounts.</li>
         <li><strong>Account Recovery:</strong> Facilitating secure password resets and multi-factor session validation.</li>
@@ -5671,7 +5675,7 @@ function legalPolicyPage(activeTab = 'terms') {
     bodyHtml = `
       <h2>1. Overview</h2>
       <p>
-        At <strong>TripZen Travel Technologies</strong> (“TripZen”), we strive to keep our cancellation and refund process as flexible and transparent as possible. When you book a trek or expedition package, campsite reservations, guide allocations, forest department entry permits, and local safety equipment are procured in advance.
+        At <strong>TripZen Travel Technologies</strong> (“TripZen”, Govt. of India MSME: <strong>UDYAM-UP-28-0250895</strong>), we strive to keep our cancellation and refund process as flexible and transparent as possible. When you book a trek or expedition package, campsite reservations, guide allocations, forest department entry permits, and local safety equipment are procured in advance.
       </p>
 
       <h2>2. Standard Cancellation & Refund Matrix</h2>
@@ -5748,7 +5752,7 @@ function legalPolicyPage(activeTab = 'terms') {
     bodyHtml = `
       <h2>1. Nature of Services Provided</h2>
       <p>
-        <strong>TripZen Travel Technologies</strong> is an experiential travel platform offering digital companion matchmaking, curated trekking expeditions, and mountain travel packages. We do not sell or ship physical merchandise or physical goods. Consequently, traditional postal or courier shipping does not apply to our platform.
+        <strong>TripZen Travel Technologies</strong> (Govt. of India MSME / Udyam: <strong>UDYAM-UP-28-0250895</strong>) is an experiential travel platform offering curated mountain trekking expeditions, adventure travel reservations, and guided wilderness packages. We do not sell or ship physical merchandise or physical goods. Consequently, traditional postal or courier shipping does not apply to our platform.
       </p>
 
       <h2>2. Digital Delivery Timelines & Process</h2>
@@ -5838,12 +5842,16 @@ function legalPolicyPage(activeTab = 'terms') {
             <td><strong>TripZen</strong> (TripZen Travel Technologies)</td>
           </tr>
           <tr>
-            <td><strong>Operating Founder</strong></td>
+            <td><strong>Legal Status & Registration</strong></td>
+            <td>Registered Micro-Enterprise (Govt. of India MSME / Udyam: <strong>UDYAM-UP-28-0250895</strong>)</td>
+          </tr>
+          <tr>
+            <td><strong>Operating Founder / Proprietor</strong></td>
             <td>Abhishek Sharma</td>
           </tr>
           <tr>
             <td><strong>Nature of Business</strong></td>
-            <td>Travel Companion Matchmaking & Curated Adventure Expeditions</td>
+            <td>Adventure Travel Bookings, Guided Trekking Expeditions & Tour Operations</td>
           </tr>
           <tr>
             <td><strong>Registered Office</strong></td>
@@ -5854,6 +5862,7 @@ function legalPolicyPage(activeTab = 'terms') {
             <td><a href="https://tripzen.co.in" target="_blank" style="color: #059669; font-weight: 700;">https://tripzen.co.in</a></td>
           </tr>
         </tbody>
+      </table>
       </table>
 
       <h2>3. Grievance Redressal Mechanism</h2>
@@ -5909,6 +5918,91 @@ function legalPolicyPage(activeTab = 'terms') {
   `;
 }
 
+function storefrontLandingPage() {
+  return `
+    <div class="storefront-hero-container animate-fade-in" style="max-width: 1240px; margin: 0 auto; padding: 0 16px;">
+      <!-- HERO BANNER -->
+      <section class="storefront-hero-card" style="background: radial-gradient(circle at 10% 20%, #14382d 0%, #0a211a 90%); color: #ffffff; padding: 48px 32px; border-radius: 24px; margin: 20px 0 32px 0; border: 1px solid rgba(167, 243, 208, 0.25); box-shadow: 0 16px 40px rgba(10, 33, 26, 0.35);">
+        <div style="max-width: 900px; margin: 0 auto; text-align: center;">
+          <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.12); padding: 7px 18px; border-radius: 999px; font-size: 0.84rem; font-weight: 800; color: #a7f3d0; margin-bottom: 20px; border: 1px solid rgba(167,243,208,0.35);">
+            <span>🏛️ Govt. of India MSME Registered: UDYAM-UP-28-0250895</span>
+          </div>
+          <h1 style="font-size: clamp(2rem, 4vw, 3.1rem); font-weight: 900; line-height: 1.15; margin: 0 0 18px 0; letter-spacing: -0.02em;">
+            Curated Himalayan Trekking Expeditions &amp; Guided Tours
+          </h1>
+          <p style="font-size: 1.08rem; line-height: 1.6; color: #e2e8f0; margin: 0 auto 28px auto; max-width: 720px;">
+            Book verified high-altitude treks, licensed local mountain guides, alpine camps, and forest permits. 100% transparent pricing in INR with instant WhatsApp vouchers.
+          </p>
+          <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
+            <a href="#/join-book" class="primary-btn" style="padding: 13px 30px; font-size: 1rem; font-weight: 800; text-decoration: none; box-shadow: 0 4px 14px rgba(232, 135, 58, 0.4);">
+              <span>Explore All Packages ➔</span>
+            </a>
+            <a href="#/contact" class="ghost-btn" style="padding: 13px 26px; font-size: 1rem; font-weight: 700; color: #ffffff; border-color: rgba(255,255,255,0.3); text-decoration: none;">
+              <span>📞 Contact Support</span>
+            </a>
+          </div>
+
+          <!-- TRUST BADGES ROW -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-top: 36px; padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.15); text-align: left;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 1.6rem;">🏔️</span>
+              <div>
+                <strong style="display: block; font-size: 0.88rem; color: #ffffff;">Certified Mountain Guides</strong>
+                <span style="font-size: 0.76rem; color: #cbd5e1;">WFR &amp; Local Leader Certified</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 1.6rem;">💳</span>
+              <div>
+                <strong style="display: block; font-size: 0.88rem; color: #ffffff;">Authorized Payment Gateways</strong>
+                <span style="font-size: 0.76rem; color: #cbd5e1;">256-bit SSL • Cards, UPI &amp; NetBanking</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 1.6rem;">⚡</span>
+              <div>
+                <strong style="display: block; font-size: 0.88rem; color: #ffffff;">Instant Digital Vouchers</strong>
+                <span style="font-size: 0.76rem; color: #cbd5e1;">WhatsApp &amp; Email Delivery</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 1.6rem;">🛡️</span>
+              <div>
+                <strong style="display: block; font-size: 0.88rem; color: #ffffff;">Govt. Registered MSME</strong>
+                <span style="font-size: 0.76rem; color: #cbd5e1;">Tour Operator • UDYAM-UP-28-0250895</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LIVE BROWSEABLE STOREFRONT (PACKAGES) -->
+      ${joinBookPage()}
+
+      <!-- OFFICIAL ENTITY CREDENTIALS CARD -->
+      <section style="background: #ffffff; border: 1px solid var(--surface-border); border-radius: 20px; padding: 30px; margin: 36px 0; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+          <div>
+            <h3 style="margin: 0 0 6px 0; font-size: 1.25rem; color: var(--ink);">TripZen Travel Technologies</h3>
+            <p style="margin: 0 0 10px 0; font-size: 0.88rem; color: var(--muted);">Registered Office: Galaxy Apartments, Sector 49, Noida, Uttar Pradesh 201301, India</p>
+            <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.84rem; color: #475569;">
+              <span><strong>URN:</strong> UDYAM-UP-28-0250895</span>
+              <span><strong>Helpline:</strong> +91 89206 32874</span>
+              <span><strong>Support:</strong> Support.tripzen@gmail.com</span>
+              <span><strong>Founder &amp; Grievance Officer:</strong> Abhishek Sharma</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="#/terms" class="ghost-btn" style="font-size: 0.84rem; padding: 8px 16px; text-decoration: none;">Terms of Service</a>
+            <a href="#/refund-policy" class="ghost-btn" style="font-size: 0.84rem; padding: 8px 16px; text-decoration: none;">Refund Policy</a>
+            <a href="#/contact" class="ghost-btn" style="font-size: 0.84rem; padding: 8px 16px; text-decoration: none;">Contact Us</a>
+          </div>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
 function pageContent() {
   const route = normalizedRoute();
   if (route === '/admin') return adminPanelPage();
@@ -5928,7 +6022,7 @@ function pageContent() {
   if (route === '/shipping-policy' || route === '/delivery-policy' || route === '/shipping') return legalPolicyPage('shipping');
   if (route === '/contact' || route === '/contact-us') return legalPolicyPage('contact');
   if (state.user) return preferencesPage();
-  return authPage();
+  return storefrontLandingPage();
 }
 
 function renderApp() {
@@ -5944,7 +6038,8 @@ function renderApp() {
         ${state.notificationMessage ? `<div class="floating-notification">${escapeHtml(state.notificationMessage)}</div>` : ''}
         ${topbar()}
         ${state.globalStatus ? `<div class="global-banner ${state.globalStatusType || ''}">${escapeHtml(state.globalStatus)}</div>` : ''}
-        <main>${pageContent()}</main>
+        <main style="min-height: 80vh;">${pageContent()}</main>
+        ${route === '/auth' ? '' : appSiteFooter()}
       </div>
     `;
   }
@@ -7881,16 +7976,11 @@ function renderItineraryModal() {
 }
 
 function openCheckoutModal(packageId) {
-  if (!state.user) {
-    state.authStatus = 'Please log in to book packages.';
-    state.authStatusType = 'info';
-    routeTo('/auth');
-    return;
-  }
   state.checkoutPackageId = packageId;
   state.checkoutTravelers = 1;
   state.checkoutDate = 'Upcoming Weekend';
   state.bookingSuccessData = null;
+  state.paymentStatus = '';
   renderApp();
 }
 
@@ -8093,6 +8183,10 @@ function renderCheckoutModal() {
                 <span>WHATSAPP PHONE</span>
                 <input id="checkoutLeadPhone" class="stitch-input" value="${escapeHtml(state.user?.phone || state.checkoutPhone || '')}" placeholder="10-digit Mobile Number" required />
               </label>
+              <label class="field-label" style="grid-column: 1 / -1;">
+                <span>EMAIL ADDRESS (FOR BOOKING VOUCHER &amp; INVOICE)</span>
+                <input id="checkoutLeadEmail" type="email" class="stitch-input" value="${escapeHtml(state.user?.email || state.checkoutEmail || '')}" placeholder="traveler@example.com" required />
+              </label>
             </div>
           </div>
 
@@ -8137,19 +8231,22 @@ async function startPackagePayment(packageId, options = {}) {
   const tripPackage = TRIP_PACKAGES.find((item) => item.id === packageId);
   if (!tripPackage) return;
 
-  if (!state.user) {
-    state.authStatus = 'Please log in to book and pay for packages.';
-    state.authStatusType = 'info';
-    routeTo('/auth');
-    return;
-  }
+  const leadNameInput = document.getElementById('checkoutLeadName')?.value?.trim();
+  const leadPhoneInput = document.getElementById('checkoutLeadPhone')?.value?.trim();
+  const leadEmailInput = document.getElementById('checkoutLeadEmail')?.value?.trim();
 
-  const profileId = state.profile?.id || state.user?.id;
   const count = options.travelerCount || state.checkoutTravelers || 1;
   const month = options.preferredMonth || state.checkoutDate || tripPackage.month;
-  const leadName = options.leadName || state.user?.fullName || 'Traveler';
-  const leadPhone = options.leadPhone || state.user?.phone || state.checkoutPhone || '9876543210';
-  const leadEmail = state.user?.email || '';
+  const leadName = options.leadName || leadNameInput || state.user?.fullName || 'Traveler';
+  const leadPhone = options.leadPhone || leadPhoneInput || state.user?.phone || state.checkoutPhone || '9876543210';
+  const leadEmail = options.leadEmail || leadEmailInput || state.user?.email || 'support.tripzen@gmail.com';
+  const profileId = state.profile?.id || state.user?.id || 'direct-traveler';
+
+  if (!leadName || !leadPhone) {
+    state.paymentStatus = 'Please enter lead traveler name and phone number.';
+    renderApp();
+    return;
+  }
 
   if (!window.Razorpay) {
     state.paymentStatus = 'Razorpay checkout could not load. Check your internet connection and refresh.';
@@ -8165,7 +8262,7 @@ async function startPackagePayment(packageId, options = {}) {
       conversationId: state.activeConversationId || '',
       profileId: profileId,
       userId: state.user?.id || '',
-      userEmail: state.user?.email || '',
+      userEmail: state.user?.email || leadEmail,
       leadEmail: leadEmail,
       packageId: tripPackage.id,
       packageName: tripPackage.packageName,
@@ -8191,7 +8288,7 @@ async function startPackagePayment(packageId, options = {}) {
       order_id: orderData.orderId,
       prefill: {
         name: leadName,
-        email: state.user?.email || '',
+        email: leadEmail,
         contact: leadPhone,
       },
       notes: {
